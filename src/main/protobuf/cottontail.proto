@@ -7,7 +7,7 @@ option java_outer_classname = "CottontailGrpc";
 
 service CottonDDL {
     /* Handling DB schemas. */
-    rpc ListSchemas (google.protobuf.Empty) returns (Schema);
+    rpc ListSchemas (google.protobuf.Empty) returns (stream Schema);
     rpc CreateSchema (Schema) returns (SuccessStatus);
     rpc DropSchema (Schema) returns (SuccessStatus);
 
