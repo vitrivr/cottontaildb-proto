@@ -183,9 +183,10 @@ message QueryMessage {
 message QueryResponseMessage {
     string queryId = 1;
     bool start = 2;
-    uint32 size = 3;
-    uint32 total = 4;
-    repeated Tuple results = 5;
+    uint32 page = 3;
+    uint32 batchSize = 4;
+    uint32 total = 5;
+    repeated Tuple results = 6;
 }
 
 
