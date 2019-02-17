@@ -8,15 +8,15 @@ option java_outer_classname = "CottontailGrpc";
 service CottonDDL {
     /* Handling DB schemas. */
     rpc ListSchemas (google.protobuf.Empty) returns (Schema);
-    rpc CreateSchema (Schema) returns (google.protobuf.Empty);
-    rpc DropSchema (Schema) returns (google.protobuf.Empty);
+    rpc CreateSchema (Schema) returns (SuccessStatus);
+    rpc DropSchema (Schema) returns (SuccessStatus);
 
     /* Handling entities. */
     rpc ListEntities (Schema) returns (stream Entity);
-    rpc CreateEntity (CreateEntityMessage) returns (google.protobuf.Empty);
-    rpc DropEntity (Entity) returns (google.protobuf.Empty);
-    rpc OptimizeEntity (Entity) returns (google.protobuf.Empty);
-    rpc TruncateEntity (Entity) returns (google.protobuf.Empty);
+    rpc CreateEntity (CreateEntityMessage) returns (SuccessStatus);
+    rpc DropEntity (Entity) returns (SuccessStatus);
+    rpc OptimizeEntity (Entity) returns (SuccessStatus);
+    rpc TruncateEntity (Entity) returns (SuccessStatus);
 }
 
 service CottonDML {
@@ -43,11 +43,15 @@ message Entity {
     string name = 2;
 }
 
+/** A status as returned by Cottontail DB in response to a successful action that has no dedicated return type. */
+message SuccessStatus {
+    int64 timestamp = 1;
+}
+
 /** A status as returned by Cottontail DB in response to an insert action. */
 message InsertStatus {
     bool success = 1;
-    Type type = 2;
-    int64 timestamp = 4;
+    int64 timestamp = 2;
 }
 
 /** A basic tuple as used in insert or update statements OR results. */
@@ -65,12 +69,11 @@ enum Type {
     FLOAT = 5;
     DOUBLE = 6;
     STRING = 7;
-    DOUBLE_ARRAY = 8;
-    FLOAT_ARRAY = 9;
-    LONG_ARRAY = 10;
-    INT_ARRAY = 11;
-    SHORT_ARRAY = 12;
-    BLOB = 13;
+    DOUBLE_VEC = 8;
+    FLOAT_VEC = 9;
+    LONG_VEC = 10;
+    INT_VEC = 11;
+    BLOB = 12;
 }
 
 /** The data payload that can be contained in a tuple. */
