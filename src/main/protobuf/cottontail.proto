@@ -26,11 +26,12 @@ service CottonDML {
     rpc InsertStream (stream InsertMessage) returns (stream InsertStatus);
 }
 
-
 service CottonDQL {
     rpc Query(QueryMessage) returns (stream QueryResponseMessage);
     rpc BatchedQuery(BatchedQueryMessage) returns (stream QueryResponseMessage);
+    rpc Ping(google.protobuf.Empty) returns (SuccessStatus) {}
 }
+
 
 /** Identifier for a single schema.  */
 message Schema {
@@ -138,7 +139,6 @@ message ColumnDefinition {
     bool nullable = 5;
 }
 
-
 /** Message for creating an entity. */
 message CreateEntityMessage {
     Entity entity = 1;
@@ -155,8 +155,6 @@ message InsertMessage {
 /*
  * Data Query Language (DQL)
  */
-
-
 
 /* A simple query. */
 message Query {
@@ -222,6 +220,7 @@ message Knn {
         L1 = 0;
         L2 = 1;
         L2SQUARED = 2;
+        CHISQUARED = 3;
     }
 }
 
