@@ -168,6 +168,7 @@ message CreateEntityMessage {
 message CreateIndexMessage {
     Index index = 1;
     repeated string columns = 2;
+    map<string,string> params = 3;
 }
 
 /** Message for inserting data into an entity. */
