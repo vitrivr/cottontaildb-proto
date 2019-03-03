@@ -15,6 +15,10 @@ service CottonDDL {
     rpc ListEntities (Schema) returns (stream Entity);
     rpc CreateEntity (CreateEntityMessage) returns (SuccessStatus);
     rpc DropEntity (Entity) returns (SuccessStatus);
+
+    rpc CreateIndex(CreateIndexMessage) returns (SuccessStatus);
+    rpc DropIndex(Index) returns (SuccessStatus);
+
     rpc OptimizeEntity (Entity) returns (SuccessStatus);
     rpc TruncateEntity (Entity) returns (SuccessStatus);
 }
@@ -42,6 +46,21 @@ message Schema {
 message Entity {
     Schema schema = 1;
     string name = 2;
+}
+
+/** Identifier for a single index. */
+message Index {
+    Entity entity = 1;
+    string name = 2;
+    IndexType type = 3;
+    enum IndexType {
+        HASH = 0;
+        HASH_UQ = 1;
+        BTREE = 2;
+        LUCENE = 3;
+        VAF = 4;
+        PQ = 5;
+    }
 }
 
 /** A status as returned by Cottontail DB in response to a successful action that has no dedicated return type. */
@@ -145,12 +164,17 @@ message CreateEntityMessage {
     repeated ColumnDefinition columns = 2;
 }
 
+/** Message for creating an index. */
+message CreateIndexMessage {
+    Index index = 1;
+    repeated string columns = 2;
+}
+
 /** Message for inserting data into an entity. */
 message InsertMessage {
     Entity entity = 1;
     repeated Tuple tuple = 2;
 }
-
 
 /*
  * Data Query Language (DQL)
