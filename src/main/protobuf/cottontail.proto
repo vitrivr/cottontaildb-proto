@@ -289,6 +289,7 @@ message AtomicLiteralBooleanPredicate {
         BETWEEN = 6;
         ISNULL = 7;
         ISNOTNULL = 8;
+        LIKE = 9;
     }
 }
 
