@@ -236,7 +236,7 @@ message From {
 /* The projection part of a query (select + attributes / count / exists) . */
 message Projection {
     Operation op = 1;
-    repeated string attributes = 2;
+    map<string,string> attributes = 2;
     enum Operation {
         SELECT = 0;
         COUNT = 1;
