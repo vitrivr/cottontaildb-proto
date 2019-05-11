@@ -108,6 +108,7 @@ message Data {
         double doubleData = 5;
         string stringData = 6;
         Vector vectorData = 7;
+        Null nullData = 8;
     }
 }
 
@@ -120,6 +121,9 @@ message Vector {
         LongVector longVector = 4;
     }
 }
+
+/** A null entry.*/
+message Null {}
 
 /** A float vector. */
 message FloatVector {
