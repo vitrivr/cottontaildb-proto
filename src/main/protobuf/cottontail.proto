@@ -244,7 +244,12 @@ message Projection {
     enum Operation {
         SELECT = 0;
         COUNT = 1;
-        EXISTS = 2;
+        COUNT_DISTINCT = 2;
+        EXISTS = 3;
+        SUM = 4;
+        MAX = 5;
+        MIN = 6;
+        MEAN = 7;
     }
 }
 
