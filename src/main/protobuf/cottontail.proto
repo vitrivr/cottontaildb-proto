@@ -203,8 +203,8 @@ message Query {
     Projection projection = 2;
     Where where = 3;
     Knn knn = 4;
-    uint32 count = 5; /* Size of the result-set (default: unlimited). */
-    uint32 skip = 6; /* Number of records to skip. */
+    uint64 limit = 5; /* Size of the result-set (default: unlimited). */
+    uint64 skip = 6; /* Number of records to skip. */
 }
 
 /* A batch of queries that should be executed. The individual queries will return under a single query ID. */
