@@ -260,8 +260,8 @@ message Knn {
     string attribute = 1;
     uint32 k = 2;
     Distance distance = 3;
-    Vector query = 4;
-    Vector weights = 5;
+    repeated Vector query = 4;
+    repeated Vector weights = 5;
     enum Distance {
         L1 = 0;
         L2 = 1;
