@@ -2,6 +2,8 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
+package ch.unibas.dmi.dbis.cottontail.grpc;
+
 option java_package = "ch.unibas.dmi.dbis.cottontail.grpc";
 option java_outer_classname = "CottontailGrpc";
 
