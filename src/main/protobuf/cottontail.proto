@@ -97,7 +97,8 @@ enum Type {
     FLOAT_VEC = 9;
     LONG_VEC = 10;
     INT_VEC = 11;
-    BLOB = 12;
+    BOOL_VEC = 12;
+    BLOB = 13;
 }
 
 /** The data payload that can be contained in a tuple. */
