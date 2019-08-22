@@ -270,6 +270,7 @@ message Knn {
         L2 = 1;
         L2SQUARED = 2;
         CHISQUARED = 3;
+        HAMMING = 4;
         HAVERSINE = 10;
     }
 }
