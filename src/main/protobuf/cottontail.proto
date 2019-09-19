@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
-
 package ch.unibas.dmi.dbis.cottontail.grpc;
 
 option java_package = "ch.unibas.dmi.dbis.cottontail.grpc";
@@ -9,7 +7,7 @@ option java_outer_classname = "CottontailGrpc";
 
 service CottonDDL {
     /* Handling DB schemas. */
-    rpc ListSchemas (google.protobuf.Empty) returns (stream Schema);
+    rpc ListSchemas (Empty) returns (stream Schema);
     rpc CreateSchema (Schema) returns (SuccessStatus);
     rpc DropSchema (Schema) returns (SuccessStatus);
 
@@ -37,9 +35,11 @@ service CottonDML {
 service CottonDQL {
     rpc Query(QueryMessage) returns (stream QueryResponseMessage);
     rpc BatchedQuery(BatchedQueryMessage) returns (stream QueryResponseMessage);
-    rpc Ping(google.protobuf.Empty) returns (SuccessStatus) {}
+    rpc Ping(Empty) returns (SuccessStatus) {}
 }
 
+
+message Empty {}
 
 /** Identifier for a single schema.  */
 message Schema {
@@ -272,6 +272,7 @@ message Knn {
         L2SQUARED = 2;
         CHISQUARED = 3;
         HAMMING = 4;
+        COSINE = 5;
         HAVERSINE = 10;
     }
 }
