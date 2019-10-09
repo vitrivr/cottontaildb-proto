@@ -17,9 +17,9 @@ service CottonDDL {
     rpc DropEntity (Entity) returns (SuccessStatus);
 
     /* Handling indexes. */
-    rpc CreateIndex(CreateIndexMessage) returns (SuccessStatus);
-    rpc DropIndex(DropIndexMessage) returns (SuccessStatus);
-    rpc RebuildIndex(RebuildIndexMessage) returns (SuccessStatus);
+    rpc CreateIndex (CreateIndexMessage) returns (SuccessStatus);
+    rpc DropIndex (DropIndexMessage) returns (SuccessStatus);
+    rpc RebuildIndex (RebuildIndexMessage) returns (SuccessStatus);
 
     rpc OptimizeEntity (Entity) returns (SuccessStatus);
     rpc TruncateEntity (Entity) returns (SuccessStatus);
@@ -33,13 +33,14 @@ service CottonDML {
 }
 
 service CottonDQL {
-    rpc Query(QueryMessage) returns (stream QueryResponseMessage);
-    rpc BatchedQuery(BatchedQueryMessage) returns (stream QueryResponseMessage);
-    rpc Ping(Empty) returns (SuccessStatus) {}
+    rpc Query (QueryMessage) returns (stream QueryResponseMessage);
+    rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
+    rpc Ping (Empty) returns (SuccessStatus) {
+    }
 }
 
-
-message Empty {}
+message Empty {
+}
 
 /** Identifier for a single schema.  */
 message Schema {
@@ -99,6 +100,8 @@ enum Type {
     INT_VEC = 11;
     BOOL_VEC = 12;
     BLOB = 13;
+    COMPLEX = 14;
+    COMPLEX_VEC = 15;
 }
 
 /** The data payload that can be contained in a tuple. */
@@ -112,6 +115,7 @@ message Data {
         string stringData = 6;
         Vector vectorData = 7;
         Null nullData = 8;
+        Complex complexData = 9;
     }
 }
 
@@ -123,11 +127,19 @@ message Vector {
         IntVector intVector = 3;
         LongVector longVector = 4;
         BoolVector boolVector = 5;
+        ComplexVector complexVector = 6;
     }
 }
 
 /** A null entry.*/
-message Null {}
+message Null {
+}
+
+/** A complex entry.*/
+message Complex {
+    float real = 1;
+    float imaginary = 2;
+}
 
 /** A float vector. */
 message FloatVector {
@@ -154,6 +166,10 @@ message BoolVector {
     repeated bool vector = 1;
 }
 
+/** A complex vector. */
+message ComplexVector {
+    repeated Complex vector = 1;
+}
 
 /*
  * Data Definition Language (DDL) messages
@@ -178,7 +194,7 @@ message CreateEntityMessage {
 message CreateIndexMessage {
     Index index = 1;
     repeated string columns = 2;
-    map<string,string> params = 3;
+    map<string, string> params = 3;
 }
 
 /** Message for dropping an index. */
@@ -233,7 +249,6 @@ message QueryResponseMessage {
     repeated Tuple results = 7;
 }
 
-
 /* The from part for a query. */
 message From {
     oneof from {
@@ -244,7 +259,7 @@ message From {
 /* The projection part of a query (select + attributes / count / exists) . */
 message Projection {
     Operation op = 1;
-    map<string,string> attributes = 2;
+    map<string, string> attributes = 2;
     enum Operation {
         SELECT = 0;
         COUNT = 1;
@@ -328,4 +343,3 @@ message CompoundBooleanPredicate {
         OR = 1;
     }
 }
-
