@@ -17,9 +17,9 @@ service CottonDDL {
     rpc DropEntity (Entity) returns (SuccessStatus);
 
     /* Handling indexes. */
-    rpc CreateIndex(CreateIndexMessage) returns (SuccessStatus);
-    rpc DropIndex(DropIndexMessage) returns (SuccessStatus);
-    rpc RebuildIndex(RebuildIndexMessage) returns (SuccessStatus);
+    rpc CreateIndex (CreateIndexMessage) returns (SuccessStatus);
+    rpc DropIndex (DropIndexMessage) returns (SuccessStatus);
+    rpc RebuildIndex (RebuildIndexMessage) returns (SuccessStatus);
 
     rpc OptimizeEntity (Entity) returns (SuccessStatus);
     rpc TruncateEntity (Entity) returns (SuccessStatus);
@@ -33,13 +33,14 @@ service CottonDML {
 }
 
 service CottonDQL {
-    rpc Query(QueryMessage) returns (stream QueryResponseMessage);
-    rpc BatchedQuery(BatchedQueryMessage) returns (stream QueryResponseMessage);
-    rpc Ping(Empty) returns (SuccessStatus) {}
+    rpc Query (QueryMessage) returns (stream QueryResponseMessage);
+    rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
+    rpc Ping (Empty) returns (SuccessStatus) {
+    }
 }
 
-
-message Empty {}
+message Empty {
+}
 
 /** Identifier for a single schema.  */
 message Schema {
@@ -80,7 +81,7 @@ message InsertStatus {
 
 /** A basic tuple as used in insert or update statements OR results. */
 message Tuple {
-    map<string, Data> data = 1;
+    map<string,Data> data = 1;
 }
 
 /* The basic data types supported by Cottontail DB. */
@@ -98,7 +99,9 @@ enum Type {
     LONG_VEC = 10;
     INT_VEC = 11;
     BOOL_VEC = 12;
-    BLOB = 13;
+    COMPLEX = 13;
+    COMPLEX_VEC = 14;
+    BLOB = 15;
 }
 
 /** The data payload that can be contained in a tuple. */
@@ -110,8 +113,10 @@ message Data {
         float floatData = 4;
         double doubleData = 5;
         string stringData = 6;
-        Vector vectorData = 7;
-        Null nullData = 8;
+        Complex32 complex32Data = 7;
+        Complex64 complex64Data = 8;
+        Vector vectorData = 9;
+        Null nullData = 10;
     }
 }
 
@@ -123,11 +128,25 @@ message Vector {
         IntVector intVector = 3;
         LongVector longVector = 4;
         BoolVector boolVector = 5;
+        Complex32Vector complex32Vector = 6;
+        Complex64Vector complex64Vector = 7;
     }
 }
 
 /** A null entry.*/
 message Null {}
+
+/** A complex number entry using floats.*/
+message Complex32 {
+    float real = 1;
+    float imaginary = 2;
+}
+
+/** A complex number entry using doubles.*/
+message Complex64 {
+    double real = 1;
+    double imaginary = 2;
+}
 
 /** A float vector. */
 message FloatVector {
@@ -154,6 +173,15 @@ message BoolVector {
     repeated bool vector = 1;
 }
 
+/** A complex vector using 32bit floating point numbers. */
+message Complex32Vector {
+    repeated Complex32 vector = 1;
+}
+
+/** A complex vector using 64bit floating point numbers. */
+message Complex64Vector {
+    repeated Complex64 vector = 1;
+}
 
 /*
  * Data Definition Language (DDL) messages
@@ -233,7 +261,6 @@ message QueryResponseMessage {
     repeated Tuple results = 7;
 }
 
-
 /* The from part for a query. */
 message From {
     oneof from {
@@ -244,7 +271,7 @@ message From {
 /* The projection part of a query (select + attributes / count / exists) . */
 message Projection {
     Operation op = 1;
-    map<string,string> attributes = 2;
+    map<string, string> attributes = 2;
     enum Operation {
         SELECT = 0;
         COUNT = 1;
@@ -328,4 +355,3 @@ message CompoundBooleanPredicate {
         OR = 1;
     }
 }
-
