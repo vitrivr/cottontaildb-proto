@@ -291,8 +291,9 @@ message Knn {
     string attribute = 1;
     uint32 k = 2;
     Distance distance = 3;
-    repeated Vector query = 4;
-    repeated Vector weights = 5;
+    bool inexact = 4;
+    repeated Vector query = 5;
+    repeated Vector weights = 6;
     enum Distance {
         L1 = 0;
         L2 = 1;
