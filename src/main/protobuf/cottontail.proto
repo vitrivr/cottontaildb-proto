@@ -26,10 +26,8 @@ service CottonDDL {
 }
 
 service CottonDML {
-
-    /* Insert data into entities (either in a single message or a streaming manner). */
-    rpc Insert (InsertMessage) returns (InsertStatus);
-    rpc InsertStream (stream InsertMessage) returns (stream InsertStatus);
+    /* Insert data into entities. */
+    rpc Insert (stream InsertMessage) returns (stream InsertStatus);
 }
 
 service CottonDQL {
@@ -222,7 +220,7 @@ message RebuildIndexMessage {
 /** Message for inserting data into an entity. */
 message InsertMessage {
     Entity entity = 1;
-    repeated Tuple tuple = 2;
+    Tuple tuple = 2;
 }
 
 /*
