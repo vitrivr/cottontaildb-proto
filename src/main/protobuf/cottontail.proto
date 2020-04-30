@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package ch.unibas.dmi.dbis.cottontail.grpc;
 
-option java_package = "ch.unibas.dmi.dbis.cottontail.grpc";
+option java_package = "org.vitrivr.cottontail.grpc";
 option java_outer_classname = "CottontailGrpc";
 
 service CottonDDL {
