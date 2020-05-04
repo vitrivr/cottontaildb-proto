@@ -13,7 +13,8 @@ service CottonDDL {
 
     /* Handling entities. */
     rpc ListEntities (Schema) returns (stream Entity);
-    rpc CreateEntity (CreateEntityMessage) returns (SuccessStatus);
+    rpc CreateEntity (EntityDefinition) returns (SuccessStatus);
+    rpc EntityDetails (Entity) returns (EntityDefinition);
     rpc DropEntity (Entity) returns (SuccessStatus);
 
     /* Handling indexes. */
@@ -49,6 +50,13 @@ message Schema {
 message Entity {
     Schema schema = 1;
     string name = 2;
+}
+
+/** Describes a single entity. */
+message EntityDetail {
+    Schema schema = 1;
+    string name = 2;
+
 }
 
 /** Identifier for a single index. */
@@ -194,8 +202,8 @@ message ColumnDefinition {
     bool nullable = 5;
 }
 
-/** Message for creating an entity. */
-message CreateEntityMessage {
+/** Definition of an entity in Cottontail DB. */
+message EntityDefinition {
     Entity entity = 1;
     repeated ColumnDefinition columns = 2;
 }
