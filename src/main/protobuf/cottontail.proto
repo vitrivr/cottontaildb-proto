@@ -71,6 +71,8 @@ message Index {
         LUCENE = 3;
         VAF = 4;
         PQ = 5;
+        LSH = 6;
+        SUPERBIT_LSH = 7;
     }
 }
 
