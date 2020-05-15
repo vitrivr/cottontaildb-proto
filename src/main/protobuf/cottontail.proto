@@ -107,9 +107,11 @@ enum Type {
     LONG_VEC = 10;
     INT_VEC = 11;
     BOOL_VEC = 12;
-    COMPLEX = 13;
-    COMPLEX_VEC = 14;
-    BLOB = 15;
+    COMPLEX32 = 13;
+    COMPLEX64 = 14;
+    COMPLEX32_VEC = 15;
+    COMPLEX64_VEC = 16;
+    BLOB = 17;
 }
 
 /** The data payload that can be contained in a tuple. */
