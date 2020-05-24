@@ -274,8 +274,17 @@ message QueryResponseMessage {
 /* The from part for a query. */
 message From {
     oneof from {
-        Entity entity = 1;
+        Entity entity = 1; /* Entity data. */
+        Sample sample = 2; /* Random sample of an Entity. */
+        Query query = 3; /* Sub-select. */
     }
+}
+
+/* Describes a random sample of an Entity. Can be used to specify the "FROM" part of a query. */
+message Sample {
+    Entity entity = 1;
+    int64 size = 2;
+    int64 seed = 3;
 }
 
 /* The projection part of a query (select + attributes / count / exists) . */
