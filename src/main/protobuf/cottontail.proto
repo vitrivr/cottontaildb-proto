@@ -293,13 +293,14 @@ message Projection {
     map<string, string> attributes = 2;
     enum Operation {
         SELECT = 0;
-        COUNT = 1;
-        COUNT_DISTINCT = 2;
-        EXISTS = 3;
-        SUM = 4;
-        MAX = 5;
-        MIN = 6;
-        MEAN = 7;
+        SELECT_DISTINCT = 1;
+        COUNT = 2;
+        COUNT_DISTINCT = 3;
+        EXISTS = 4;
+        SUM = 5;
+        MAX = 6;
+        MIN = 7;
+        MEAN = 8;
     }
 }
 
