@@ -64,16 +64,18 @@ message Index {
     Entity entity = 1;
     string name = 2;
     IndexType type = 3;
-    enum IndexType {
-        HASH = 0;
-        HASH_UQ = 1;
-        BTREE = 2;
-        LUCENE = 3;
-        VAF = 4;
-        PQ = 5;
-        LSH = 6;
-        SUPERBIT_LSH = 7;
-    }
+}
+
+/** Type of index. */
+enum IndexType {
+    HASH = 0;
+    HASH_UQ = 1;
+    BTREE = 2;
+    LUCENE = 3;
+    VAF = 4;
+    PQ = 5;
+    LSH = 6;
+    SUPERBIT_LSH = 7;
 }
 
 /** A status as returned by Cottontail DB in response to a successful action that has no dedicated return type. */
@@ -311,7 +313,7 @@ message Knn {
     string attribute = 1;
     uint32 k = 2;
     Distance distance = 3;
-    bool inexact = 4;
+    KnnHint hint = 4;
     repeated Vector query = 5;
     repeated Vector weights = 6;
     enum Distance {
@@ -326,8 +328,20 @@ message Knn {
 }
 
 /**
-  * The 'WHERE' part of a QueryMessage.
+  * A hint to the query planner for kNN queries.
   */
+message KnnHint {
+    oneof hint {
+        bool indexInexact = 1;
+        bool noIndex = 2;
+        IndexType indexType = 3;
+        string indexName = 4;
+    }
+}
+
+/**
+ * The 'WHERE' part of a QueryMessage.
+ */
 message Where {
     oneof predicate {
         AtomicLiteralBooleanPredicate atomic = 1;
