@@ -18,9 +18,10 @@ service CottonDDL {
     rpc DropEntity (Entity) returns (SuccessStatus);
 
     /* Handling indexes. */
-    rpc CreateIndex (CreateIndexMessage) returns (SuccessStatus);
-    rpc DropIndex (DropIndexMessage) returns (SuccessStatus);
-    rpc RebuildIndex (RebuildIndexMessage) returns (SuccessStatus);
+    rpc ListIndexes (Entity) returns (stream Index);
+    rpc CreateIndex (IndexDefinition) returns (SuccessStatus);
+    rpc DropIndex (Index) returns (SuccessStatus);
+    rpc RebuildIndex (Index) returns (SuccessStatus);
 
     rpc OptimizeEntity (Entity) returns (SuccessStatus);
     rpc TruncateEntity (Entity) returns (SuccessStatus);
@@ -215,20 +216,10 @@ message EntityDefinition {
 }
 
 /** Message for creating an index. */
-message CreateIndexMessage {
+message IndexDefinition {
     Index index = 1;
     repeated string columns = 2;
     map<string,string> params = 3;
-}
-
-/** Message for dropping an index. */
-message DropIndexMessage {
-    Index index = 1;
-}
-
-/** Message for rebuilding an index. */
-message RebuildIndexMessage {
-    Index index = 1;
 }
 
 /** Message for inserting data into an entity. */
