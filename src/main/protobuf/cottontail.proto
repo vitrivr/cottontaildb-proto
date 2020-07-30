@@ -322,6 +322,7 @@ message Knn {
         HAMMING = 4;
         COSINE = 5;
         HAVERSINE = 10;
+        KEYPOINTS2D = 20;
     }
 }
 
