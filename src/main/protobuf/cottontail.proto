@@ -244,7 +244,8 @@ message Query {
 
 /* A batch of queries that should be executed. The individual queries will return under a single query ID. */
 message BatchedQueryMessage {
-    repeated Query queries = 1;
+    string queryId = 1;
+    repeated Query queries = 2;
 }
 
 /* A single query that should be executed. */
@@ -256,12 +257,11 @@ message QueryMessage {
 /* A query response message. */
 message QueryResponseMessage {
     string queryId = 1;
-    bool start = 2;
-    uint32 page = 3;
-    uint32 pageSize = 4;
-    uint32 maxPage = 5;
-    uint32 totalHits = 6;
-    repeated Tuple results = 7;
+    uint32 pageSize = 2;
+    uint64 page = 3;
+    uint64 maxPage = 4;
+    uint64 totalHits = 5;
+    repeated Tuple results = 6;
 }
 
 /* The from part for a query. */
