@@ -33,8 +33,8 @@ service CottonDML {
 }
 
 service CottonDQL {
-    rpc Query (QueryMessage) returns (stream QueryResultMessage);
-    rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResultMessage);
+    rpc Query (QueryMessage) returns (stream QueryResponseMessage);
+    rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
     rpc Ping (Empty) returns (SuccessStatus) {
     }
 }
@@ -244,8 +244,7 @@ message Query {
 
 /* A batch of queries that should be executed. The individual queries will return under a single query ID. */
 message BatchedQueryMessage {
-    string queryId = 1;
-    repeated Query queries = 2;
+    repeated Query queries = 1;
 }
 
 /* A single query that should be executed. */
@@ -255,10 +254,14 @@ message QueryMessage {
 }
 
 /* A query response message. */
-message QueryResultMessage {
+message QueryResponseMessage {
     string queryId = 1;
-    uint64 hits = 2;
-    Tuple tuple = 3;
+    bool start = 2;
+    uint32 page = 3;
+    uint32 pageSize = 4;
+    uint32 maxPage = 5;
+    uint32 totalHits = 6;
+    repeated Tuple results = 7;
 }
 
 /* The from part for a query. */
