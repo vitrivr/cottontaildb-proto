@@ -315,6 +315,8 @@ message Knn {
         CHISQUARED = 3;
         HAMMING = 4;
         COSINE = 5;
+        ABSOLUTEINNERPRODUCT = 6;
+        REALINNERPRODUCT = 7;
         HAVERSINE = 10;
     }
 }
