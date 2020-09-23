@@ -230,26 +230,26 @@ message IndexDefinition {
 
 /** Message for inserting data into an entity. */
 message InsertMessage {
-    Entity entity = 1;
+    From from = 1;
     Tuple tuple = 2;
 }
 
 /** Message for updating data in an entity. */
 message UpdateMessage {
-    Entity entity = 1;
+    From from = 1;
     Where where = 2;
     Tuple tuple = 3;
 }
 
 /** Message for deleting data from an entity. */
 message DeleteMessage {
-    Entity entity = 1;
+    From from = 1;
     Where where = 2;
 }
 
 /** Message for deleting data from an entity. */
 message TruncateMessage {
-    Entity entity = 1;
+    From from = 1;
 }
 
 /*
