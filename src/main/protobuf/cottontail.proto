@@ -27,9 +27,14 @@ service CottonDDL {
     rpc TruncateEntity (Entity) returns (SuccessStatus);
 }
 
+/**
+ * Endpoint for data management (INSERT, UPDATE and DELETE).
+ */
 service CottonDML {
-    /* Insert data into entities. */
-    rpc Insert (stream InsertMessage) returns (stream InsertStatus);
+    rpc Insert (stream InsertMessage) returns (stream Status);
+    rpc Update (stream UpdateMessage) returns (stream Status);
+    rpc Delete (stream DeleteMessage) returns (stream Status);
+    rpc Truncate (TruncateMessage) returns (Status);
 }
 
 service CottonDQL {
@@ -86,7 +91,7 @@ message SuccessStatus {
 }
 
 /** A status as returned by Cottontail DB in response to an insert action. */
-message InsertStatus {
+message Status {
     bool success = 1;
     int64 timestamp = 2;
 }
@@ -227,6 +232,24 @@ message IndexDefinition {
 message InsertMessage {
     Entity entity = 1;
     Tuple tuple = 2;
+}
+
+/** Message for updating data in an entity. */
+message UpdateMessage {
+    Entity entity = 1;
+    Where where = 2;
+    Tuple tuple = 3;
+}
+
+/** Message for deleting data from an entity. */
+message DeleteMessage {
+    Entity entity = 1;
+    Where where = 2;
+}
+
+/** Message for deleting data from an entity. */
+message TruncateMessage {
+    Entity entity = 1;
 }
 
 /*
