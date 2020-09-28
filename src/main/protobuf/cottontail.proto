@@ -32,8 +32,8 @@ service CottonDDL {
  */
 service CottonDML {
     rpc Insert (stream InsertMessage) returns (stream Status);
-    rpc Update (stream UpdateMessage) returns (stream Status);
-    rpc Delete (stream DeleteMessage) returns (stream Status);
+    rpc Update (UpdateMessage) returns (Status);
+    rpc Delete (DeleteMessage) returns (Status);
     rpc Truncate (TruncateMessage) returns (Status);
 }
 
