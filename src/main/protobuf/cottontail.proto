@@ -8,23 +8,23 @@ option java_outer_classname = "CottontailGrpc";
 service CottonDDL {
     /* Handling DB schemas. */
     rpc ListSchemas (Empty) returns (stream Schema);
-    rpc CreateSchema (Schema) returns (SuccessStatus);
-    rpc DropSchema (Schema) returns (SuccessStatus);
+    rpc CreateSchema (Schema) returns (Status);
+    rpc DropSchema (Schema) returns (Status);
 
     /* Handling entities. */
     rpc ListEntities (Schema) returns (stream Entity);
-    rpc CreateEntity (EntityDefinition) returns (SuccessStatus);
+    rpc CreateEntity (EntityDefinition) returns (Status);
     rpc EntityDetails (Entity) returns (EntityDefinition);
-    rpc DropEntity (Entity) returns (SuccessStatus);
+    rpc DropEntity (Entity) returns (Status);
 
     /* Handling indexes. */
     rpc ListIndexes (Entity) returns (stream Index);
-    rpc CreateIndex (IndexDefinition) returns (SuccessStatus);
-    rpc DropIndex (Index) returns (SuccessStatus);
-    rpc RebuildIndex (Index) returns (SuccessStatus);
+    rpc CreateIndex (IndexDefinition) returns (Status);
+    rpc DropIndex (Index) returns (Status);
+    rpc RebuildIndex (Index) returns (Status);
 
-    rpc OptimizeEntity (Entity) returns (SuccessStatus);
-    rpc TruncateEntity (Entity) returns (SuccessStatus);
+    rpc OptimizeEntity (Entity) returns (Status);
+    rpc TruncateEntity (Entity) returns (Status);
 }
 
 /**
@@ -32,16 +32,15 @@ service CottonDDL {
  */
 service CottonDML {
     rpc Insert (stream InsertMessage) returns (stream Status);
-    rpc Update (UpdateMessage) returns (Status);
-    rpc Delete (DeleteMessage) returns (Status);
-    rpc Truncate (TruncateMessage) returns (Status);
+    rpc Update (UpdateMessage) returns (QueryResponseMessage);
+    rpc Delete (DeleteMessage) returns (QueryResponseMessage);
+    rpc Truncate (TruncateMessage) returns (QueryResponseMessage);
 }
 
 service CottonDQL {
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
     rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
-    rpc Ping (Empty) returns (SuccessStatus) {
-    }
+    rpc Ping (Empty) returns (Status)
 }
 
 message Empty {
@@ -85,16 +84,10 @@ enum IndexType {
     NONBUCKETING_SUPERBIT_LSH = 8;
 }
 
-/** A status as returned by Cottontail DB in response to a successful action that has no dedicated return type. */
-message SuccessStatus {
-    int64 timestamp = 1;
-}
-
 /** A status as returned by Cottontail DB in response to a DML action. */
 message Status {
-    string queryId = 1;
-    bool success = 2;
-    int64 timestamp = 3;
+    bool success = 1;
+    int64 timestamp = 2;
 }
 
 /** A basic tuple as used in insert or update statements OR results. */
@@ -286,11 +279,7 @@ message QueryMessage {
 /* A query response message. */
 message QueryResponseMessage {
     string queryId = 1;
-    uint32 pageSize = 2;
-    uint64 page = 3;
-    uint64 maxPage = 4;
-    uint64 totalHits = 5;
-    repeated Tuple results = 6;
+    repeated Tuple results = 2;
 }
 
 /* The from part for a query. */
