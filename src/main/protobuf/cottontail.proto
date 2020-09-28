@@ -40,7 +40,7 @@ service CottonDML {
 service CottonDQL {
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
     rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
-    rpc Ping (Empty) returns (Status)
+    rpc Ping (Empty) returns (Status);
 }
 
 message Empty {
