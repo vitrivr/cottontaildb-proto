@@ -90,10 +90,11 @@ message SuccessStatus {
     int64 timestamp = 1;
 }
 
-/** A status as returned by Cottontail DB in response to an insert action. */
+/** A status as returned by Cottontail DB in response to a DML action. */
 message Status {
-    bool success = 1;
-    int64 timestamp = 2;
+    string queryId = 1;
+    bool success = 2;
+    int64 timestamp = 3;
 }
 
 /** A basic tuple as used in insert or update statements OR results. */
@@ -230,26 +231,30 @@ message IndexDefinition {
 
 /** Message for inserting data into an entity. */
 message InsertMessage {
-    From from = 1;
-    Tuple tuple = 2;
+    string queryId = 1;
+    From from = 2;
+    Tuple tuple = 3;
 }
 
 /** Message for updating data in an entity. */
 message UpdateMessage {
-    From from = 1;
-    Where where = 2;
-    Tuple tuple = 3;
+    string queryId = 1;
+    From from = 2;
+    Where where = 3;
+    Tuple tuple = 4;
 }
 
 /** Message for deleting data from an entity. */
 message DeleteMessage {
-    From from = 1;
-    Where where = 2;
+    string queryId = 1;
+    From from = 2;
+    Where where = 3;
 }
 
-/** Message for deleting data from an entity. */
+/** Message for deleting all data from an entity. */
 message TruncateMessage {
-    From from = 1;
+    string queryId = 1;
+    From from = 2;
 }
 
 /*
