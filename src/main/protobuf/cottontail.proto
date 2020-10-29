@@ -95,7 +95,7 @@ message Tuple {
     map<string,Data> data = 1;
 }
 
-/* The basic data types supported by Cottontail DB. */
+/* The basic data types supported by Cottontail DB columns. */
 enum Type {
     BOOLEAN = 0;
     BYTE = 1;
@@ -115,6 +115,12 @@ enum Type {
     COMPLEX32_VEC = 15;
     COMPLEX64_VEC = 16;
     BLOB = 17;
+}
+
+/* The storage engine employed by a Cottontail DB column. */
+enum Engine {
+    HARE = 0;
+    MAPDB = 1;
 }
 
 /** The data payload that can be contained in a tuple. */
@@ -207,6 +213,7 @@ message ColumnDefinition {
     uint32 length = 3;
     bool unique = 4;
     bool nullable = 5;
+    Engine engine = 6;
 }
 
 /** Definition of an entity in Cottontail DB. */
