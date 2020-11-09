@@ -8,34 +8,39 @@ option java_outer_classname = "CottontailGrpc";
 service CottonDDL {
     /* Handling DB schemas. */
     rpc ListSchemas (Empty) returns (stream Schema);
-    rpc CreateSchema (Schema) returns (SuccessStatus);
-    rpc DropSchema (Schema) returns (SuccessStatus);
+    rpc CreateSchema (Schema) returns (Status);
+    rpc DropSchema (Schema) returns (Status);
 
     /* Handling entities. */
     rpc ListEntities (Schema) returns (stream Entity);
-    rpc CreateEntity (EntityDefinition) returns (SuccessStatus);
+    rpc CreateEntity (EntityDefinition) returns (Status);
     rpc EntityDetails (Entity) returns (EntityDefinition);
-    rpc DropEntity (Entity) returns (SuccessStatus);
+    rpc DropEntity (Entity) returns (Status);
 
     /* Handling indexes. */
-    rpc CreateIndex (CreateIndexMessage) returns (SuccessStatus);
-    rpc DropIndex (DropIndexMessage) returns (SuccessStatus);
-    rpc RebuildIndex (RebuildIndexMessage) returns (SuccessStatus);
+    rpc ListIndexes (Entity) returns (stream Index);
+    rpc CreateIndex (IndexDefinition) returns (Status);
+    rpc DropIndex (Index) returns (Status);
+    rpc RebuildIndex (Index) returns (Status);
 
-    rpc OptimizeEntity (Entity) returns (SuccessStatus);
-    rpc TruncateEntity (Entity) returns (SuccessStatus);
+    /* Optimizing and truncating entities. */
+    rpc Optimize (Entity) returns (Status);
+    rpc Truncate (Entity) returns (Status);
 }
 
+/**
+ * Endpoint for data management (INSERT, UPDATE and DELETE).
+ */
 service CottonDML {
-    /* Insert data into entities. */
-    rpc Insert (stream InsertMessage) returns (stream InsertStatus);
+    rpc Insert (stream InsertMessage) returns (stream Status);
+    rpc Update (UpdateMessage) returns (stream QueryResponseMessage);
+    rpc Delete (DeleteMessage) returns (stream QueryResponseMessage);
 }
 
 service CottonDQL {
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
     rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
-    rpc Ping (Empty) returns (SuccessStatus) {
-    }
+    rpc Ping (Empty) returns (Status);
 }
 
 message Empty {
@@ -64,25 +69,23 @@ message Index {
     Entity entity = 1;
     string name = 2;
     IndexType type = 3;
-    enum IndexType {
-        HASH = 0;
-        HASH_UQ = 1;
-        BTREE = 2;
-        LUCENE = 3;
-        VAF = 4;
-        PQ = 5;
-        LSH = 6;
-        SUPERBIT_LSH = 7;
-    }
 }
 
-/** A status as returned by Cottontail DB in response to a successful action that has no dedicated return type. */
-message SuccessStatus {
-    int64 timestamp = 1;
+/** Type of index. */
+enum IndexType {
+    HASH = 0;
+    HASH_UQ = 1;
+    BTREE = 2;
+    LUCENE = 3;
+    VAF = 4;
+    PQ = 5;
+    LSH = 6;
+    SUPERBIT_LSH = 7;
+    NONBUCKETING_SUPERBIT_LSH = 8;
 }
 
-/** A status as returned by Cottontail DB in response to an insert action. */
-message InsertStatus {
+/** A status as returned by Cottontail DB in response to a DML action. */
+message Status {
     bool success = 1;
     int64 timestamp = 2;
 }
@@ -92,7 +95,7 @@ message Tuple {
     map<string,Data> data = 1;
 }
 
-/* The basic data types supported by Cottontail DB. */
+/* The basic data types supported by Cottontail DB columns. */
 enum Type {
     BOOLEAN = 0;
     BYTE = 1;
@@ -112,6 +115,12 @@ enum Type {
     COMPLEX32_VEC = 15;
     COMPLEX64_VEC = 16;
     BLOB = 17;
+}
+
+/* The storage engine employed by a Cottontail DB column. */
+enum Engine {
+    HARE = 0;
+    MAPDB = 1;
 }
 
 /** The data payload that can be contained in a tuple. */
@@ -204,6 +213,7 @@ message ColumnDefinition {
     uint32 length = 3;
     bool unique = 4;
     bool nullable = 5;
+    Engine engine = 6;
 }
 
 /** Definition of an entity in Cottontail DB. */
@@ -213,26 +223,32 @@ message EntityDefinition {
 }
 
 /** Message for creating an index. */
-message CreateIndexMessage {
+message IndexDefinition {
     Index index = 1;
     repeated string columns = 2;
     map<string,string> params = 3;
 }
 
-/** Message for dropping an index. */
-message DropIndexMessage {
-    Index index = 1;
-}
-
-/** Message for rebuilding an index. */
-message RebuildIndexMessage {
-    Index index = 1;
-}
-
 /** Message for inserting data into an entity. */
 message InsertMessage {
-    Entity entity = 1;
-    Tuple tuple = 2;
+    string queryId = 1;
+    From from = 2;
+    Tuple tuple = 3;
+}
+
+/** Message for updating data in an entity. */
+message UpdateMessage {
+    string queryId = 1;
+    From from = 2;
+    Where where = 3;
+    Tuple tuple = 4;
+}
+
+/** Message for deleting data from an entity. */
+message DeleteMessage {
+    string queryId = 1;
+    From from = 2;
+    Where where = 3;
 }
 
 /*
@@ -251,7 +267,8 @@ message Query {
 
 /* A batch of queries that should be executed. The individual queries will return under a single query ID. */
 message BatchedQueryMessage {
-    repeated Query queries = 1;
+    string queryId = 1;
+    repeated Query queries = 2;
 }
 
 /* A single query that should be executed. */
@@ -263,12 +280,7 @@ message QueryMessage {
 /* A query response message. */
 message QueryResponseMessage {
     string queryId = 1;
-    bool start = 2;
-    uint32 page = 3;
-    uint32 pageSize = 4;
-    uint32 maxPage = 5;
-    uint32 totalHits = 6;
-    repeated Tuple results = 7;
+    repeated Tuple results = 2;
 }
 
 /* The from part for a query. */
@@ -311,7 +323,7 @@ message Knn {
     string attribute = 1;
     uint32 k = 2;
     Distance distance = 3;
-    bool inexact = 4;
+    KnnHint hint = 4;
     repeated Vector query = 5;
     repeated Vector weights = 6;
     enum Distance {
@@ -321,13 +333,27 @@ message Knn {
         CHISQUARED = 3;
         HAMMING = 4;
         COSINE = 5;
+        ABSOLUTEINNERPRODUCT = 6;
+        REALINNERPRODUCT = 7;
         HAVERSINE = 10;
     }
 }
 
 /**
-  * The 'WHERE' part of a QueryMessage.
+  * A hint to the query planner for kNN queries.
   */
+message KnnHint {
+    oneof hint {
+        bool indexInexact = 1;
+        bool noIndex = 2;
+        IndexType indexType = 3;
+        string indexName = 4;
+    }
+}
+
+/**
+ * The 'WHERE' part of a QueryMessage.
+ */
 message Where {
     oneof predicate {
         AtomicLiteralBooleanPredicate atomic = 1;
