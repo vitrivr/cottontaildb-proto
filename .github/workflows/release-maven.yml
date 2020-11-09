@@ -1,4 +1,4 @@
-name: Publish Cottontail DB to the Maven Central Repository
+name: Publish Cottontail DB gRPC definition to the Maven Central Repository
 on:
   push:
     tags:
