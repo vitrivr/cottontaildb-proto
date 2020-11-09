@@ -23,8 +23,9 @@ service CottonDDL {
     rpc DropIndex (Index) returns (Status);
     rpc RebuildIndex (Index) returns (Status);
 
-    rpc OptimizeEntity (Entity) returns (Status);
-    rpc TruncateEntity (Entity) returns (Status);
+    /* Optimizing and truncating entities. */
+    rpc Optimize (Entity) returns (Status);
+    rpc Truncate (Entity) returns (Status);
 }
 
 /**
@@ -34,7 +35,6 @@ service CottonDML {
     rpc Insert (stream InsertMessage) returns (stream Status);
     rpc Update (UpdateMessage) returns (stream QueryResponseMessage);
     rpc Delete (DeleteMessage) returns (stream QueryResponseMessage);
-    rpc Truncate (TruncateMessage) returns (stream QueryResponseMessage);
 }
 
 service CottonDQL {
@@ -242,12 +242,6 @@ message DeleteMessage {
     string queryId = 1;
     From from = 2;
     Where where = 3;
-}
-
-/** Message for deleting all data from an entity. */
-message TruncateMessage {
-    string queryId = 1;
-    From from = 2;
 }
 
 /*
