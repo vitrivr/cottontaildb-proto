@@ -25,9 +25,9 @@ publishing {
         maven(MavenPublication) {
             from components.java
             pom {
-                name = 'Cottontail DB (embedded)'
-                description = 'An embedded version of Cottontail DB.'
-                url = 'https://github.com/vitrivr/cottontaildb/'
+                name = 'Cottontail DB (gRPC)'
+                description = 'The gRPC and ProtoBuf definitions for Cottontail DB.'
+                url = 'https://github.com/vitrivr/cottontaildb-proto/'
                 licenses {
                     license {
                         name = 'MIT License'
@@ -46,7 +46,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/vitrivr/cottontaildb"
+            url = "https://maven.pkg.github.com/vitrivr/cottontaildb-proto"
             credentials {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
