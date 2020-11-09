@@ -1,0 +1,13 @@
+# Files related to the project
+.idea
+.gradle
+build
+out
+
+# Java Dependencies
+*.jar
+*.war
+*.ear
+*.iml
+
+!gradle/wrapper/gradle-wrapper.jar

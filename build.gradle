@@ -1,0 +1,91 @@
+group 'org.vitrivr'
+version '0.9'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.8"
+    }
+}
+
+apply plugin: 'com.google.protobuf'
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+repositories {
+    mavenCentral()
+    maven { url "https://kotlin.bintray.com/kotlinx" }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            pom {
+                name = 'Cottontail DB (embedded)'
+                description = 'An embedded version of Cottontail DB.'
+                url = 'https://github.com/vitrivr/cottontaildb/'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'ppanopticon'
+                        name = 'Ralph Gasser'
+                        email = 'ralph.gasser@unibas.ch'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/vitrivr/cottontaildb"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDirs += "$projectDir/src/main/protobuf"
+        }
+        java {
+            srcDirs += "$projectDir/build/generated/source/proto"
+        }
+    }
+}
+
+protobuf {
+    generatedFilesBaseDir = "$projectDir/build/generated/source/proto"
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.29.0'
+        }
+    }
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.12.3'
+    }
+    generateProtoTasks {
+        all()*.plugins { grpc {
+            outputSubDir = 'java'
+        }}
+    }
+}
+
+dependencies {
+    /////// gRPC & Protobuf
+    compile group: 'javax.annotation', name: 'javax.annotation-api', version: '1.2'
+    compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.13.0'
+    compile group: 'io.grpc', name: 'grpc-all', version: '1.33.1'
+}
