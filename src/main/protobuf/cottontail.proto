@@ -344,10 +344,27 @@ message Knn {
   */
 message KnnHint {
     oneof hint {
-        bool indexInexact = 1;
-        bool noIndex = 2;
-        IndexType indexType = 3;
-        string indexName = 4;
+        NoIndexKnnHint noIndexHint = 1;
+        AllowInexactKnnHint allowInexactIndexHint = 2;
+        IndexTypeKnnHint typeIndexHint = 3;
+        IndexNameKnnHint nameIndexHint = 4;
+        ParallelKnnHint parallelIndexHint = 5;
+    }
+
+    message NoIndexKnnHint {}
+    message AllowInexactKnnHint {
+        bool allow = 1;
+    }
+    message IndexTypeKnnHint {
+        IndexType type = 2;
+    }
+    message IndexNameKnnHint {
+        string name = 1;
+        map<string,string> parameters = 2;
+    }
+    message ParallelKnnHint {
+        uint32 min = 1;
+        uint32 max = 2;
     }
 }
 
