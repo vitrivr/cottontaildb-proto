@@ -19,11 +19,6 @@ jobs:
       - id: get_version
         name: Extract publication version from tag.
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
-      - id: install-secret-key
-        name: Install gpg secret key
-        run: |
-          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
-          gpg --list-secret-keys --keyid-format LONG
       - id: publish-gradle
         name: Publish package the Maven Central Repository & GitHub Packages
         run: gradle publish
