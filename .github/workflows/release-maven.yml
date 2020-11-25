@@ -22,7 +22,7 @@ jobs:
           gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSWORD }}
       - id: get_version
         name: Extract publication version from tag.
-        run: echo ::set-env name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+        run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
       - id: install-secret-key
         name: Install gpg secret key
         run: |
@@ -35,6 +35,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          MAVEN_PUBLICATION_VERSION:
+          MAVEN_PUBLICATION_VERSION: ${{ env.VERSION }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.MAVEN_GPG_PASSWORD }}
