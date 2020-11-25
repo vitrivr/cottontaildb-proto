@@ -10,15 +10,22 @@ buildscript {
     }
 }
 
+
 apply plugin: 'com.google.protobuf'
 apply plugin: 'idea'
 apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 repositories {
     mavenCentral()
     maven { url "https://kotlin.bintray.com/kotlinx" }
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 publishing {
@@ -42,6 +49,10 @@ publishing {
                         name = 'Ralph Gasser'
                         email = 'ralph.gasser@unibas.ch'
                     }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/vitrivr/cottontaildb.git'
+                    url = 'https://github.com/vitrivr/cottontaildb'
                 }
             }
             from components.java
