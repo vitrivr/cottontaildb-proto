@@ -51,8 +51,8 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:https://github.com/vitrivr/cottontaildb.git'
-                    url = 'https://github.com/vitrivr/cottontaildb'
+                    connection = 'scm:git:https://github.com/vitrivr/cottontaildb-proto.git'
+                    url = 'https://github.com/vitrivr/cottontaildb-proto'
                 }
             }
             from components.java
