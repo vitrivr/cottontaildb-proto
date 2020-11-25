@@ -10,7 +10,6 @@ buildscript {
     }
 }
 
-
 apply plugin: 'com.google.protobuf'
 apply plugin: 'idea'
 apply plugin: 'java'
@@ -22,6 +21,9 @@ repositories {
     mavenCentral()
     maven { url "https://kotlin.bintray.com/kotlinx" }
 }
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 java {
     withJavadocJar()
