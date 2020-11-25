@@ -20,6 +20,14 @@ repositories {
     maven { url "https://kotlin.bintray.com/kotlinx" }
 }
 
+signing {
+    sign publishing.publications.mavenJava
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign stuffZip
+}
+
 publishing {
     publications {
         maven(MavenPublication) {
@@ -44,6 +52,14 @@ publishing {
         }
     }
     repositories {
+        maven {
+            name = "OSSRH"
+            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
         maven {
             name = "GitHubPackages"
             url = "https://maven.pkg.github.com/vitrivr/cottontaildb-proto"
