@@ -18,7 +18,7 @@ jobs:
           server-id: maven
       - id: get_version
         name: Extract publication version from tag.
-        run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
       - id: publish-gradle
         name: Publish package the Maven Central Repository & GitHub Packages
         run: gradle publish
