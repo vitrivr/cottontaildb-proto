@@ -14,24 +14,19 @@ apply plugin: 'com.google.protobuf'
 apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 repositories {
     mavenCentral()
     maven { url "https://kotlin.bintray.com/kotlinx" }
 }
 
-signing {
-    sign publishing.publications.mavenJava
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign stuffZip
-}
-
 publishing {
     publications {
-        maven(MavenPublication) {
-            from components.java
+        mavenJava(MavenPublication) {
+            groupId = 'org.vitrivr'
+            artifactId = 'cottontail-proto'
+            version = System.getenv("MAVEN_PUBLICATION_VERSION")
             pom {
                 name = 'Cottontail DB (gRPC)'
                 description = 'The gRPC and ProtoBuf definitions for Cottontail DB.'
@@ -49,6 +44,7 @@ publishing {
                     }
                 }
             }
+            from components.java
         }
     }
     repositories {
@@ -69,6 +65,13 @@ publishing {
             }
         }
     }
+}
+
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
 }
 
 sourceSets {

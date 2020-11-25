@@ -21,6 +21,10 @@ jobs:
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSWORD }}
 
+      - name: Get the version from the tag
+          id: get_version
+          run: echo ::set-env name=MAVEN_PUBLICATION_VERSION::${GITHUB_REF/refs\/tags\/v/}
+
       - id: install-secret-key
         name: Install gpg secret key
         run: |
@@ -33,5 +37,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          MAVEN_PUBLICATION_VERSION:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.MAVEN_GPG_PASSWORD }}
