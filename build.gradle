@@ -32,7 +32,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             groupId = 'org.vitrivr'
-            artifactId = 'cottontail-proto'
+            artifactId = 'cottontaildb-proto'
             version = System.getenv("MAVEN_PUBLICATION_VERSION")
             pom {
                 name = 'Cottontail DB (gRPC)'
