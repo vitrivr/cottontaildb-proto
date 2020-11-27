@@ -35,7 +35,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'org.vitrivr'
             artifactId = 'cottontaildb-proto'
-            version = System.getenv("MAVEN_PUBLICATION_VERSION")
+            version = System.getenv().getOrDefault("MAVEN_PUBLICATION_VERSION", version.toString())
             pom {
                 name = 'Cottontail DB (Driver)'
                 description = 'The gRPC and ProtoBuf definitions (driver) for Cottontail DB.'
@@ -65,7 +65,7 @@ publishing {
             def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
             def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
             name = "OSSRH"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            url = (publishing.publications.mavenJava.version.endsWith('SNAPSHOT')) ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
                 username = System.getenv("MAVEN_USERNAME")
                 password = System.getenv("MAVEN_PASSWORD")
