@@ -66,14 +66,6 @@ publishing {
                 password = System.getenv("MAVEN_PASSWORD")
             }
         }
-        maven {
-            name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/vitrivr/cottontaildb-proto"
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
     }
 }
 
