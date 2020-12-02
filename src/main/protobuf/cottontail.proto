@@ -69,6 +69,7 @@ message Index {
     Entity entity = 1;
     string name = 2;
     IndexType type = 3;
+    repeated ColumnDefinition columns = 4;
 }
 
 /** Type of index. */
