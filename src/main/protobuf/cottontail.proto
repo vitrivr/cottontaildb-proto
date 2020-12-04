@@ -18,7 +18,7 @@ service CottonDDL {
     rpc DropEntity (Entity) returns (Status);
 
     /* Handling indexes. */
-    rpc ListIndexes (Entity) returns (stream Index);
+    rpc ListIndexes (Entity) returns (stream IndexDescription);
     rpc CreateIndex (IndexDefinition) returns (Status);
     rpc DropIndex (Index) returns (Status);
     rpc RebuildIndex (Index) returns (Status);
