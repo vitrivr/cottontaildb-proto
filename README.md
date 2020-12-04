@@ -14,9 +14,11 @@ The easiest way to use this client driver is to include the artifact using Maven
 <dependency>
   <groupId>org.vitrivr</groupId>
   <artifactId>cottontaildb-proto</artifactId>
-  <version>0.10.0</version>
+  <version>VERSION</version>
 </dependency>
 ```
+
+Where `VERSION` can be found from the badge above
 
 Of course, you can also checkout the repository and build the files using `protoc` or simply `./gradlew clean generateProto`
 
