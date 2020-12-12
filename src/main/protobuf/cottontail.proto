@@ -53,7 +53,7 @@ service DQL {
  */
 service SYS {
     rpc ListTransactions (google.protobuf.Empty) returns (stream Transaction);
-    rpc AbortTransaction (int64) returns (google.protobuf.Empty);
+    rpc AbortTransaction (TransactionId) returns (google.protobuf.Empty);
     rpc AbortTransactions (google.protobuf.Empty) returns (google.protobuf.Empty);
     rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
@@ -101,11 +101,24 @@ enum IndexType {
     NONBUCKETING_SUPERBIT_LSH = 8;
 }
 
-/** A basic tuple as used in insert or update statements OR results. */
-message Transaction {
-
+/** A transaction ID in Cottontail DB. */
+message TransactionId {
+    int64 value = 1;
 }
 
+/** Describes a basic transaction in Cottontail DB. */
+message Transaction {
+    TransactionId tid = 1;
+    Status status = 2;
+    int64 created = 3;
+    int64 completed = 4;
+    enum Status {
+        CREATED = 0;
+        RUNNING = 1;
+        COMPLETED = 2;
+        ERROR = 3;
+    }
+}
 
 /** A basic tuple as used in INSERT or UPDATE statements OR results. */
 message Tuple {
