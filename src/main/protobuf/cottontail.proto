@@ -310,7 +310,8 @@ message QueryMessage {
 /* A query response message. */
 message QueryResponseMessage {
     string queryId = 1;
-    repeated Tuple results = 2;
+    TransactionId tid = 2;
+    repeated Tuple results = 3;
 }
 
 /* The from part for a query. */
