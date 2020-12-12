@@ -2,74 +2,90 @@ syntax = "proto3";
 
 package org.vitrivr.cottontail.grpc;
 
+import "google/protobuf/empty.proto";
+
 option java_package = "org.vitrivr.cottontail.grpc";
 option java_outer_classname = "CottontailGrpc";
 
-service CottonDDL {
+service DDL {
     /* Handling DB schemas. */
-    rpc ListSchemas (Empty) returns (stream Schema);
-    rpc CreateSchema (Schema) returns (Status);
-    rpc DropSchema (Schema) returns (Status);
+    rpc ListSchemas (google.protobuf.Empty) returns (stream SchemaName);
+    rpc CreateSchema (SchemaName) returns (google.protobuf.Empty);
+    rpc DropSchema (SchemaName) returns (google.protobuf.Empty);
 
     /* Handling entities. */
-    rpc ListEntities (Schema) returns (stream Entity);
-    rpc CreateEntity (EntityDefinition) returns (Status);
-    rpc EntityDetails (Entity) returns (EntityDefinition);
-    rpc DropEntity (Entity) returns (Status);
+    rpc ListEntities (SchemaName) returns (stream EntityName);
+    rpc CreateEntity (EntityDefinition) returns (google.protobuf.Empty);
+    rpc EntityDetails (EntityName) returns (EntityDefinition);
+    rpc DropEntity (EntityName) returns (google.protobuf.Empty);
 
     /* Handling indexes. */
-    rpc ListIndexes (Entity) returns (stream Index);
-    rpc CreateIndex (IndexDefinition) returns (Status);
-    rpc DropIndex (Index) returns (Status);
-    rpc RebuildIndex (Index) returns (Status);
+    rpc ListIndexes (EntityName) returns (stream IndexDetails);
+    rpc CreateIndex (IndexDefinition) returns (google.protobuf.Empty);
+    rpc DropIndex (IndexName) returns (google.protobuf.Empty);
+    rpc RebuildIndex (IndexName) returns (google.protobuf.Empty);
 
     /* Optimizing and truncating entities. */
-    rpc Optimize (Entity) returns (Status);
-    rpc Truncate (Entity) returns (Status);
+    rpc Optimize (EntityName) returns (google.protobuf.Empty);
+    rpc Truncate (EntityName) returns (google.protobuf.Empty);
 }
 
 /**
  * Endpoint for data management (INSERT, UPDATE and DELETE).
  */
-service CottonDML {
-    rpc Insert (stream InsertMessage) returns (stream Status);
-    rpc Update (UpdateMessage) returns (stream QueryResponseMessage);
-    rpc Delete (DeleteMessage) returns (stream QueryResponseMessage);
+service DML {
+    rpc Insert (stream InsertMessage) returns (QueryResponseMessage);
+    rpc Update (stream UpdateMessage) returns (QueryResponseMessage);
+    rpc Delete (stream DeleteMessage) returns (QueryResponseMessage);
 }
 
-service CottonDQL {
+/**
+ * Endpoint for data management (SELECT).
+ */
+service DQL {
+    rpc Explain (QueryMessage) returns (stream QueryResponseMessage);
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
     rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
-    rpc Ping (Empty) returns (Status);
 }
 
-message Empty {
+/**
+ * Endpoint for system commands.
+ */
+service SYS {
+    rpc ListTransactions (google.protobuf.Empty) returns (stream Transaction);
+    rpc AbortTransaction (int64) returns (google.protobuf.Empty);
+    rpc AbortTransactions (google.protobuf.Empty) returns (google.protobuf.Empty);
+    rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 /** Identifier for a single schema.  */
-message Schema {
+message SchemaName {
     string name = 1;
 }
 
 /** Identifier for a single entity. */
-message Entity {
-    Schema schema = 1;
+message EntityName {
+    SchemaName schema = 1;
     string name = 2;
-}
-
-/** Describes a single entity. */
-message EntityDetail {
-    Schema schema = 1;
-    string name = 2;
-
 }
 
 /** Identifier for a single index. */
-message Index {
-    Entity entity = 1;
+message IndexName {
+    EntityName entity = 1;
     string name = 2;
-    IndexType type = 3;
-    repeated ColumnDefinition columns = 4;
+}
+
+/** Identifier for a single column. */
+message ColumnName {
+    EntityName entity = 1;
+    string name = 2;
+}
+
+/** Identifier for a single index. */
+message IndexDetails {
+    IndexName name = 1;
+    IndexType type = 2;
+    repeated ColumnDefinition columns = 3;
 }
 
 /** Type of index. */
@@ -85,15 +101,15 @@ enum IndexType {
     NONBUCKETING_SUPERBIT_LSH = 8;
 }
 
-/** A status as returned by Cottontail DB in response to a DML action. */
-message Status {
-    bool success = 1;
-    int64 timestamp = 2;
+/** A basic tuple as used in insert or update statements OR results. */
+message Transaction {
+
 }
 
-/** A basic tuple as used in insert or update statements OR results. */
+
+/** A basic tuple as used in INSERT or UPDATE statements OR results. */
 message Tuple {
-    map<string,Data> data = 1;
+    map<string, Literal> data = 1;
 }
 
 /* The basic data types supported by Cottontail DB columns. */
@@ -124,8 +140,8 @@ enum Engine {
     MAPDB = 1;
 }
 
-/** The data payload that can be contained in a tuple. */
-message Data {
+/** Literal data, i.e. field that actually contains information. */
+message Literal {
     oneof data {
         bool booleanData = 1;
         int32 intData = 2;
@@ -219,13 +235,13 @@ message ColumnDefinition {
 
 /** Definition of an entity in Cottontail DB. */
 message EntityDefinition {
-    Entity entity = 1;
+    EntityName entity = 1;
     repeated ColumnDefinition columns = 2;
 }
 
 /** Message for creating an index. */
 message IndexDefinition {
-    Index index = 1;
+    IndexDetails index = 1;
     repeated string columns = 2;
     map<string,string> params = 3;
 }
@@ -287,7 +303,7 @@ message QueryResponseMessage {
 /* The from part for a query. */
 message From {
     oneof from {
-        Entity entity = 1; /* Entity data. */
+        EntityName entity = 1; /* Entity data. */
         Sample sample = 2; /* Random sample of an Entity. */
         Query query = 3; /* Sub-select. */
     }
@@ -295,7 +311,7 @@ message From {
 
 /* Describes a random sample of an Entity. Can be used to specify the "FROM" part of a query. */
 message Sample {
-    Entity entity = 1;
+    EntityName entity = 1;
     int64 size = 2;
     int64 seed = 3;
 }
@@ -321,7 +337,7 @@ message Projection {
  * The kNN part of a QueryMessage.
  */
 message Knn {
-    string attribute = 1;
+    ColumnName attribute = 1;
     uint32 k = 2;
     Distance distance = 3;
     KnnHint hint = 4;
@@ -380,25 +396,38 @@ message Where {
 }
 
 /**
-  * The boolean query part for a query message.
-  */
+ * An operator to compare a series of values.
+ */
+enum ComparisonOperator {
+    EQUAL = 0;
+    GREATER = 1;
+    LESS = 2;
+    GEQUAL = 3;
+    LEQUAL = 4;
+    IN = 5;
+    BETWEEN = 6;
+    ISNULL = 7;
+    ISNOTNULL = 8;
+    LIKE = 9;
+}
+
+/**
+ * An operator to connect multiple boolean predicates.
+ */
+enum ConnectionOperator {
+    AND = 0;
+    OR = 1;
+}
+
+/**
+ * An atomic boolean predicate of form X OP Y, where Y is a literal (or list of literals).
+ */
 message AtomicLiteralBooleanPredicate {
-    string attribute = 1;
+    ColumnName left = 1;
     bool not = 2;
-    Operator op = 3;
-    repeated Data data = 4;
-    enum Operator {
-        EQUAL = 0;
-        GREATER = 1;
-        LESS = 2;
-        GEQUAL = 3;
-        LEQUAL = 4;
-        IN = 5;
-        BETWEEN = 6;
-        ISNULL = 7;
-        ISNOTNULL = 8;
-        LIKE = 9;
-    }
+    ComparisonOperator op = 3;
+    repeated Literal right = 4;
+
 }
 
 /**
@@ -409,14 +438,9 @@ message CompoundBooleanPredicate {
         AtomicLiteralBooleanPredicate aleft = 1;
         CompoundBooleanPredicate cleft = 2;
     }
-    Operator op = 3;
+    ConnectionOperator op = 3;
     oneof right {
         AtomicLiteralBooleanPredicate aright = 4;
         CompoundBooleanPredicate cright = 5;
-    }
-
-    enum Operator {
-        AND = 0;
-        OR = 1;
     }
 }
