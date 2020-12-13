@@ -155,11 +155,6 @@ message Transaction {
     }
 }
 
-/** A basic tuple as used in INSERT or UPDATE statements OR results. */
-message Tuple {
-    map<string, Literal> data = 1;
-}
-
 /* The basic data types supported by Cottontail DB columns. */
 enum Type {
     BOOLEAN = 0;
@@ -353,7 +348,11 @@ message InsertMessage {
     string queryId = 1;
     TransactionId txId = 2;
     From from = 3;
-    Tuple tuple = 4;
+    repeated InsertElement inserts = 4;
+    message InsertElement {
+        ColumnName column = 1;
+        Literal value = 2;
+    }
 }
 
 /** Message for updating data in an entity. */
@@ -362,7 +361,11 @@ message UpdateMessage {
     TransactionId txId = 2;
     From from = 3;
     Where where = 4;
-    Tuple tuple = 5;
+    repeated UpdateElement updates = 5;
+    message UpdateElement {
+        ColumnName column = 1;
+        Literal value = 2;
+    }
 }
 
 /** Message for deleting data from an entity. */
@@ -398,7 +401,11 @@ message Query {
 message QueryResponseMessage {
     string queryId = 1;
     TransactionId tid = 2;
-    repeated Tuple results = 3;
+    repeated ColumnName columns = 3; /* Columns returned by this QueryResponseMessage. */
+    repeated Tuple tuples = 4; /* List of tuples returned (data in order of columns). */
+    message Tuple {
+        repeated Literal data = 1;
+    }
 }
 
 /* The from part for a query. */
@@ -417,11 +424,11 @@ message Sample {
     int64 seed = 3;
 }
 
-/* The projection part of a query (select + attributes / count / exists) . */
+/* The projection part of a query (select + attributes / count / exists). */
 message Projection {
-    Operation op = 1;
-    map<string, string> attributes = 2;
-    enum Operation {
+    ProjectionOperation op = 1;
+    repeated ProjectionElement columns = 2;
+    enum ProjectionOperation {
         SELECT = 0;
         SELECT_DISTINCT = 1;
         COUNT = 2;
@@ -431,6 +438,10 @@ message Projection {
         MAX = 6;
         MIN = 7;
         MEAN = 8;
+    }
+    message ProjectionElement {
+        ColumnName column = 1;
+        ColumnName alias = 2;
     }
 }
 
