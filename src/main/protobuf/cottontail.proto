@@ -8,34 +8,57 @@ option java_package = "org.vitrivr.cottontail.grpc";
 option java_outer_classname = "CottontailGrpc";
 
 service DDL {
-    /* Handling DB schemas. */
+    /* Lists all schemas. */
     rpc ListSchemas (google.protobuf.Empty) returns (stream SchemaName);
-    rpc CreateSchema (SchemaName) returns (google.protobuf.Empty);
-    rpc DropSchema (SchemaName) returns (google.protobuf.Empty);
 
-    /* Handling entities. */
+    /* Creates a new schema. */
+    rpc CreateSchema (CreateSchemaMessage) returns (google.protobuf.Empty);
+
+    /* Drops an existing schema. */
+    rpc DropSchema (DropSchemaMessage) returns (google.protobuf.Empty);
+
+    /* Lists all available entities for the given schema. */
     rpc ListEntities (SchemaName) returns (stream EntityName);
-    rpc CreateEntity (EntityDefinition) returns (google.protobuf.Empty);
-    rpc EntityDetails (EntityName) returns (EntityDefinition);
-    rpc DropEntity (EntityName) returns (google.protobuf.Empty);
 
-    /* Handling indexes. */
-    rpc ListIndexes (EntityName) returns (stream IndexDetails);
-    rpc CreateIndex (IndexDefinition) returns (google.protobuf.Empty);
-    rpc DropIndex (IndexName) returns (google.protobuf.Empty);
-    rpc RebuildIndex (IndexName) returns (google.protobuf.Empty);
+    /* Returns details about the given entity. */
+    rpc EntityDetails (EntityName) returns (EntityDefinition);
+
+    /** Creates a new entity. */
+    rpc CreateEntity (CreateEntityMessage) returns (google.protobuf.Empty);
+
+    /** Drops an existing entity. */
+    rpc DropEntity (DropEntityMessage) returns (google.protobuf.Empty);
+
+    /** Truncates an existing entity. */
+    rpc TruncateEntity (TruncateEntityMessage) returns (google.protobuf.Empty);
 
     /* Optimizing and truncating entities. */
-    rpc Optimize (EntityName) returns (google.protobuf.Empty);
-    rpc Truncate (EntityName) returns (google.protobuf.Empty);
+    rpc OptimizeEntity (OptimizeEntityMessage) returns (google.protobuf.Empty);
+
+    /** Lists all indexes for the given entity. */
+    rpc ListIndexes (EntityName) returns (stream IndexDetails);
+
+    /** Creates a new index. */
+    rpc CreateIndex (CreateIndexMessage) returns (google.protobuf.Empty);
+
+    /** Drops an existing index. */
+    rpc DropIndex (DropIndexMessage) returns (google.protobuf.Empty);
+
+    /** Rebuilds an existing index. */
+    rpc RebuildIndex (RebuildIndexMessage) returns (google.protobuf.Empty);
 }
 
 /**
  * Endpoint for data management (INSERT, UPDATE and DELETE).
  */
 service DML {
+    /** Inserts data into an entity. */
     rpc Insert (InsertMessage) returns (QueryResponseMessage);
+
+    /** Updates data in an entity. */
     rpc Update (UpdateMessage) returns (QueryResponseMessage);
+
+    /** Deletes data from an entity. */
     rpc Delete (DeleteMessage) returns (QueryResponseMessage);
 }
 
@@ -66,8 +89,8 @@ service TXN {
     /** Performs a rollback on a transaction and aborts it. */
     rpc Rollback (TransactionId) returns (google.protobuf.Empty);
 
+    /** Lists all active transactions. */
     rpc ListTransactions (google.protobuf.Empty) returns (stream Transaction);
-    rpc AbortTransactions (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 /** Identifier for a single schema.  */
@@ -248,6 +271,60 @@ message Complex64Vector {
  * Data Definition Language (DDL) messages
  */
 
+/** Message to create a new schema. */
+message CreateSchemaMessage {
+    TransactionId txId = 1;
+    SchemaName name = 2;
+}
+
+/** Message to drop schema. */
+message DropSchemaMessage {
+    TransactionId txId = 1;
+    SchemaName name = 2;
+}
+
+/** Message to create an entity. */
+message CreateEntityMessage {
+    TransactionId txId = 1;
+    EntityDefinition definition = 2;
+}
+
+/** Message to drop an entity. */
+message DropEntityMessage {
+    TransactionId txId = 1;
+    EntityName name = 2;
+}
+
+/** Message to drop an entity. */
+message TruncateEntityMessage {
+    TransactionId txId = 1;
+    EntityName name = 2;
+}
+
+/** Message to drop an entity. */
+message OptimizeEntityMessage {
+    TransactionId txId = 1;
+    EntityName name = 2;
+}
+
+/** Message to create an index. */
+message CreateIndexMessage {
+    TransactionId txId = 1;
+    IndexDefinition definition = 2;
+}
+
+/** Message to drop an index. */
+message DropIndexMessage {
+    TransactionId txId = 1;
+    IndexName name = 2;
+}
+
+/** Message to rebuild an index. */
+message RebuildIndexMessage {
+    TransactionId txId = 1;
+    IndexName name = 2;
+}
+
 /** Definition of a column in Cottontail DB. */
 message ColumnDefinition {
     string name = 1;
@@ -274,7 +351,7 @@ message IndexDefinition {
 /** Message for inserting data into an entity. */
 message InsertMessage {
     string queryId = 1;
-    TransactionId = 2;
+    TransactionId txId = 2;
     From from = 3;
     Tuple tuple = 4;
 }
@@ -282,7 +359,7 @@ message InsertMessage {
 /** Message for updating data in an entity. */
 message UpdateMessage {
     string queryId = 1;
-    TransactionId = 2;
+    TransactionId txId = 2;
     From from = 3;
     Where where = 4;
     Tuple tuple = 5;
@@ -291,7 +368,7 @@ message UpdateMessage {
 /** Message for deleting data from an entity. */
 message DeleteMessage {
     string queryId = 1;
-    TransactionId = 2;
+    TransactionId txId = 2;
     From from = 3;
     Where where = 4;
 }
@@ -303,7 +380,7 @@ message DeleteMessage {
 /* A single query that should be executed. */
 message QueryMessage {
     string queryId = 1;
-    TransactionId = 2;
+    TransactionId txId = 2;
     Query query = 3;
 }
 
