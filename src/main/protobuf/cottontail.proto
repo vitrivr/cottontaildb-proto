@@ -34,28 +34,40 @@ service DDL {
  * Endpoint for data management (INSERT, UPDATE and DELETE).
  */
 service DML {
-    rpc Insert (stream InsertMessage) returns (QueryResponseMessage);
-    rpc Update (stream UpdateMessage) returns (QueryResponseMessage);
-    rpc Delete (stream DeleteMessage) returns (QueryResponseMessage);
+    rpc Insert (InsertMessage) returns (QueryResponseMessage);
+    rpc Update (UpdateMessage) returns (QueryResponseMessage);
+    rpc Delete (DeleteMessage) returns (QueryResponseMessage);
 }
 
 /**
  * Endpoint for data management (SELECT).
  */
 service DQL {
+    /** Evaluates and returns the execution plan for a query. */
     rpc Explain (QueryMessage) returns (stream QueryResponseMessage);
+
+    /** Executes a query through Cottontail DB. */
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
-    rpc BatchedQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
+
+    /** Pings the endpoint */
+    rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 /**
- * Endpoint for system commands.
+ * Endpoint for transaction management.
  */
-service SYS {
+service TXN {
+    /** Starts a new transaction. */
+    rpc Begin (google.protobuf.Empty) returns (TransactionId);
+
+    /** Performs a commit on a transaction. */
+    rpc Commit (TransactionId) returns (google.protobuf.Empty);
+
+    /** Performs a rollback on a transaction and aborts it. */
+    rpc Rollback (TransactionId) returns (google.protobuf.Empty);
+
     rpc ListTransactions (google.protobuf.Empty) returns (stream Transaction);
-    rpc AbortTransaction (TransactionId) returns (google.protobuf.Empty);
     rpc AbortTransactions (google.protobuf.Empty) returns (google.protobuf.Empty);
-    rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 /** Identifier for a single schema.  */
@@ -262,28 +274,38 @@ message IndexDefinition {
 /** Message for inserting data into an entity. */
 message InsertMessage {
     string queryId = 1;
-    From from = 2;
-    Tuple tuple = 3;
+    TransactionId = 2;
+    From from = 3;
+    Tuple tuple = 4;
 }
 
 /** Message for updating data in an entity. */
 message UpdateMessage {
     string queryId = 1;
-    From from = 2;
-    Where where = 3;
-    Tuple tuple = 4;
+    TransactionId = 2;
+    From from = 3;
+    Where where = 4;
+    Tuple tuple = 5;
 }
 
 /** Message for deleting data from an entity. */
 message DeleteMessage {
     string queryId = 1;
-    From from = 2;
-    Where where = 3;
+    TransactionId = 2;
+    From from = 3;
+    Where where = 4;
 }
 
 /*
  * Data Query Language (DQL)
  */
+
+/* A single query that should be executed. */
+message QueryMessage {
+    string queryId = 1;
+    TransactionId = 2;
+    Query query = 3;
+}
 
 /* A simple query. */
 message Query {
@@ -293,18 +315,6 @@ message Query {
     Knn knn = 4;
     uint64 limit = 5; /* Size of the result-set (default: unlimited). */
     uint64 skip = 6; /* Number of records to skip. */
-}
-
-/* A batch of queries that should be executed. The individual queries will return under a single query ID. */
-message BatchedQueryMessage {
-    string queryId = 1;
-    repeated Query queries = 2;
-}
-
-/* A single query that should be executed. */
-message QueryMessage {
-    string queryId = 1;
-    Query query = 2;
 }
 
 /* A query response message. */
