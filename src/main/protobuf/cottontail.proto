@@ -36,7 +36,7 @@ service DDL {
     rpc OptimizeEntity (OptimizeEntityMessage) returns (QueryResponseMessage);
 
     /** Lists all indexes for the given entity. */
-    rpc ListIndexes (EntityName) returns (stream QueryResponseMessage);
+    rpc ListIndexes (ListIndexMessage) returns (stream QueryResponseMessage);
 
     /** Creates a new index. */
     rpc CreateIndex (CreateIndexMessage) returns (QueryResponseMessage);
@@ -323,6 +323,7 @@ message ListEntityMessage {
 message CreateIndexMessage {
     TransactionId txId = 1;
     IndexDefinition definition = 2;
+    bool rebuild = 3;
 }
 
 /** Message to drop an index. */
