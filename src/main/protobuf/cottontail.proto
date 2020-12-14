@@ -53,7 +53,7 @@ service DDL {
  */
 service DML {
     /** Inserts data into an entity. */
-    rpc Insert (stream InsertMessage) returns (QueryResponseMessage);
+    rpc Insert (InsertMessage) returns (QueryResponseMessage);
 
     /** Updates data in an entity. */
     rpc Update (UpdateMessage) returns (QueryResponseMessage);
