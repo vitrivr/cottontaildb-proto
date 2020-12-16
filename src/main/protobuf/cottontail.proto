@@ -35,9 +35,6 @@ service DDL {
     /* Optimizing and truncating entities. */
     rpc OptimizeEntity (OptimizeEntityMessage) returns (QueryResponseMessage);
 
-    /** Lists all indexes for the given entity. */
-    rpc ListIndexes (ListIndexMessage) returns (stream QueryResponseMessage);
-
     /** Creates a new index. */
     rpc CreateIndex (CreateIndexMessage) returns (QueryResponseMessage);
 
@@ -91,6 +88,9 @@ service TXN {
 
     /** Lists all active transactions. */
     rpc ListTransactions (google.protobuf.Empty) returns (stream QueryResponseMessage);
+
+    /** Lists all active locks on database objects. */
+    rpc ListLocks (google.protobuf.Empty) returns (stream QueryResponseMessage)
 }
 
 /** Identifier for a single schema.  */
@@ -139,6 +139,7 @@ enum IndexType {
 /** A transaction ID in Cottontail DB. */
 message TransactionId {
     int64 value = 1;
+    string queryId = 2;
 }
 
 /** Describes a basic transaction in Cottontail DB. */
@@ -338,12 +339,6 @@ message RebuildIndexMessage {
     IndexName index = 2;
 }
 
-/** Message to rebuild an index. */
-message ListIndexMessage {
-    TransactionId txId = 1;
-    EntityName entity = 2;
-}
-
 /** Definition of a column in Cottontail DB. */
 message ColumnDefinition {
     string name = 1;
@@ -369,10 +364,9 @@ message IndexDefinition {
 
 /** Message for inserting data into an entity. */
 message InsertMessage {
-    string queryId = 1;
-    TransactionId txId = 2;
-    From from = 3;
-    repeated InsertElement inserts = 4;
+    TransactionId txId = 1;
+    From from = 2;
+    repeated InsertElement inserts = 3;
     message InsertElement {
         ColumnName column = 1;
         Literal value = 2;
@@ -381,11 +375,10 @@ message InsertMessage {
 
 /** Message for updating data in an entity. */
 message UpdateMessage {
-    string queryId = 1;
-    TransactionId txId = 2;
-    From from = 3;
-    Where where = 4;
-    repeated UpdateElement updates = 5;
+    TransactionId txId = 1;
+    From from = 2;
+    Where where = 3;
+    repeated UpdateElement updates = 4;
     message UpdateElement {
         ColumnName column = 1;
         Literal value = 2;
@@ -394,10 +387,9 @@ message UpdateMessage {
 
 /** Message for deleting data from an entity. */
 message DeleteMessage {
-    string queryId = 1;
-    TransactionId txId = 2;
-    From from = 3;
-    Where where = 4;
+    TransactionId txId = 1;
+    From from = 2;
+    Where where = 3;
 }
 
 /*
@@ -406,9 +398,8 @@ message DeleteMessage {
 
 /* A single query that should be executed. */
 message QueryMessage {
-    string queryId = 1;
-    TransactionId txId = 2;
-    Query query = 3;
+    TransactionId txId = 1;
+    Query query = 2;
 }
 
 /* A simple query. */
@@ -423,10 +414,9 @@ message Query {
 
 /* A query response message. */
 message QueryResponseMessage {
-    string queryId = 1;
-    TransactionId tid = 2;
-    repeated ColumnName columns = 3; /* Columns returned by this QueryResponseMessage. */
-    repeated Tuple tuples = 4; /* List of tuples returned (data in order of columns). */
+    TransactionId tid = 1;
+    repeated ColumnName columns = 2; /* Columns returned by this QueryResponseMessage. */
+    repeated Tuple tuples = 3; /* List of tuples returned (data in order of columns). */
     message Tuple {
         repeated Literal data = 1;
     }
