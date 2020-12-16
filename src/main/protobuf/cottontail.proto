@@ -116,13 +116,6 @@ message ColumnName {
     string name = 2;
 }
 
-/** Identifier for a single index. */
-message IndexDetails {
-    IndexName name = 1;
-    IndexType type = 2;
-    repeated ColumnDefinition columns = 3;
-}
-
 /** Type of index. */
 enum IndexType {
     HASH = 0;
@@ -357,9 +350,10 @@ message EntityDefinition {
 
 /** Message for creating an index. */
 message IndexDefinition {
-    IndexDetails index = 1;
-    repeated string columns = 2;
-    map<string,string> params = 3;
+    IndexName name = 1;
+    IndexType type = 2;
+    repeated ColumnName columns = 3;
+    map<string,string> params = 4;
 }
 
 /** Message for inserting data into an entity. */
