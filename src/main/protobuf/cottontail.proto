@@ -90,7 +90,7 @@ service TXN {
     rpc ListTransactions (google.protobuf.Empty) returns (stream QueryResponseMessage);
 
     /** Lists all active locks on database objects. */
-    rpc ListLocks (google.protobuf.Empty) returns (stream QueryResponseMessage)
+    rpc ListLocks (google.protobuf.Empty) returns (stream QueryResponseMessage);
 }
 
 /** Identifier for a single schema.  */
