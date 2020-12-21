@@ -529,6 +529,7 @@ enum ComparisonOperator {
     ISNULL = 7;
     ISNOTNULL = 8;
     LIKE = 9;
+    MATCH = 10;
 }
 
 /**
