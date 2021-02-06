@@ -400,8 +400,10 @@ message QueryMessage {
 message Query {
     From from = 1;
     Projection projection = 2;
-    Where where = 3;
-    Knn knn = 4;
+    oneof predicate {
+        Where where = 3;
+        Knn knn = 4;
+    }
     uint64 limit = 5; /* Size of the result-set (default: unlimited). */
     uint64 skip = 6; /* Number of records to skip. */
 }
@@ -419,13 +421,20 @@ message QueryResponseMessage {
 /* The from part for a query. */
 message From {
     oneof from {
-        EntityName entity = 1; /* Entity data. */
-        Sample sample = 2; /* Random sample of an Entity. */
-        Query query = 3; /* Sub-select. */
+        Scan scan = 1;      /* Entity SCAN. */
+        Sample sample = 2;  /* Entity SAMPLE. */
+        Query subSelect = 3;    /* A SUB-SELECT clause, i.e., another query. */
     }
 }
 
-/* Describes a random sample of an Entity. Can be used to specify the "FROM" part of a query. */
+/* Describes a SCAN of an Entity. Can be used to specify the "FROM" part of a query. */
+message Scan {
+    EntityName entity = 1;
+    int64 start = 2;
+    int64 end = 3;
+}
+
+/* Describes a random SAMPLE of an Entity. Can be used to specify the "FROM" part of a query. */
 message Sample {
     EntityName entity = 1;
     int64 size = 2;
