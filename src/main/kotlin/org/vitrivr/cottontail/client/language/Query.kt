@@ -59,6 +59,19 @@ class Query {
     }
 
     /**
+     * Adds a SELECT EXISTS projection to this [Query].
+     *
+     * @return [Query]
+     */
+    fun exists(): Query {
+        this.builder.clearProjection()
+        val builder = this.builder.projectionBuilder
+        builder.op = CottontailGrpc.Projection.ProjectionOperation.EXISTS
+        builder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
+        return this
+    }
+
+    /**
      * Adds a FROM-clause with a SCAN to this [Query]
      *
      * @param entity The entity to SCAN.
