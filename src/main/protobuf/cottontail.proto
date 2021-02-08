@@ -189,10 +189,11 @@ message Literal {
         float floatData = 4;
         double doubleData = 5;
         string stringData = 6;
-        Complex32 complex32Data = 7;
-        Complex64 complex64Data = 8;
-        Vector vectorData = 9;
-        Null nullData = 10;
+        Date dateData = 7;
+        Complex32 complex32Data = 8;
+        Complex64 complex64Data = 9;
+        Vector vectorData = 10;
+        Null nullData = 11;
     }
 }
 
@@ -211,6 +212,11 @@ message Vector {
 
 /** A null entry.*/
 message Null {}
+
+/** A date entry */
+message Date {
+    int64 utc_timestamp = 1;
+}
 
 /** A complex number entry using floats.*/
 message Complex32 {
