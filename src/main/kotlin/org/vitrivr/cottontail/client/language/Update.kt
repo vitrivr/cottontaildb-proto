@@ -7,11 +7,15 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An UPDATE query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0
+ * @version 1.0.0
  */
-class Update {
+class Update(entity: String) {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
     val builder = CottontailGrpc.UpdateMessage.newBuilder()
+
+    init {
+        this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+    }
 
     /**
      * Adds a FROM-clause to this [Update].
