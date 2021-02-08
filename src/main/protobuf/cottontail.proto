@@ -52,13 +52,13 @@ service DML {
     /** Inserts data into an entity. Each INSERT returns a record with a status. */
     rpc Insert (InsertMessage) returns (QueryResponseMessage);
 
-    /** Inserts data into an entity; INSERTS do not a return status. */
-    rpc InsertBatch (InsertMessage) returns (google.protobuf.Empty);
+    /** Inserts data into an entity; Individual INSERTS do not a return status. */
+    rpc InsertBatch (stream InsertMessage) returns (google.protobuf.Empty);
 
-    /** Updates data in an entity. */
+    /** Updates data in an entity. Each UPDATE returns a record with a status. */
     rpc Update (UpdateMessage) returns (QueryResponseMessage);
 
-    /** Deletes data from an entity. */
+    /** Deletes data from an entity. Each DELETE returns a record with a status. */
     rpc Delete (DeleteMessage) returns (QueryResponseMessage);
 }
 
