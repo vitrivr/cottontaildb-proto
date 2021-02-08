@@ -53,7 +53,7 @@ service DML {
     rpc Insert (InsertMessage) returns (QueryResponseMessage);
 
     /** Inserts data into an entity; Individual INSERTS do not a return status. Always takes place in a single transaction! */
-    rpc InsertBatch (stream InsertMessage) returns (stream QueryResponseMessage);
+    rpc InsertBatch (stream InsertMessage) returns (stream google.protobuf.Empty);
 
     /** Updates data in an entity. Each UPDATE returns a record with a status. */
     rpc Update (UpdateMessage) returns (QueryResponseMessage);
