@@ -71,6 +71,9 @@ class BatchInsertClient(private val channel: ManagedChannel, private val maxBuff
     fun complete() {
         check(!this.done.get()) { "Cannot complete INSERT because client has been closed."}
         this.serverObserver.onCompleted()
+        while (!this.done.get()) {
+            Thread.onSpinWait()
+        }
     }
 
     /**
@@ -79,5 +82,8 @@ class BatchInsertClient(private val channel: ManagedChannel, private val maxBuff
     fun abort() {
         check(!this.done.get()) { "Cannot abort INSERT because client has been closed."}
         this.serverObserver.onError(Status.ABORTED.withDescription("Transaction was aborted by client.").asException())
+        while (!this.done.get()) {
+            Thread.onSpinWait()
+        }
     }
 }
