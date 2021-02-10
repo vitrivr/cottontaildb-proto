@@ -11,12 +11,14 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class Insert(val entity: String) {
+class Insert(entity: String? = null) {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
     val builder = CottontailGrpc.InsertMessage.newBuilder()
 
     init {
-        this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+        if (entity != null) {
+            this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+        }
     }
 
     /**
