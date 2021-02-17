@@ -9,9 +9,15 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class Query {
+class Query(entity: String? = null) {
     /** Internal [CottontailGrpc.Query.Builder]. */
     val builder = CottontailGrpc.Query.newBuilder()
+
+    init {
+        if (entity != null) {
+            this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+        }
+    }
 
     /**
      * Adds a SELECT projection to this [Query].
