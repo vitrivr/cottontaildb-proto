@@ -346,7 +346,7 @@ message ColumnDefinition {
     string name = 1;
     Type type = 2;
     uint32 length = 3;
-    bool unique = 4;
+    bool primary = 4;
     bool nullable = 5;
     Engine engine = 6;
 }
