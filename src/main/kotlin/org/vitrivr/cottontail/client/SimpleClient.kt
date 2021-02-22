@@ -3,6 +3,7 @@ package org.vitrivr.cottontail.client.stub
 import com.google.protobuf.Empty
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
+import org.vitrivr.cottontail.client.TupleIterator
 import org.vitrivr.cottontail.client.language.Delete
 import org.vitrivr.cottontail.client.language.Insert
 import org.vitrivr.cottontail.client.language.Query
@@ -66,7 +67,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @param query [CottontailGrpc.Query] to execute.
      */
-    fun query(query: CottontailGrpc.QueryMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.dql.query(query)
+    fun query(query: CottontailGrpc.QueryMessage): TupleIterator = TupleIterator(this.dql.query(query))
 
     /**
      * Executes [Query] through this [SimpleClient]
@@ -74,7 +75,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param q [Query] to execute.
      * @param txId Optional transaction ID to execute the query in. Can be null!
      */
-    fun query(q: Query, txId: Long? = null): Iterator<CottontailGrpc.QueryResponseMessage> {
+    fun query(q: Query, txId: Long? = null): TupleIterator {
         val message = CottontailGrpc.QueryMessage.newBuilder().setQuery(q.builder)
         if (txId != null) {
             message.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
@@ -87,7 +88,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @param query [CottontailGrpc.Query] to executed.
      */
-    fun explain(query: CottontailGrpc.QueryMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.dql.explain(query)
+    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator = TupleIterator(this.dql.explain(query))
 
     /**
      * Executes [Query] through this [SimpleClient]
@@ -95,7 +96,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param q [Query] to execute.
      * @param txId Optional transaction ID to execute the query in. Can be null!
      */
-    fun explain(q: Query, txId: Long? = null): Iterator<CottontailGrpc.QueryResponseMessage> {
+    fun explain(q: Query, txId: Long? = null): TupleIterator {
         val message = CottontailGrpc.QueryMessage.newBuilder().setQuery(q.builder)
         if (txId != null) {
             message.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
