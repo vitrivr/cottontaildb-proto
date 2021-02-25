@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.extensions
 
+import org.vitrivr.cottontail.client.language.Query
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -22,13 +23,13 @@ sealed class CompoundBooleanPredicate(val left: Predicate, val right: Predicate)
         val builder = CottontailGrpc.CompoundBooleanPredicate.newBuilder().setOp(this.operator)
         when(this.left) {
             is And -> builder.setCleft(this.left.toPredicate())
-            is Atomic -> builder.setAleft(this.left.toPredicate())
             is Or -> builder.setCleft(this.left.toPredicate())
+            is Atomic -> builder.setAleft(this.left.toPredicate())
         }
         when(this.right) {
             is And -> builder.setCright(this.right.toPredicate())
-            is Atomic -> builder.setAright(this.right.toPredicate())
             is Or -> builder.setCright(this.right.toPredicate())
+            is Atomic -> builder.setAright(this.right.toPredicate())
         }
         return builder
     }
@@ -55,25 +56,60 @@ class Or(left: Predicate, right: Predicate): CompoundBooleanPredicate(left, righ
 }
 
 /**
- * An [Atomic] [CompoundBooleanPredicate]
+ * An [Atomic] [Predicate]
  *
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class Atomic(
-    val left: CottontailGrpc.ColumnName,
-    val operator: CottontailGrpc.ComparisonOperator,
-    val values: List<CottontailGrpc.Literal>,
-    val not: Boolean = false): Predicate() {
+sealed class Atomic: Predicate() {
+    abstract fun toPredicate(): CottontailGrpc.AtomicBooleanPredicate.Builder
+}
+
+/**
+ * A [Literal] [Atomic] [Predicate]
+ *
+ * @author Ralph Gasser
+ * @version 1.0.0
+ */
+class Literal(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.ComparisonOperator, val values: List<CottontailGrpc.Literal>, val not: Boolean = false): Atomic() {
     constructor(column: String, operator: String, vararg values: Any) : this(
         column.parseColumn(),
         operator.parseOperator(),
         values.map { it.toLiteral() }
     )
-    fun toPredicate(): CottontailGrpc.AtomicLiteralBooleanPredicate.Builder
-        = CottontailGrpc.AtomicLiteralBooleanPredicate.newBuilder()
-            .setLeft(this.left)
-            .setOp(this.operator)
-            .setNot(this.not)
-            .addAllRight(this.values)
+    override fun toPredicate(): CottontailGrpc.AtomicBooleanPredicate.Builder = CottontailGrpc.AtomicBooleanPredicate.newBuilder()
+        .setLeft(this.left)
+        .setOp(this.operator)
+        .setNot(this.not)
+        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setLiterals(CottontailGrpc.Literals.newBuilder().addAllLiteral(this.values)))
+}
+
+/**
+ * A [Reference] [Atomic] [Predicate]
+ *
+ * @author Ralph Gasser
+ * @version 1.0.0
+ */
+class Reference(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.ComparisonOperator, val right: CottontailGrpc.ColumnName, val not: Boolean = false): Atomic() {
+    constructor(left: String, operator: String, right: String) : this(left.parseColumn(), operator.parseOperator(), right.parseColumn())
+    override fun toPredicate(): CottontailGrpc.AtomicBooleanPredicate.Builder = CottontailGrpc.AtomicBooleanPredicate.newBuilder()
+        .setLeft(this.left)
+        .setOp(this.operator)
+        .setNot(this.not)
+        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setColumn(this.right))
+}
+
+/**
+ * A [SubSelect] [Atomic] [Predicate]
+ *
+ * @author Ralph Gasser
+ * @version 1.0.0
+ */
+class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.ComparisonOperator, val right: Query, val not: Boolean = false): Atomic() {
+    constructor(column: String, operator: String, query: Query) : this(column.parseColumn(), operator.parseOperator(), query)
+    override  fun toPredicate(): CottontailGrpc.AtomicBooleanPredicate.Builder = CottontailGrpc.AtomicBooleanPredicate.newBuilder()
+        .setLeft(this.left)
+        .setOp(this.operator)
+        .setNot(this.not)
+        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setQuery(this.right.builder))
 }

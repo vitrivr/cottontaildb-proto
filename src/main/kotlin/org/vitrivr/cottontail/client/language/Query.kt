@@ -159,6 +159,22 @@ class Query(entity: String? = null) {
     }
 
     /**
+     * Adds a ORDER BY-clause to this [Query] and returns it
+     *
+     * @param clauses ORDER BY clauses in the form of <column> <order>
+     */
+    fun order(vararg clauses: Pair<String,String>): Query {
+        this.builder.clearOrder()
+        val builder = this.builder.orderBuilder
+        for (c in clauses) {
+            val cBuilder = builder.addComponentsBuilder()
+            cBuilder.column = c.first.parseColumn()
+            cBuilder.direct = CottontailGrpc.Order.Direction.valueOf(c.second.toUpperCase())
+        }
+        return this
+    }
+
+    /**
      * Adds a SKIP-clause in the Cottontail DB query language.
      *
      * @param skip The number of results to skip.

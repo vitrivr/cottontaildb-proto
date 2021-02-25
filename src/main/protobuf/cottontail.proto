@@ -619,7 +619,7 @@ message Order {
     repeated Component components = 1;
     message Component {
         ColumnName column = 1;
-        Direction direct = 2;
+        Direction direction = 2;
     }
     enum Direction {
         ASCENDING = 0;
