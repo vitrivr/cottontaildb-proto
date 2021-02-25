@@ -411,8 +411,9 @@ message Query {
     Projection projection = 2;
     Where where = 3;
     Knn knn = 4;
-    uint64 limit = 5; /* Size of the result-set (default: unlimited). */
-    uint64 skip = 6; /* Number of records to skip. */
+    Order order = 5;
+    uint64 limit = 6; /* Size of the result-set (default: unlimited). */
+    uint64 skip = 7; /* Number of records to skip. */
 }
 
 /* A query response message. */
@@ -428,8 +429,8 @@ message QueryResponseMessage {
 /* The from part for a query. */
 message From {
     oneof from {
-        Scan scan = 1;      /* Entity SCAN. */
-        Sample sample = 2;  /* Entity SAMPLE. */
+        Scan scan = 1;          /* Entity SCAN. */
+        Sample sample = 2;      /* Entity SAMPLE. */
         Query subSelect = 3;    /* A SUB-SELECT clause, i.e., another query. */
     }
 }
@@ -492,9 +493,7 @@ message Knn {
     }
 }
 
-/**
-  * A hint to the query planner for kNN queries.
-  */
+/** A hint to the query planner for NNS-clauses. */
 message KnnHint {
     oneof hint {
         NoIndexKnnHint noIndexHint = 1;
@@ -509,7 +508,7 @@ message KnnHint {
         bool allow = 1;
     }
     message IndexTypeKnnHint {
-        IndexType type = 2;
+        IndexType type = 1;
     }
     message IndexNameKnnHint {
         string name = 1;
@@ -521,13 +520,34 @@ message KnnHint {
     }
 }
 
-/**
- * The 'WHERE' part of a QueryMessage.
- */
+/** The boolean predicate ('WHERE') part of a QueryMessage. */
 message Where {
     oneof predicate {
-        AtomicLiteralBooleanPredicate atomic = 1;
+        AtomicBooleanPredicate atomic = 1;
         CompoundBooleanPredicate compound = 2;
+    }
+    WhereHint hint = 3;
+}
+
+/** A hint to the query planner for boolean predicate ('WHERE')-clauses. */
+message WhereHint {
+    oneof hint {
+        NoIndexWhereHint noIndexHint = 1;
+        IndexTypeWhereHint typeIndexHint = 2;
+        IndexNameWhereHint nameIndexHint = 3;
+        ParallelWhereHint parallelIndexHint = 4;
+    }
+    message NoIndexWhereHint {}
+    message IndexTypeWhereHint {
+        IndexType type = 1;
+    }
+    message IndexNameWhereHint {
+        string name = 1;
+        map<string,string> parameters = 2;
+    }
+    message ParallelWhereHint {
+        uint32 min = 1;
+        uint32 max = 2;
     }
 }
 
@@ -543,9 +563,8 @@ enum ComparisonOperator {
     IN = 5;
     BETWEEN = 6;
     ISNULL = 7;
-    ISNOTNULL = 8;
-    LIKE = 9;
-    MATCH = 10;
+    LIKE = 8;
+    MATCH = 9;
 }
 
 /**
@@ -556,28 +575,54 @@ enum ConnectionOperator {
     OR = 1;
 }
 
-/**
- * An atomic boolean predicate of form X OP Y, where Y is a literal (or list of literals).
- */
-message AtomicLiteralBooleanPredicate {
+/** An atomic boolean predicate of form X OP Y, where X is always a column and Y is an operand. */
+message AtomicBooleanPredicate {
     ColumnName left = 1;
-    bool not = 2;
+    AtomicBooleanOperand right = 2;
     ComparisonOperator op = 3;
-    repeated Literal right = 4;
+    bool not = 4;
+}
 
+/** An atomic boolean predicate operand. */
+message AtomicBooleanOperand {
+    oneof operand {
+        ColumnName column = 1;
+        Literals literals = 2;
+        Query query = 3;
+    }
+}
+
+/** A list of literals. */
+message Literals {
+    repeated Literal literal = 1;
 }
 
 /**
-  * The boolean query part for a query message.
-  */
+* The boolean query part for a query message.
+*/
 message CompoundBooleanPredicate {
     oneof left {
-        AtomicLiteralBooleanPredicate aleft = 1;
+        AtomicBooleanPredicate aleft = 1;
         CompoundBooleanPredicate cleft = 2;
     }
     ConnectionOperator op = 3;
     oneof right {
-        AtomicLiteralBooleanPredicate aright = 4;
+        AtomicBooleanPredicate aright = 4;
         CompoundBooleanPredicate cright = 5;
+    }
+}
+
+/**
+ * The ORDER BY clause of a query.
+ */
+message Order {
+    repeated Component components = 1;
+    message Component {
+        ColumnName column = 1;
+        Direction direct = 2;
+    }
+    enum Direction {
+        ASCENDING = 0;
+        DESCENDING = 1;
     }
 }
