@@ -169,7 +169,7 @@ class Query(entity: String? = null) {
         for (c in clauses) {
             val cBuilder = builder.addComponentsBuilder()
             cBuilder.column = c.first.parseColumn()
-            cBuilder.direct = CottontailGrpc.Order.Direction.valueOf(c.second.toUpperCase())
+            cBuilder.direction = CottontailGrpc.Order.Direction.valueOf(c.second.toUpperCase())
         }
         return this
     }
