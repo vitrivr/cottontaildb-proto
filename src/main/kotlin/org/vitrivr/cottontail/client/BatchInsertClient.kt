@@ -5,7 +5,7 @@ import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
-import org.vitrivr.cottontail.client.language.Insert
+import org.vitrivr.cottontail.client.language.dml.Insert
 import org.vitrivr.cottontail.client.stub.SimpleClient
 import org.vitrivr.cottontail.grpc.DMLGrpc
 import java.util.concurrent.Semaphore

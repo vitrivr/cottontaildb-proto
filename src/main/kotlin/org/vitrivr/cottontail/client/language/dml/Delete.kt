@@ -1,4 +1,4 @@
-package org.vitrivr.cottontail.client.language
+package org.vitrivr.cottontail.client.language.dml
 
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc

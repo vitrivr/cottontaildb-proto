@@ -4,10 +4,10 @@ import com.google.protobuf.Empty
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import org.vitrivr.cottontail.client.TupleIterator
-import org.vitrivr.cottontail.client.language.Delete
-import org.vitrivr.cottontail.client.language.Insert
-import org.vitrivr.cottontail.client.language.Query
-import org.vitrivr.cottontail.client.language.Update
+import org.vitrivr.cottontail.client.language.dml.Delete
+import org.vitrivr.cottontail.client.language.dml.Insert
+import org.vitrivr.cottontail.client.language.dql.Query
+import org.vitrivr.cottontail.client.language.dml.Update
 import org.vitrivr.cottontail.grpc.*
 
 /**
@@ -23,6 +23,9 @@ class SimpleClient(private val channel: ManagedChannel) {
 
     /** Endpoint used for managing data Cottontail DB. */
     private val dml by lazy { DMLGrpc.newBlockingStub(this.channel)  }
+
+    /** Endpoint used for managing data Cottontail DB. */
+    private val ddl by lazy { DMLGrpc.newBlockingStub(this.channel)  }
 
     /** Endpoint used for transaction management through Cottontail DB. */
     private val tx by lazy { TXNGrpc.newBlockingStub(this.channel)  }

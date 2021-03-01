@@ -1,4 +1,4 @@
-package org.vitrivr.cottontail.client.language
+package org.vitrivr.cottontail.client.language.dml
 
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
@@ -46,9 +46,32 @@ class Insert(entity: String? = null) {
             this.builder.addInserts(
                 CottontailGrpc.InsertMessage.InsertElement.newBuilder()
                     .setColumn(assignment.first.parseColumn())
-                    .setValue(assignment.second?.toLiteral() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
+                    .setValue(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
             )
         }
         return this
+    }
+
+    /**
+     * Converts an [Any] to a [CottontailGrpc.Literal]
+     *
+     * @return [CottontailGrpc.Literal]
+     */
+    private fun Any.convert(): CottontailGrpc.Literal = when(this) {
+        is Array<*> -> (this as Array<Number>).toLiteral()
+        is BooleanArray -> this.toLiteral()
+        is IntArray -> this.toLiteral()
+        is LongArray -> this.toLiteral()
+        is FloatArray -> this.toLiteral()
+        is DoubleArray -> this.toLiteral()
+        is Boolean -> this.toLiteral()
+        is Byte -> this.toLiteral()
+        is Short -> this.toLiteral()
+        is Int -> this.toLiteral()
+        is Long -> this.toLiteral()
+        is Float -> this.toLiteral()
+        is Double -> this.toLiteral()
+        is String -> this.toLiteral()
+        else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to literal is not supported.")
     }
 }

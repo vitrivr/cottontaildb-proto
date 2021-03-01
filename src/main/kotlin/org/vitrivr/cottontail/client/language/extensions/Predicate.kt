@@ -1,6 +1,6 @@
 package org.vitrivr.cottontail.client.language.extensions
 
-import org.vitrivr.cottontail.client.language.Query
+import org.vitrivr.cottontail.client.language.dql.Query
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
