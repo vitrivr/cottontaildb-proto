@@ -72,7 +72,7 @@ sealed class Atomic: Predicate() {
  * @version 1.0.0
  */
 class Literal(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.ComparisonOperator, val values: List<CottontailGrpc.Literal>, val not: Boolean = false): Atomic() {
-    constructor(column: String, operator: String, vararg values: Any) : this(column.parseColumn(), operator.parseOperator(), values.map { it.toLiteral() }, operator.parseNot()) {
+    constructor(column: String, operator: String, vararg values: Any) : this(column.parseColumn(), operator.parseOperator(), values.map { it.convert() }, operator.parseNot()) {
 
     }
 
@@ -111,4 +111,27 @@ class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrp
         .setOp(this.operator)
         .setNot(this.not)
         .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setQuery(this.right.builder))
+}
+
+/**
+ * Converts an [Any] to a [CottontailGrpc.Literal]
+ *
+ * @return [CottontailGrpc.Literal]
+ */
+private fun Any.convert(): CottontailGrpc.Literal = when(this) {
+    is Array<*> -> (this as Array<Number>).toLiteral()
+    is BooleanArray -> this.toLiteral()
+    is IntArray -> this.toLiteral()
+    is LongArray -> this.toLiteral()
+    is FloatArray -> this.toLiteral()
+    is DoubleArray -> this.toLiteral()
+    is Boolean -> this.toLiteral()
+    is Byte -> this.toLiteral()
+    is Short -> this.toLiteral()
+    is Int -> this.toLiteral()
+    is Long -> this.toLiteral()
+    is Float -> this.toLiteral()
+    is Double -> this.toLiteral()
+    is String -> this.toLiteral()
+    else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to literal is not supported.")
 }
