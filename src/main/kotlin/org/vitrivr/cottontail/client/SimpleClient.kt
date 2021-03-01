@@ -70,42 +70,46 @@ class SimpleClient(private val channel: ManagedChannel) {
      * Executes [CottontailGrpc.Query] through this [SimpleClient]
      *
      * @param query [CottontailGrpc.Query] to execute.
+     * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun query(query: CottontailGrpc.QueryMessage): TupleIterator = TupleIterator(this.dql.query(query))
+    fun query(query: CottontailGrpc.QueryMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.dql.query(query)
 
     /**
      * Executes [Query] through this [SimpleClient]
      *
      * @param q [Query] to execute.
      * @param txId Optional transaction ID to execute the query in. Can be null!
+     * @return [TupleIterator] of the result.
      */
     fun query(q: Query, txId: Long? = null): TupleIterator {
         val message = CottontailGrpc.QueryMessage.newBuilder().setQuery(q.builder)
         if (txId != null) {
             message.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
-        return this.query(message.build())
+        return TupleIterator(this.query(message.build()))
     }
 
     /**
      * Explains [CottontailGrpc.Query] through this [SimpleClient]
      *
      * @param query [CottontailGrpc.Query] to executed.
+     * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator = TupleIterator(this.dql.explain(query))
+    fun explain(query: CottontailGrpc.QueryMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.dql.explain(query)
 
     /**
      * Executes [Query] through this [SimpleClient]
      *
      * @param q [Query] to execute.
      * @param txId Optional transaction ID to execute the query in. Can be null!
+     * @return [TupleIterator] of the result.
      */
     fun explain(q: Query, txId: Long? = null): TupleIterator {
         val message = CottontailGrpc.QueryMessage.newBuilder().setQuery(q.builder)
         if (txId != null) {
             message.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
-        return this.explain(message.build())
+        return TupleIterator(this.explain(message.build()))
     }
 
     /**
@@ -120,11 +124,11 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @param query [Insert] to execute.
      */
-    fun insert(query: Insert, txId: Long? = null): CottontailGrpc.QueryResponseMessage {
+    fun insert(query: Insert, txId: Long? = null): TupleIterator {
         if (txId != null) {
             query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
-        return this.insert(query.builder.build())
+        return TupleIterator(this.insert(query.builder.build()))
     }
 
     /**
@@ -139,11 +143,11 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @param query [Update] to execute.
      */
-    fun insert(query: Update, txId: Long? = null): CottontailGrpc.QueryResponseMessage {
+    fun insert(query: Update, txId: Long? = null): TupleIterator {
         if (txId != null) {
             query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
-        return this.update(query.builder.build())
+        return TupleIterator(this.update(query.builder.build()))
     }
 
     /**
@@ -158,11 +162,11 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @param query [Delete] to execute.
      */
-    fun delete(query: Delete, txId: Long? = null): CottontailGrpc.QueryResponseMessage {
+    fun delete(query: Delete, txId: Long? = null): TupleIterator {
         if (txId != null) {
             query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
-        return this.delete(query.builder.build())
+        return TupleIterator(this.delete(query.builder.build()))
     }
 
     /**
