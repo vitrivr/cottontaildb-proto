@@ -79,7 +79,6 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
                 CottontailGrpc.Literal.DataCase.FLOATDATA -> data.floatData
                 CottontailGrpc.Literal.DataCase.DOUBLEDATA -> data.doubleData
                 CottontailGrpc.Literal.DataCase.STRINGDATA -> data.stringData
-
                 CottontailGrpc.Literal.DataCase.COMPLEX32DATA -> data.complex32Data.real to data.complex32Data.imaginary
                 CottontailGrpc.Literal.DataCase.COMPLEX64DATA -> data.complex64Data.real to data.complex64Data.imaginary
                 CottontailGrpc.Literal.DataCase.VECTORDATA -> {
@@ -168,5 +167,7 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
             return if (value is String) { value } else { null }
         }
         fun asString(name: String) = asString(this@TupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
+
+        override fun toString(): String = this.values.joinToString(", ") { it?.toString() ?: "<null>" }
     }
 }
