@@ -7,7 +7,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.0.1
  */
 class Query(entity: String? = null) {
     /** Internal [CottontailGrpc.Query.Builder]. */
@@ -109,7 +109,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun where(predicate: Predicate): Query {
-        this.builder.clearWhere()
+        this.builder.clearKnn()
         val builder = this.builder.whereBuilder
         when (predicate) {
             is Atomic -> builder.setAtomic(predicate.toPredicate())
@@ -128,7 +128,7 @@ class Query(entity: String? = null) {
      * @param queries List of query vectors to use (one required).
      */
     fun knn(column: String, k: Int, distance: String, vararg queries: Any): Query {
-        this.builder.clearWhere()
+        this.builder.clearKnn()
         val builder = this.builder.knnBuilder
         builder.attribute = column.parseColumn()
         builder.k = k
@@ -148,13 +148,8 @@ class Query(entity: String? = null) {
      */
     fun knn(column: String, k: Int, distance: String, queries: List<Any> = emptyList(), weights: List<Any> = emptyList()): Query {
         require(queries.size == weights.size) { "Equal number of query and weight vectors are expected"}
-        this.builder.clearWhere()
-        val builder = this.builder.knnBuilder
-        builder.attribute = column.parseColumn()
-        builder.k = k
-        builder.distance = CottontailGrpc.Knn.Distance.valueOf(distance.toUpperCase())
-        queries.forEach { builder.addQuery(it.toVector()) }
-        weights.forEach { builder.addWeights(it.toVector()) }
+        this.knn(column, k, distance, *queries.toTypedArray())
+        weights.forEach { this.builder.knnBuilder.addWeights(it.toVector()) }
         return this
     }
 
