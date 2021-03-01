@@ -17,6 +17,21 @@ fun String.parseEntity(): CottontailGrpc.EntityName {
 }
 
 /**
+ * Parses a [String] into an [CottontailGrpc.IndexName]
+ *
+ * @return [CottontailGrpc.IndexName]
+ */
+fun String.parseIndex(): CottontailGrpc.IndexName {
+    val split = this.toLowerCase().split('.')
+    return when (split.size) {
+        1 -> CottontailGrpc.IndexName.newBuilder().setName(split[0]).build()
+        2 -> CottontailGrpc.IndexName.newBuilder().setName(split[1]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[0])).build()
+        3 -> CottontailGrpc.IndexName.newBuilder().setName(split[2]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[1]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[0]))).build()
+        else -> throw IllegalStateException("Cottontail DB index names can consist of at most three components separated by a dot: <schema>.<entity>.<index>")
+    }
+}
+
+/**
  * Parses a [String] into an [CottontailGrpc.ColumnName]
  *
  * @return [CottontailGrpc.ColumnName]

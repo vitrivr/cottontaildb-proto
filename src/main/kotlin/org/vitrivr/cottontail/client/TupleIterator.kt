@@ -10,9 +10,12 @@ import kotlin.collections.HashMap
  * A very simple utility class that wraps [CottontailGrpc.QueryResponseMessage] and provides more convenient means of access.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : Iterator<TupleIterator.Tuple> {
+
+    /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
+    constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator())
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
