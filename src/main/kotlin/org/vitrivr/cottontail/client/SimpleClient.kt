@@ -3,6 +3,7 @@ package org.vitrivr.cottontail.client.stub
 import com.google.protobuf.Empty
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
+import io.grpc.StatusRuntimeException
 import org.vitrivr.cottontail.client.TupleIterator
 import org.vitrivr.cottontail.client.language.ddl.*
 import org.vitrivr.cottontail.client.language.dml.Delete
@@ -15,7 +16,7 @@ import org.vitrivr.cottontail.grpc.*
  * A simple Cottontail DB client for querying and data management.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class SimpleClient(private val channel: ManagedChannel) {
 
@@ -306,10 +307,31 @@ class SimpleClient(private val channel: ManagedChannel) {
     /**
      * Lists all schemas through this [SimpleClient].
      *
-     * @param message [ListSchema] to execute.
+     * @param message [ListSchemas] to execute.
      * @return [TupleIterator]
      */
-    fun list(message: ListSchema, txId: Long? = null): TupleIterator {
+    fun list(message: ListSchemas, txId: Long? = null): TupleIterator {
+        if (txId != null) {
+            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
+        }
+        return TupleIterator(this.list(message.builder.build()))
+    }
+
+    /**
+     * Lists all entities in a schema through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.ListEntityMessage] to execute.
+     * @return [TupleIterator]
+     */
+    fun list(message: CottontailGrpc.ListEntityMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.ddl.listEntities(message)
+
+    /**
+     * Lists all entities in a schema through this [SimpleClient].
+     *
+     * @param message [ListEntities] to execute.
+     * @return [TupleIterator]
+     */
+    fun list(message: ListEntities, txId: Long? = null): TupleIterator {
         if (txId != null) {
             message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
@@ -338,10 +360,14 @@ class SimpleClient(private val channel: ManagedChannel) {
     }
 
     /**
-     * Pings this Cottontail DB instance. Once this method returns, the ping was successful-
+     * Pings this Cottontail DB instance. The method returns true on success and false otherwise.
+     *
+     * @return true on success, false otherwise.
      */
-    fun ping() {
+    fun ping(): Boolean = try {
         this.dql.ping(Empty.getDefaultInstance())
-        return
+        true
+    } catch (e: StatusRuntimeException) {
+        false
     }
 }
