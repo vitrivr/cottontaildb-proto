@@ -161,17 +161,18 @@ enum Type {
     LONG = 4;
     FLOAT = 5;
     DOUBLE = 6;
-    STRING = 7;
-    DOUBLE_VEC = 8;
-    FLOAT_VEC = 9;
-    LONG_VEC = 10;
-    INT_VEC = 11;
-    BOOL_VEC = 12;
-    COMPLEX32 = 13;
-    COMPLEX64 = 14;
-    COMPLEX32_VEC = 15;
-    COMPLEX64_VEC = 16;
-    BLOB = 17;
+    DATE = 7;
+    STRING = 8;
+    DOUBLE_VEC = 9;
+    FLOAT_VEC = 10;
+    LONG_VEC = 11;
+    INT_VEC = 12;
+    BOOL_VEC = 13;
+    COMPLEX32 = 14;
+    COMPLEX64 = 15;
+    COMPLEX32_VEC = 16;
+    COMPLEX64_VEC = 17;
+    BLOB = 18;
 }
 
 /* The storage engine employed by a Cottontail DB column. */
