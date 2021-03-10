@@ -44,6 +44,6 @@ class CreateEntity(name: String) {
      * @param nullable Flag indicating whether column should be nullable.
      * @return this [CreateEntity]
      */
-    fun column(name: String, type: String, length: Int = 1, nullable: Boolean = true)
+    fun column(name: String, type: String, length: Int = 0, nullable: Boolean = false)
         = this.column(name, CottontailGrpc.Type.valueOf(type.toUpperCase()), length, nullable)
 }
