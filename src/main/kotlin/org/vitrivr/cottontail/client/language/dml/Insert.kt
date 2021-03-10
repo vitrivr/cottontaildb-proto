@@ -9,7 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.0.1
  */
 class Insert(entity: String? = null) {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
@@ -35,19 +35,31 @@ class Insert(entity: String? = null) {
     }
 
     /**
-     * Adds value assignments this [Insert]
+     * Adds a value assignments this [Insert]. This method is cumulative, i.e., invoking
+     * this method multiple times appends another assignment each time.
+     *
+     * @param column The name of the column to insert into.
+     * @param value The value or null.
+     * @return This [Insert]
+     */
+    fun value(column: String, value: Any?): Insert {
+        this.builder.addInserts(
+            CottontailGrpc.InsertMessage.InsertElement.newBuilder()
+                .setColumn(column.parseColumn())
+                .setValue(value?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build()))
+        return this
+    }
+
+    /**
+     * Adds value assignments this [Insert]. A value assignment consists of a column name and a value.
      *
      * @param assignments The value assignments for the [Insert]
-     * @return This [Update]
+     * @return This [Insert]
      */
     fun values(vararg assignments: Pair<String,Any?>): Insert {
         this.builder.clearInserts()
         for (assignment in assignments) {
-            this.builder.addInserts(
-                CottontailGrpc.InsertMessage.InsertElement.newBuilder()
-                    .setColumn(assignment.first.parseColumn())
-                    .setValue(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
-            )
+            this.value(assignment.first, assignment.second)
         }
         return this
     }
