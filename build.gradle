@@ -1,9 +1,9 @@
 buildscript {
-    ext.kotlinVersion = '1.4.21'
+    ext.kotlinVersion = '1.4.31'
 }
 
 plugins {
-    id "com.google.protobuf" version "0.8.14"
+    id "com.google.protobuf" version "0.8.15"
     id "org.jetbrains.kotlin.jvm" version "$kotlinVersion"
 }
 
@@ -107,11 +107,11 @@ protobuf {
     generatedFilesBaseDir = "$projectDir/build/generated/source/proto"
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.35.0'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.36.0'
         }
     }
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.14.0'
+        artifact = 'com.google.protobuf:protoc:3.15.5'
     }
     generateProtoTasks {
         all()*.plugins { grpc {
@@ -123,6 +123,6 @@ protobuf {
 dependencies {
     /////// gRPC & Protobuf
     implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.2'
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.14.0'
-    implementation group: 'io.grpc', name: 'grpc-all', version: '1.35.0'
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.15.5'
+    implementation group: 'io.grpc', name: 'grpc-all', version: '1.36.0'
 }
