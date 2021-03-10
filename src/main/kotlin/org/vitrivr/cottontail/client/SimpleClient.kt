@@ -296,6 +296,27 @@ class SimpleClient(private val channel: ManagedChannel) {
     }
 
     /**
+     * Lists all schemas through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.ListSchemaMessage] to execute.
+     * @return [TupleIterator]
+     */
+    fun list(message: CottontailGrpc.ListSchemaMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.ddl.listSchemas(message)
+
+    /**
+     * Lists all schemas through this [SimpleClient].
+     *
+     * @param message [ListSchema] to execute.
+     * @return [TupleIterator]
+     */
+    fun list(message: ListSchema, txId: Long? = null): TupleIterator {
+        if (txId != null) {
+            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
+        }
+        return TupleIterator(this.list(message.builder.build()))
+    }
+
+    /**
      * Optimizes an entity through this [SimpleClient].
      *
      * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
