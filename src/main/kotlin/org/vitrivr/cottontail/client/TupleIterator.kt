@@ -68,7 +68,7 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
      * A [Tuple] as returned by the [TupleIterator].
      *
      * @author Ralph Gasser
-     * @version 1.0.0
+     * @version 1.1.0
      */
     inner class Tuple(tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
 
@@ -81,6 +81,7 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
                 CottontailGrpc.Literal.DataCase.LONGDATA -> data.longData
                 CottontailGrpc.Literal.DataCase.FLOATDATA -> data.floatData
                 CottontailGrpc.Literal.DataCase.DOUBLEDATA -> data.doubleData
+                CottontailGrpc.Literal.DataCase.DATEDATA -> Date(data.dateData.utcTimestamp)
                 CottontailGrpc.Literal.DataCase.STRINGDATA -> data.stringData
                 CottontailGrpc.Literal.DataCase.COMPLEX32DATA -> data.complex32Data.real to data.complex32Data.imaginary
                 CottontailGrpc.Literal.DataCase.COMPLEX64DATA -> data.complex64Data.real to data.complex64Data.imaginary
@@ -168,6 +169,12 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
         fun asString(index: Int): String? {
             val value = this.values[index]
             return if (value is String) { value } else { null }
+        }
+        fun asDate(name: String) = asString(this@TupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
+
+        fun asDate(index: Int): Date? {
+            val value = this.values[index]
+            return if (value is Date) { value } else { null }
         }
         fun asString(name: String) = asString(this@TupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
 
