@@ -72,6 +72,9 @@ service DQL {
     /** Executes a query through Cottontail DB. */
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
 
+    /** Executes a batched query through Cottontail DB. */
+    rpc BatchQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
+
     /** Pings the endpoint */
     rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
@@ -404,6 +407,12 @@ message DeleteMessage {
 message QueryMessage {
     TransactionId txId = 1;
     Query query = 2;
+}
+
+/* A batched query that should be executed. */
+message BatchedQueryMessage {
+    TransactionId txId = 1;
+    repeated Query query = 2;
 }
 
 /* A simple query. */
