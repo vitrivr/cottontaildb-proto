@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.Type
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -21,15 +22,15 @@ class CreateEntity(name: String) {
      * Adds a column to this [CreateEntity].
      *
      * @param name The name of the column.
-     * @param type The [CottontailGrpc.Type] of the column.
+     * @param type The [Type] of the column.
      * @param length The length of the column (>= 1 for vector columns)
      * @param nullable Flag indicating whether column should be nullable.
      * @return this [CreateEntity]
      */
-    fun column(name: String, type: CottontailGrpc.Type, length: Int = 0, nullable: Boolean = false): CreateEntity {
+    fun column(name: String, type: Type, length: Int = 0, nullable: Boolean = false): CreateEntity {
         val addBuilder = builder.definitionBuilder.addColumnsBuilder()
         addBuilder.name = name
-        addBuilder.type = type
+        addBuilder.type = type.grpc
         addBuilder.length = length
         addBuilder.nullable = nullable
         return this
@@ -45,5 +46,5 @@ class CreateEntity(name: String) {
      * @return this [CreateEntity]
      */
     fun column(name: String, type: String, length: Int = 0, nullable: Boolean = false)
-        = this.column(name, CottontailGrpc.Type.valueOf(type.toUpperCase()), length, nullable)
+        = this.column(name, Type.valueOf(type.toUpperCase()), length, nullable)
 }
