@@ -8,7 +8,13 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class ListEntities(val name: String) {
+class ListEntities(name: String) {
+
+    companion object {
+
+    }
+
+
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
     val builder = CottontailGrpc.ListEntityMessage.newBuilder()
     init {
