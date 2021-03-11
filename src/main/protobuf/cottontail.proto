@@ -479,8 +479,8 @@ message Knn {
     uint32 k = 2;
     Distance distance = 3;
     KnnHint hint = 4;
-    repeated Vector query = 5;
-    repeated Vector weights = 6;
+    Vector query = 5;
+    Vector weight = 6;
     enum Distance {
         L1 = 0;
         L2 = 1;

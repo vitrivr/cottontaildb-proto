@@ -145,31 +145,16 @@ class Query(entity: String? = null) {
      * @param column The column to apply the kNN to
      * @param k The k parameter in the kNN
      * @param distance The distance metric to use.
-     * @param queries List of query vectors to use (one required).
+     * @param query Query vector to use (one required).
      */
-    fun knn(column: String, k: Int, distance: String, vararg queries: Any): Query {
+    fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
         this.builder.clearKnn()
         val builder = this.builder.knnBuilder
         builder.attribute = column.parseColumn()
         builder.k = k
         builder.distance = CottontailGrpc.Knn.Distance.valueOf(distance.toUpperCase())
-        queries.forEach { builder.addQuery(it.toVector()) }
-        return this
-    }
-
-    /**
-     * Adds a kNN-clause to this [Query] and returns it
-     *
-     * @param column The column to apply the kNN to.
-     * @param k The k parameter in the kNN
-     * @param distance The distance metric to use.
-     * @param queries List of query vectors to use (one required).
-     * @param weights List of weight vectors to use (one required).
-     */
-    fun knn(column: String, k: Int, distance: String, queries: List<Any> = emptyList(), weights: List<Any> = emptyList()): Query {
-        require(queries.size == weights.size) { "Equal number of query and weight vectors are expected"}
-        this.knn(column, k, distance, *queries.toTypedArray())
-        weights.forEach { this.builder.knnBuilder.addWeights(it.toVector()) }
+        builder.query = query.toVector()
+        builder.weight = weight?.toVector()
         return this
     }
 
