@@ -145,7 +145,8 @@ class Query(entity: String? = null) {
      * @param column The column to apply the kNN to
      * @param k The k parameter in the kNN
      * @param distance The distance metric to use.
-     * @param query Query vector to use (one required).
+     * @param query Query vector to use.
+     * @param weight Query vector to use (optional).
      */
     fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
         this.builder.clearKnn()
