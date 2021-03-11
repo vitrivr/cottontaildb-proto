@@ -321,7 +321,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      * Lists all entities in a schema through this [SimpleClient].
      *
      * @param message [CottontailGrpc.ListEntityMessage] to execute.
-     * @return [TupleIterator]
+     * @return [Iterator] of [CottontailGrpc.QueryResponseMessage]
      */
     fun list(message: CottontailGrpc.ListEntityMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.ddl.listEntities(message)
 
@@ -336,6 +336,27 @@ class SimpleClient(private val channel: ManagedChannel) {
             message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
         return TupleIterator(this.list(message.builder.build()))
+    }
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.EntityDetailsMessage] to execute.
+     * @return [CottontailGrpc.QueryResponseMessage]
+     */
+    fun about(message: CottontailGrpc.EntityDetailsMessage): CottontailGrpc.QueryResponseMessage = this.ddl.entityDetails(message)
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [AboutEntity] to execute.
+     * @return [TupleIterator]
+     */
+    fun about(message: AboutEntity, txId: Long? = null): TupleIterator {
+        if (txId != null) {
+            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
+        }
+        return TupleIterator(this.about(message.builder.build()))
     }
 
     /**
