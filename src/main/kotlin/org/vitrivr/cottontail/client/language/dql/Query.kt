@@ -7,7 +7,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.1
+ * @version 1.0.2
  */
 class Query(entity: String? = null) {
     /** Internal [CottontailGrpc.Query.Builder]. */
@@ -31,6 +31,26 @@ class Query(entity: String? = null) {
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
         for (field in fields) {
             builder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
+        }
+        return this
+    }
+
+    /**
+     * Adds a SELECT projection to this [Query].
+     *
+     * @param fields The names of the columns to return and their alias (null, if no alias is set).
+     * @return [Query]
+     */
+    fun select(vararg fields: Pair<String,String?>): Query {
+        this.builder.clearProjection()
+        val builder = this.builder.projectionBuilder
+        builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
+        for (field in fields) {
+            val c = CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.first.parseColumn())
+            if (field.second != null) {
+                c.alias = field.second!!.parseColumn()
+            }
+            builder.addColumns(c)
         }
         return this
     }
