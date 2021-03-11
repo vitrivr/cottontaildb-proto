@@ -155,7 +155,9 @@ class Query(entity: String? = null) {
         builder.k = k
         builder.distance = CottontailGrpc.Knn.Distance.valueOf(distance.toUpperCase())
         builder.query = query.toVector()
-        builder.weight = weight?.toVector()
+        if (weight != null) {
+            builder.weight = weight.toVector()
+        }
         return this
     }
 
