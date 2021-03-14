@@ -72,7 +72,7 @@ service DQL {
     /** Executes a query through Cottontail DB. */
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
 
-    /** Executes a batched query through Cottontail DB. */
+    /** Executes a batched query through Cottontail DB (not supported yet). */
     rpc BatchQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
 
     /** Pings the endpoint */
