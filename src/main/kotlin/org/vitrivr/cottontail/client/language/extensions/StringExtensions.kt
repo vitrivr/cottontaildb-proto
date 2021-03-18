@@ -73,7 +73,7 @@ fun String.parseOperator(): CottontailGrpc.ComparisonOperator = when(val value =
  *
  * @return [Boolean]
  */
-fun String.parseNot(): Boolean = when(val value = this.toUpperCase()) {
+fun String.parseNot(): Boolean = when(this.toUpperCase()) {
     "!=", "!==", "NOT IN", "NOT LIKE", "NOT MATCH", "IS NOT NULL" -> true
     else -> false
 }

@@ -72,9 +72,7 @@ sealed class Atomic: Predicate() {
  * @version 1.0.0
  */
 class Literal(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.ComparisonOperator, val values: List<CottontailGrpc.Literal>, val not: Boolean = false): Atomic() {
-    constructor(column: String, operator: String, vararg values: Any) : this(column.parseColumn(), operator.parseOperator(), values.map { it.convert() }, operator.parseNot()) {
-
-    }
+    constructor(column: String, operator: String, vararg values: Any) : this(column.parseColumn(), operator.parseOperator(), values.map { it.convert() }, operator.parseNot())
 
     override fun toPredicate(): CottontailGrpc.AtomicBooleanPredicate.Builder = CottontailGrpc.AtomicBooleanPredicate.newBuilder()
         .setLeft(this.left)
