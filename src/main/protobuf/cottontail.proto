@@ -494,11 +494,11 @@ message Knn {
         L1 = 0;
         L2 = 1;
         L2SQUARED = 2;
-        CHISQUARED = 3;
-        HAMMING = 4;
-        COSINE = 5;
-        ABSOLUTEINNERPRODUCT = 6;
-        REALINNERPRODUCT = 7;
+        LP = 3;
+        CHISQUARED = 4;
+        HAMMING = 5;
+        COSINE = 6;
+        INNERPRODUCT = 7;
         HAVERSINE = 10;
     }
 }
