@@ -1,14 +1,14 @@
 buildscript {
-    ext.kotlinVersion = '1.4.31'
+    ext.kotlinVersion = '1.4.32'
 }
 
 plugins {
-    id "com.google.protobuf" version "0.8.15"
+    id "com.google.protobuf" version "0.8.16"
     id "org.jetbrains.kotlin.jvm" version "$kotlinVersion"
 }
 
 group 'org.vitrivr'
-version '0.12.0-SNAPSHOT'
+version '0.12.1-SNAPSHOT'
 
 apply plugin: 'com.google.protobuf'
 apply plugin: 'idea'
@@ -88,7 +88,10 @@ sourceSets {
             srcDirs += "$projectDir/src/main/protobuf"
         }
         java {
-            srcDirs += "$projectDir/build/generated/source/proto"
+            srcDirs += "$projectDir/build/generated/source/proto/main/java"
+        }
+        kotlin {
+            srcDirs += "$projectDir/build/generated/source/proto/main/kotlin"
         }
     }
 }
@@ -104,22 +107,35 @@ protobuf {
     generatedFilesBaseDir = "$projectDir/build/generated/source/proto"
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.36.0'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.37.0'
+        }
+        grpckt {
+            artifact = 'io.grpc:protoc-gen-grpc-kotlin:1.0.0:jdk7@jar'
         }
     }
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.15.6'
+        artifact = 'com.google.protobuf:protoc:3.15.8'
     }
     generateProtoTasks {
-        all()*.plugins { grpc {
-            outputSubDir = 'java'
-        }}
+        all()*.plugins {
+            grpc {
+                outputSubDir = 'java'
+            }
+            grpckt {
+                outputSubDir = 'kotlin'
+            }
+        }
     }
 }
 
 dependencies {
     /////// gRPC & Protobuf
     implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.2'
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.15.6'
-    implementation group: 'io.grpc', name: 'grpc-all', version: '1.36.0'
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.15.8'
+    implementation group: 'io.grpc', name: 'grpc-all', version: '1.37.0'
+    implementation group: 'io.grpc', name: 'grpc-kotlin-stub', version: '1.0.0'
+
+    /////// Kotlin references
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: '1.4.32'
+    implementation group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.3'
 }
