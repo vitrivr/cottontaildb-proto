@@ -8,7 +8,7 @@ plugins {
 }
 
 group 'org.vitrivr'
-version '0.12.1-SNAPSHOT'
+version '0.12.1'
 
 apply plugin: 'com.google.protobuf'
 apply plugin: 'idea'
