@@ -52,8 +52,8 @@ service DML {
     /** Inserts data into an entity. Each INSERT returns a record with a status. */
     rpc Insert (InsertMessage) returns (QueryResponseMessage);
 
-    /** Inserts data into an entity; Individual INSERTS do not a return status. Always takes place in a single transaction! */
-    rpc InsertBatch (stream InsertMessage) returns (stream google.protobuf.Empty);
+    /** Inserts data into an entity in batches! InsertMessages are collected until Cottontail DBs cache is saturated and then persisted in one go. */
+    rpc InsertBatch (stream InsertMessage) returns (stream BatchInsertResponse);
 
     /** Updates data in an entity. Each UPDATE returns a record with a status. */
     rpc Update (UpdateMessage) returns (QueryResponseMessage);
@@ -378,6 +378,12 @@ message InsertMessage {
         ColumnName column = 1;
         Literal value = 2;
     }
+}
+
+/** Message for inserting data into an entity. */
+message BatchInsertResponse {
+    TransactionId txId = 1;
+    int32 left = 2;
 }
 
 /** Message for updating data in an entity. */
