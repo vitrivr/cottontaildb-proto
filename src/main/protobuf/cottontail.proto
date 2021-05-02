@@ -53,7 +53,7 @@ service DML {
     rpc Insert (InsertMessage) returns (QueryResponseMessage);
 
     /** Inserts data into an entity in batches! InsertMessages are collected until Cottontail DBs cache is saturated and then persisted in one go. */
-    rpc InsertBatch (stream InsertMessage) returns (stream BatchInsertResponse);
+    rpc InsertBatch (BatchInsertMessage) returns (QueryResponseMessage);
 
     /** Updates data in an entity. Each UPDATE returns a record with a status. */
     rpc Update (UpdateMessage) returns (QueryResponseMessage);
@@ -373,17 +373,23 @@ message IndexDefinition {
 message InsertMessage {
     TransactionId txId = 1;
     From from = 2;
-    repeated InsertElement inserts = 3;
+    repeated InsertElement elements = 3;
     message InsertElement {
         ColumnName column = 1;
         Literal value = 2;
     }
 }
 
-/** Message for inserting data into an entity. */
-message BatchInsertResponse {
+
+/** Message for batch-inserting data into an entity. */
+message BatchInsertMessage {
     TransactionId txId = 1;
-    int32 left = 2;
+    From from = 2;
+    repeated ColumnName columns = 3;
+    repeated Insert inserts = 4;
+    message Insert {
+        repeated Literal values = 1;
+    }
 }
 
 /** Message for updating data in an entity. */

@@ -6,6 +6,7 @@ import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
 import org.vitrivr.cottontail.client.TupleIterator
 import org.vitrivr.cottontail.client.language.ddl.*
+import org.vitrivr.cottontail.client.language.dml.BatchInsert
 import org.vitrivr.cottontail.client.language.dml.Delete
 import org.vitrivr.cottontail.client.language.dml.Insert
 import org.vitrivr.cottontail.client.language.dql.Query
@@ -16,7 +17,7 @@ import org.vitrivr.cottontail.grpc.*
  * A simple Cottontail DB client for querying and data management.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 class SimpleClient(private val channel: ManagedChannel) {
 
@@ -131,6 +132,25 @@ class SimpleClient(private val channel: ManagedChannel) {
         }
         return TupleIterator(this.insert(query.builder.build()))
     }
+
+    /**
+     * Executes this [BatchInsert] through this [SimpleClient]
+     *
+     * @param query [BatchInsert] to execute.
+     */
+    fun insert(query: BatchInsert, txId: Long? = null): TupleIterator {
+        if (txId != null) {
+            query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
+        }
+        return TupleIterator(this.insert(query.builder.build()))
+    }
+
+    /**
+     * Executes this [CottontailGrpc.BatchInsertMessage] through this [SimpleClient]
+     *
+     * @param query [CottontailGrpc.BatchInsertMessage] to execute.
+     */
+    fun insert(query: CottontailGrpc.BatchInsertMessage): CottontailGrpc.QueryResponseMessage = this.dml.insertBatch(query)
 
     /**
      * Executes this [CottontailGrpc.UpdateMessage] through this [SimpleClient]

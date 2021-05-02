@@ -6,14 +6,14 @@ import org.vitrivr.cottontail.client.language.extensions.toLiteral
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
- * A INSERT query in the Cottontail DB query language.
+ * A BATCH INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.2
+ * @version 1.0.0
  */
-class Insert(entity: String? = null) {
-    /** Internal [CottontailGrpc.InsertMessage.Builder]. */
-    val builder = CottontailGrpc.InsertMessage.newBuilder()
+class BatchInsert(entity: String? = null) {
+    /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
+    val builder = CottontailGrpc.BatchInsertMessage.newBuilder()
 
     init {
         if (entity != null) {
@@ -22,47 +22,52 @@ class Insert(entity: String? = null) {
     }
 
     /**
-     * Adds a FROM-clause to this [Insert].
+     * Adds a FROM-clause to this [BatchInsert].
      *
-     * @param entity The name of the entity to [Insert] to.
-     * @return This [Insert]
+     * @param entity The name of the entity to [BatchInsert] to.
+     * @return This [BatchInsert]
      */
-    fun into(entity: String): Insert {
+    fun into(entity: String): BatchInsert {
         this.builder.clearFrom()
-        this.builder.setFrom(
-            CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+        this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         return this
     }
 
     /**
-     * Adds a value assignments this [Insert]. This method is cumulative, i.e., invoking
-     * this method multiple times appends another assignment each time.
+     * Adds a column to this [BatchInsert].
      *
-     * @param column The name of the column to insert into.
-     * @param value The value or null.
-     * @return This [Insert]
+     * @param columns The name of the columns this [BatchInsert] should insert into.
+     * @return This [BatchInsert]
      */
-    fun value(column: String, value: Any?): Insert {
-        this.builder.addElements(
-            CottontailGrpc.InsertMessage.InsertElement.newBuilder()
-                .setColumn(column.parseColumn())
-                .setValue(value?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build()))
-        return this
-    }
-
-    /**
-     * Adds value assignments this [Insert]. A value assignment consists of a column name and a value.
-     *
-     * @param assignments The value assignments for the [Insert]
-     * @return This [Insert]
-     */
-    fun values(vararg assignments: Pair<String,Any?>): Insert {
-        this.builder.clearElements()
-        for (assignment in assignments) {
-            this.value(assignment.first, assignment.second)
+    fun columns(vararg columns: String): BatchInsert {
+        this.builder.clearColumns()
+        for (c in columns) {
+            this.builder.addColumns(c.parseColumn())
         }
         return this
     }
+
+    /**
+     * Appends values to this [BatchInsert].
+     *
+     * @param values The value to append to the [BatchInsert]
+     * @return This [BatchInsert]
+     */
+    fun append(vararg values: Any?): BatchInsert {
+        val insert = CottontailGrpc.BatchInsertMessage.Insert.newBuilder()
+        for (v in values) {
+            insert.addValues(v?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
+        }
+        this.builder.addInserts(insert)
+        return this
+    }
+
+    /**
+     * Calculates and returns the size of this [BatchInsert]
+     *
+     * @return The size in bytes of this [BatchInsert].
+     */
+    fun size() = this.builder.build().serializedSize
 
     /**
      * Converts an [Any] to a [CottontailGrpc.Literal]
