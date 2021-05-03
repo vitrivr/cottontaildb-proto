@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.extensions.parseSchema
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -13,6 +14,6 @@ class DropSchema(name: String) {
     val builder = CottontailGrpc.DropSchemaMessage.newBuilder()
 
     init {
-        this.builder.schemaBuilder.name = name
+        this.builder.schema = name.parseSchema()
     }
 }

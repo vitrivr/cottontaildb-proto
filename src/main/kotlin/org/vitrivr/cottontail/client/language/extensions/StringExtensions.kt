@@ -7,12 +7,27 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  *
  * @return [CottontailGrpc.EntityName]
  */
+fun String.parseSchema(): CottontailGrpc.SchemaName {
+    val split = this.toLowerCase().split('.')
+    return when (split.size) {
+        1 -> CottontailGrpc.SchemaName.newBuilder().setName(split[0]).build()
+        2 -> CottontailGrpc.SchemaName.newBuilder().setName(split[1]).build()
+        else -> throw IllegalStateException("Cottontail DB schema names can consist of at most two components separated by a dot: [warren.]<schema>")
+    }
+}
+
+/**
+ * Parses a [String] into an [CottontailGrpc.EntityName]
+ *
+ * @return [CottontailGrpc.EntityName]
+ */
 fun String.parseEntity(): CottontailGrpc.EntityName {
     val split = this.toLowerCase().split('.')
     return when (split.size) {
         1 -> CottontailGrpc.EntityName.newBuilder().setName(split[0]).build()
         2 -> CottontailGrpc.EntityName.newBuilder().setName(split[1]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[0])).build()
-        else -> throw IllegalStateException("Cottontail DB entity names can consist of at most three components separated by a dot: <schema>.<entity>")
+        3 -> CottontailGrpc.EntityName.newBuilder().setName(split[2]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[1])).build()
+        else -> throw IllegalStateException("Cottontail DB entity names can consist of at most three components separated by a dot: [warren.]<schema>.<entity>")
     }
 }
 
@@ -27,7 +42,8 @@ fun String.parseIndex(): CottontailGrpc.IndexName {
         1 -> CottontailGrpc.IndexName.newBuilder().setName(split[0]).build()
         2 -> CottontailGrpc.IndexName.newBuilder().setName(split[1]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[0])).build()
         3 -> CottontailGrpc.IndexName.newBuilder().setName(split[2]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[1]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[0]))).build()
-        else -> throw IllegalStateException("Cottontail DB index names can consist of at most three components separated by a dot: <schema>.<entity>.<index>")
+        4 -> CottontailGrpc.IndexName.newBuilder().setName(split[3]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[2]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[1]))).build()
+        else -> throw IllegalStateException("Cottontail DB index names can consist of at most three components separated by a dot: [warren.]<schema>.<entity>.<index>")
     }
 }
 
@@ -42,7 +58,8 @@ fun String.parseColumn(): CottontailGrpc.ColumnName {
         1 -> CottontailGrpc.ColumnName.newBuilder().setName(split[0]).build()
         2 -> CottontailGrpc.ColumnName.newBuilder().setName(split[1]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[0])).build()
         3 -> CottontailGrpc.ColumnName.newBuilder().setName(split[2]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[1]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[0]))).build()
-        else -> throw IllegalStateException("Cottontail DB column names can consist of at most three components separated by a dot: <schema>.<entity>.<column>")
+        4 -> CottontailGrpc.ColumnName.newBuilder().setName(split[3]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[2]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[1]))).build()
+        else -> throw IllegalStateException("Cottontail DB column names can consist of at most three components separated by a dot: [warren.]<schema>.<entity>.<column>")
     }
 }
 

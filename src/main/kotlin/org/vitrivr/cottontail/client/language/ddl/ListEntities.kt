@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.extensions.parseSchema
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -10,14 +11,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 class ListEntities(name: String) {
 
-    companion object {
-
-    }
-
-
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
     val builder = CottontailGrpc.ListEntityMessage.newBuilder()
     init {
-        this.builder.schemaBuilder.setName(name)
+        this.builder.schema = name.parseSchema()
     }
 }
