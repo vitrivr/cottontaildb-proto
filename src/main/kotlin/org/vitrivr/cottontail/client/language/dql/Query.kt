@@ -129,34 +129,12 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun where(predicate: Predicate): Query {
-        this.builder.clearKnn()
+        this.builder.clearWhere()
         val builder = this.builder.whereBuilder
         when (predicate) {
             is Atomic -> builder.setAtomic(predicate.toPredicate())
             is And -> builder.setCompound(predicate.toPredicate())
             is Or -> builder.setCompound(predicate.toPredicate())
-        }
-        return this
-    }
-
-    /**
-     * Adds a kNN-clause to this [Query] and returns it
-     *
-     * @param column The column to apply the kNN to
-     * @param k The k parameter in the kNN
-     * @param distance The distance metric to use.
-     * @param query Query vector to use.
-     * @param weight Query vector to use (optional).
-     */
-    fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
-        this.builder.clearKnn()
-        val builder = this.builder.knnBuilder
-        builder.attribute = column.parseColumn()
-        builder.k = k
-        builder.distance = CottontailGrpc.Knn.Distance.valueOf(distance.toUpperCase())
-        builder.query = query.toVector()
-        if (weight != null) {
-            builder.weight = weight.toVector()
         }
         return this
     }

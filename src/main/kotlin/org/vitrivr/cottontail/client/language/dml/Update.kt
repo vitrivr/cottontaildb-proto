@@ -7,7 +7,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An UPDATE query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 class Update(entity: String? = null) {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
@@ -61,7 +61,7 @@ class Update(entity: String? = null) {
             this.builder.addUpdates(
                 CottontailGrpc.UpdateMessage.UpdateElement.newBuilder()
                 .setColumn(assignment.first.parseColumn())
-                .setValue(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
+                .setValue(CottontailGrpc.Expression.newBuilder().setLiteral(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build()))
             )
         }
         return this

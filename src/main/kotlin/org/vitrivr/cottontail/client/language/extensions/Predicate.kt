@@ -78,7 +78,9 @@ class Literal(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.
         .setLeft(this.left)
         .setOp(this.operator)
         .setNot(this.not)
-        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setLiterals(CottontailGrpc.Literals.newBuilder().addAllLiteral(this.values)))
+        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setExpressions(
+            CottontailGrpc.Expressions.newBuilder().addAllExpression(this.values.map { v -> CottontailGrpc.Expression.newBuilder().setLiteral(v).build() }))
+        )
 }
 
 /**
@@ -93,14 +95,18 @@ class Reference(val left: CottontailGrpc.ColumnName, val operator: CottontailGrp
         .setLeft(this.left)
         .setOp(this.operator)
         .setNot(this.not)
-        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setColumn(this.right))
+        .setRight(
+            CottontailGrpc.AtomicBooleanOperand.newBuilder().setExpressions(CottontailGrpc.Expressions.newBuilder().addExpression(
+                CottontailGrpc.Expression.newBuilder().setColumn(this.right))
+            )
+        )
 }
 
 /**
  * A [SubSelect] [Atomic] [Predicate]
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.ComparisonOperator, val right: Query, val not: Boolean = false): Atomic() {
     constructor(column: String, operator: String, query: Query) : this(column.parseColumn(), operator.parseOperator(), query)
