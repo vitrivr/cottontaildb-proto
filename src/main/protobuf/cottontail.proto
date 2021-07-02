@@ -155,8 +155,15 @@ message Transaction {
     }
 }
 
+/* The storage engine employed by a Cottontail DB column. */
+enum Engine {
+    HARE = 0;
+    MAPDB = 1;
+}
+
 /* The basic data types supported by Cottontail DB columns. */
 enum Type {
+    /* Scalar types. */
     BOOLEAN = 0;
     BYTE = 1;
     SHORT = 2;
@@ -166,22 +173,20 @@ enum Type {
     DOUBLE = 6;
     DATE = 7;
     STRING = 8;
-    DOUBLE_VEC = 9;
-    FLOAT_VEC = 10;
-    LONG_VEC = 11;
-    INT_VEC = 12;
-    BOOL_VEC = 13;
-    COMPLEX32 = 14;
-    COMPLEX64 = 15;
+
+    /* Complex types. */
+    COMPLEX32 = 9;
+    COMPLEX64 = 10;
+
+    /* Vector types. */
+    DOUBLE_VEC = 11;
+    FLOAT_VEC = 12;
+    LONG_VEC = 13;
+    INT_VEC = 14;
+    BOOL_VEC = 15;
     COMPLEX32_VEC = 16;
     COMPLEX64_VEC = 17;
     BLOB = 18;
-}
-
-/* The storage engine employed by a Cottontail DB column. */
-enum Engine {
-    HARE = 0;
-    MAPDB = 1;
 }
 
 /** Literal data, i.e. field that actually contains information. */
@@ -199,6 +204,19 @@ message Literal {
         Vector vectorData = 10;
         Null nullData = 11;
     }
+}
+
+/** An expression can either be a Literal or a column value (arithmetics not supported yet). */
+message Expression {
+    oneof exp {
+        Literal literal = 1;
+        ColumnName column = 2;
+    }
+}
+
+/** A list of expressions. */
+message Expressions {
+    repeated Expression expression = 1;
 }
 
 /** Vector data (as opposed to scalar data). */
@@ -400,7 +418,7 @@ message UpdateMessage {
     repeated UpdateElement updates = 4;
     message UpdateElement {
         ColumnName column = 1;
-        Literal value = 2;
+        Expression value = 2;
     }
 }
 
@@ -432,10 +450,10 @@ message Query {
     From from = 1;
     Projection projection = 2;
     Where where = 3;
-    Knn knn = 4;
-    Order order = 5;
-    uint64 limit = 6; /* Size of the result-set (default: unlimited). */
-    uint64 skip = 7; /* Number of records to skip. */
+    Order order = 4;
+    uint64 limit = 5;       /* Size of the result-set (default: unlimited). */
+    uint64 skip = 6;        /* Number of records to skip. */
+    repeated ExecutionHint hints = 7; /* Hints to the query planner. */
 }
 
 /* A query response message. */
@@ -487,59 +505,18 @@ message Projection {
         MEAN = 8;
     }
     message ProjectionElement {
-        ColumnName column = 1;
-        ColumnName alias = 2;
+        ColumnName alias = 1;
+        oneof proj {
+            ColumnName column = 2;
+            Function distance = 3;
+        }
     }
 }
 
-/**
- * The kNN part of a QueryMessage.
- */
-message Knn {
-    ColumnName attribute = 1;
-    uint32 k = 2;
-    Distance distance = 3;
-    KnnHint hint = 4;
-    Vector query = 5;
-    Vector weight = 6;
-    enum Distance {
-        L1 = 0;
-        L2 = 1;
-        L2SQUARED = 2;
-        LP = 3;
-        CHISQUARED = 4;
-        HAMMING = 5;
-        COSINE = 6;
-        INNERPRODUCT = 7;
-        HAVERSINE = 10;
-    }
-}
-
-/** A hint to the query planner for NNS-clauses. */
-message KnnHint {
-    oneof hint {
-        NoIndexKnnHint noIndexHint = 1;
-        AllowInexactKnnHint allowInexactIndexHint = 2;
-        IndexTypeKnnHint typeIndexHint = 3;
-        IndexNameKnnHint nameIndexHint = 4;
-        ParallelKnnHint parallelIndexHint = 5;
-    }
-
-    message NoIndexKnnHint {}
-    message AllowInexactKnnHint {
-        bool allow = 1;
-    }
-    message IndexTypeKnnHint {
-        IndexType type = 1;
-    }
-    message IndexNameKnnHint {
-        string name = 1;
-        map<string,string> parameters = 2;
-    }
-    message ParallelKnnHint {
-        uint32 min = 1;
-        uint32 max = 2;
-    }
+/** Function; special type of query used for nearest neighbor search (NNS) and other.*/
+message Function {
+    string name = 1;
+    repeated Expression arguments = 2;
 }
 
 /** The boolean predicate ('WHERE') part of a QueryMessage. */
@@ -547,29 +524,6 @@ message Where {
     oneof predicate {
         AtomicBooleanPredicate atomic = 1;
         CompoundBooleanPredicate compound = 2;
-    }
-    WhereHint hint = 3;
-}
-
-/** A hint to the query planner for boolean predicate ('WHERE')-clauses. */
-message WhereHint {
-    oneof hint {
-        NoIndexWhereHint noIndexHint = 1;
-        IndexTypeWhereHint typeIndexHint = 2;
-        IndexNameWhereHint nameIndexHint = 3;
-        ParallelWhereHint parallelIndexHint = 4;
-    }
-    message NoIndexWhereHint {}
-    message IndexTypeWhereHint {
-        IndexType type = 1;
-    }
-    message IndexNameWhereHint {
-        string name = 1;
-        map<string,string> parameters = 2;
-    }
-    message ParallelWhereHint {
-        uint32 min = 1;
-        uint32 max = 2;
     }
 }
 
@@ -608,15 +562,9 @@ message AtomicBooleanPredicate {
 /** An atomic boolean predicate operand. */
 message AtomicBooleanOperand {
     oneof operand {
-        ColumnName column = 1;
-        Literals literals = 2;
+        Expressions expressions = 1;
         Query query = 3;
     }
-}
-
-/** A list of literals. */
-message Literals {
-    repeated Literal literal = 1;
 }
 
 /**
@@ -646,5 +594,28 @@ message Order {
     enum Direction {
         ASCENDING = 0;
         DESCENDING = 1;
+    }
+}
+
+/** A hint to the query planner. */
+message ExecutionHint {
+    oneof hint {
+        NoIndexHint noIndexHint = 1;
+        AllowInaccuracyHint allowInexactIndexHint = 2;
+        IndexNameHint nameIndexHint = 3;
+        ParallelHint parallelIndexHint = 4;
+    }
+
+    message NoIndexHint {}
+    message AllowInaccuracyHint {
+        float threshold = 1;
+    }
+    message IndexNameHint {
+        string name = 1;
+        map<string,string> parameters = 2;
+    }
+    message ParallelHint {
+        uint32 min = 1;
+        uint32 max = 2;
     }
 }
