@@ -8,7 +8,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.2
+ * @version 1.1.0
  */
 class Query(entity: String? = null) {
     /** Internal [CottontailGrpc.Query.Builder]. */
@@ -23,6 +23,8 @@ class Query(entity: String? = null) {
     /**
      * Adds a SELECT projection to this [Query].
      *
+     * Calling this method resets the PROJECTION part of the query.
+     *
      * @param fields The names of the columns to return.
      * @return [Query]
      */
@@ -31,13 +33,15 @@ class Query(entity: String? = null) {
         val builder = this.builder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
         for (field in fields) {
-            builder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
+            builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
         }
         return this
     }
 
     /**
      * Adds a SELECT projection to this [Query].
+     *
+     * Calling this method resets the PROJECTION part of the query.
      *
      * @param fields The names of the columns to return and their alias (null, if no alias is set).
      * @return [Query]
@@ -51,13 +55,15 @@ class Query(entity: String? = null) {
             if (field.second != null) {
                 c.alias = field.second!!.parseColumn()
             }
-            builder.addColumns(c)
+            builder.addElements(c)
         }
         return this
     }
 
     /**
      * Adds a SELECT projection to this [Query].
+     *
+     * Calling this method resets the PROJECTION part of the query.
      *
      * @param fields The names of the columns to return.
      * @return [Query]
@@ -67,7 +73,7 @@ class Query(entity: String? = null) {
         val builder = this.builder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT
         for (field in fields) {
-            builder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
+            builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
         }
         return this
     }
@@ -75,18 +81,22 @@ class Query(entity: String? = null) {
     /**
      * Adds a SELECT COUNT projection to this [Query].
      *
+     * Calling this method resets the PROJECTION part of the query.
+     *
      * @return [Query]
      */
     fun count(): Query {
         this.builder.clearProjection()
         val builder = this.builder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.COUNT
-        builder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
+        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
         return this
     }
 
     /**
      * Adds a SELECT EXISTS projection to this [Query].
+     *
+     * Calling this method resets the PROJECTION part of the query.
      *
      * @return [Query]
      */
@@ -94,12 +104,14 @@ class Query(entity: String? = null) {
         this.builder.clearProjection()
         val builder = this.builder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.EXISTS
-        builder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
+        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
         return this
     }
 
     /**
      * Adds a FROM-clause with a SCAN to this [Query]
+     *
+     * Calling this method resets the FROM part of the query.
      *
      * @param entity The entity to SCAN.
      * @return This [Query]
@@ -107,6 +119,21 @@ class Query(entity: String? = null) {
     fun from(entity: String): Query {
         this.builder.clearFrom()
         this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+        return this
+    }
+
+    /**
+     * Adds a FROM-clause with a SAMPLE to this [Query]
+     *
+     * Calling this method resets the FROM part of the query.
+     *
+     * @param entity The entity to SAMPLE.
+     * @param seed The random number generator seed for SAMPLE
+     * @return This [Query]
+     */
+    fun sample(entity: String, seed: Long = System.currentTimeMillis()): Query {
+        this.builder.clearFrom()
+        this.builder.setFrom(CottontailGrpc.From.newBuilder().setSample(CottontailGrpc.Sample.newBuilder().setEntity(entity.parseEntity()).setSeed(seed)))
         return this
     }
 
@@ -183,7 +210,7 @@ class Query(entity: String? = null) {
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
 
         /* Update projection: Add distance column + alias. */
-        this.builder.projectionBuilder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setDistance(distanceFunction))
+        this.builder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
         /* Update ORDER BY clause. */
         this.builder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.ASCENDING))
         /* Update LIMIT clause. */
