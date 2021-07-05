@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.dql
 
+import org.vitrivr.cottontail.client.language.basics.Distances
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -140,9 +141,61 @@ class Query(entity: String? = null) {
     }
 
     /**
+     * Adds a kNN-clause to this [Query] and returns it.
+     *
+     * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
+     * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
+     * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
+     *
+     * @param column The column to apply the kNN to
+     * @param k The k parameter in the kNN
+     * @param distance The distance metric to use.
+     * @param query Query vector to use.
+     * @param weight Weight vector to use; this is not supported anymore!
+     * @return This [Query]
+     */
+    @Deprecated("Deprecated since version 0.13.0; use nns() function instead!", replaceWith = ReplaceWith("nns"))
+    fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
+        if (weight != null)throw UnsupportedOperationException("Weighted NNS is no longer supported by Cottontail DB. Use weighted distance function with respective arguments instead.")
+        return nns(column, query, Distances.valueOf(distance.toUpperCase()),"distance", k.toLong())
+    }
+
+    /**
+     * Transforms this [Query] to a Nearest Neighbor Search (NNS) query and returns it.
+     *
+     * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
+     * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
+     * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
+     *
+     * @param column The column to perform NNS on. Type must be compatible with choice of distance function.
+     * @param query Query value to use. Type must be compatible with choice of distance function.
+     * @param distance The distance function to use. Function argument must be compatible with column type.
+     * @param name The name of the column that holds the calculated distance value.
+     * @param k The number of entries to return. It is highly recommended to use a reasonable number here, since otherwise, Cottontail DB may run out of memory.
+     * @return This [Query]
+     */
+    fun nns(column: String, query: Any, distance: Distances, name: String, k: Long): Query {
+        /* Parse necessary functions. */
+        val distanceColumn = name.parseColumn()
+        val distanceFunction = CottontailGrpc.Function.newBuilder()
+            .setName(distance.functionName)
+            .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn()))
+            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
+
+        /* Update projection: Add distance column + alias. */
+        this.builder.projectionBuilder.addColumns(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setDistance(distanceFunction))
+        /* Update ORDER BY clause. */
+        this.builder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.ASCENDING))
+        /* Update LIMIT clause. */
+        this.builder.limit = k
+        return this
+    }
+
+    /**
      * Adds a ORDER BY-clause to this [Query] and returns it
      *
      * @param clauses ORDER BY clauses in the form of <column> <order>
+     * @return This [Query]
      */
     fun order(vararg clauses: Pair<String,String>): Query {
         this.builder.clearOrder()
@@ -174,6 +227,16 @@ class Query(entity: String? = null) {
      */
     fun limit(limit: Long): Query {
         this.builder.limit = limit
+        return this
+    }
+
+    /**
+     * Clears this [Query] making it a green slate object that can be used to build a [Query]
+     *
+     * @return This [Query]
+     */
+    fun clear(): Query {
+        this.builder.clear()
         return this
     }
 }
