@@ -485,8 +485,7 @@ message Scan {
 /* Describes a random SAMPLE of an Entity. Can be used to specify the "FROM" part of a query. */
 message Sample {
     EntityName entity = 1;
-    int64 size = 2;
-    int64 seed = 3;
+    int64 seed = 2;
 }
 
 /* The projection part of a query (select + attributes / count / exists). */
