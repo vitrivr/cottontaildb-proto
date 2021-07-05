@@ -492,7 +492,7 @@ message Sample {
 /* The projection part of a query (select + attributes / count / exists). */
 message Projection {
     ProjectionOperation op = 1;
-    repeated ProjectionElement columns = 2;
+    repeated ProjectionElement elements = 2;
     enum ProjectionOperation {
         SELECT = 0;
         SELECT_DISTINCT = 1;
@@ -508,7 +508,7 @@ message Projection {
         ColumnName alias = 1;
         oneof proj {
             ColumnName column = 2;
-            Function distance = 3;
+            Function function = 3;
         }
     }
 }
