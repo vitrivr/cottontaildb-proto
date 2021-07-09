@@ -47,5 +47,5 @@ class CreateEntity(name: String) {
      * @return this [CreateEntity]
      */
     fun column(name: String, type: String, length: Int = 0, nullable: Boolean = false)
-        = this.column(name, Type.valueOf(type.toUpperCase()), length, nullable)
+        = this.column(name, Type.valueOf(type.uppercase()), length, nullable)
 }

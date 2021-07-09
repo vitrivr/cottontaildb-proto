@@ -184,7 +184,7 @@ class Query(entity: String? = null) {
     @Deprecated("Deprecated since version 0.13.0; use nns() function instead!", replaceWith = ReplaceWith("nns"))
     fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
         if (weight != null)throw UnsupportedOperationException("Weighted NNS is no longer supported by Cottontail DB. Use weighted distance function with respective arguments instead.")
-        return nns(column, query, Distances.valueOf(distance.toUpperCase()),"distance", k.toLong())
+        return nns(column, query, Distances.valueOf(distance.uppercase()),"distance", k.toLong())
     }
 
     /**
@@ -230,7 +230,7 @@ class Query(entity: String? = null) {
         for (c in clauses) {
             val cBuilder = builder.addComponentsBuilder()
             cBuilder.column = c.first.parseColumn()
-            cBuilder.direction = CottontailGrpc.Order.Direction.valueOf(c.second.toUpperCase())
+            cBuilder.direction = CottontailGrpc.Order.Direction.valueOf(c.second.uppercase())
         }
         return this
     }

@@ -8,7 +8,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @return [CottontailGrpc.EntityName]
  */
 fun String.parseSchema(): CottontailGrpc.SchemaName {
-    val split = this.toLowerCase().split('.')
+    val split = this.lowercase().split('.')
     return when (split.size) {
         1 -> CottontailGrpc.SchemaName.newBuilder().setName(split[0]).build()
         2 -> CottontailGrpc.SchemaName.newBuilder().setName(split[1]).build()
@@ -22,7 +22,7 @@ fun String.parseSchema(): CottontailGrpc.SchemaName {
  * @return [CottontailGrpc.EntityName]
  */
 fun String.parseEntity(): CottontailGrpc.EntityName {
-    val split = this.toLowerCase().split('.')
+    val split = this.lowercase().split('.')
     return when (split.size) {
         1 -> CottontailGrpc.EntityName.newBuilder().setName(split[0]).build()
         2 -> CottontailGrpc.EntityName.newBuilder().setName(split[1]).setSchema(CottontailGrpc.SchemaName.newBuilder().setName(split[0])).build()
@@ -37,7 +37,7 @@ fun String.parseEntity(): CottontailGrpc.EntityName {
  * @return [CottontailGrpc.IndexName]
  */
 fun String.parseIndex(): CottontailGrpc.IndexName {
-    val split = this.toLowerCase().split('.')
+    val split = this.lowercase().split('.')
     return when (split.size) {
         1 -> CottontailGrpc.IndexName.newBuilder().setName(split[0]).build()
         2 -> CottontailGrpc.IndexName.newBuilder().setName(split[1]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[0])).build()
@@ -53,7 +53,7 @@ fun String.parseIndex(): CottontailGrpc.IndexName {
  * @return [CottontailGrpc.ColumnName]
  */
 fun String.parseColumn(): CottontailGrpc.ColumnName {
-    val split = this.toLowerCase().split('.')
+    val split = this.lowercase().split('.')
     return when (split.size) {
         1 -> CottontailGrpc.ColumnName.newBuilder().setName(split[0]).build()
         2 -> CottontailGrpc.ColumnName.newBuilder().setName(split[1]).setEntity(CottontailGrpc.EntityName.newBuilder().setName(split[0])).build()
@@ -68,7 +68,7 @@ fun String.parseColumn(): CottontailGrpc.ColumnName {
  *
  * @return [CottontailGrpc.ColumnName]
  */
-fun String.parseOperator(): CottontailGrpc.ComparisonOperator = when(val value = this.toUpperCase()) {
+fun String.parseOperator(): CottontailGrpc.ComparisonOperator = when(val value = this.uppercase()) {
     "=" -> CottontailGrpc.ComparisonOperator.EQUAL
     "==" -> CottontailGrpc.ComparisonOperator.EQUAL
     "!=" -> CottontailGrpc.ComparisonOperator.EQUAL
@@ -90,7 +90,7 @@ fun String.parseOperator(): CottontailGrpc.ComparisonOperator = when(val value =
  *
  * @return [Boolean]
  */
-fun String.parseNot(): Boolean = when(this.toUpperCase()) {
+fun String.parseNot(): Boolean = when(this.uppercase()) {
     "!=", "!==", "NOT IN", "NOT LIKE", "NOT MATCH", "IS NOT NULL" -> true
     else -> false
 }

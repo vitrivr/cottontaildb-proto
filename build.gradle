@@ -1,14 +1,10 @@
-buildscript {
-    ext.kotlinVersion = '1.4.32'
-}
-
 plugins {
     id "com.google.protobuf" version "0.8.16"
-    id "org.jetbrains.kotlin.jvm" version "$kotlinVersion"
+    id "org.jetbrains.kotlin.jvm" version "$version_kotlin"
 }
 
 group 'org.vitrivr'
-version '0.12.2-SNAPSHOT'
+version '0.13.0-SNAPSHOT'
 
 apply plugin: 'com.google.protobuf'
 apply plugin: 'idea'
@@ -107,14 +103,14 @@ protobuf {
     generatedFilesBaseDir = "$projectDir/build/generated/source/proto"
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.37.0'
+            artifact = "io.grpc:protoc-gen-grpc-java:$version_grpc"
         }
         grpckt {
-            artifact = 'io.grpc:protoc-gen-grpc-kotlin:1.0.0:jdk7@jar'
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:$version_grpc_kotlin:jdk7@jar"
         }
     }
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.15.8'
+        artifact = "com.google.protobuf:protoc:$version_protobuf"
     }
     generateProtoTasks {
         all()*.plugins {
@@ -130,12 +126,11 @@ protobuf {
 
 dependencies {
     /////// gRPC & Protobuf
-    implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.2'
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.15.8'
-    implementation group: 'io.grpc', name: 'grpc-all', version: '1.37.0'
-    implementation group: 'io.grpc', name: 'grpc-kotlin-stub', version: '1.0.0'
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: version_protobuf
+    implementation group: 'io.grpc', name: 'grpc-all', version: version_grpc
+    implementation group: 'io.grpc', name: 'grpc-kotlin-stub', version: version_grpc_kotlin
 
     /////// Kotlin references
-    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: '1.4.32'
-    implementation group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.3'
+    implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: version_kotlin
+    implementation group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: version_kotlinx_coroutines
 }
