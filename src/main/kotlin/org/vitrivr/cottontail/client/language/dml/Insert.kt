@@ -46,7 +46,7 @@ class Insert(entity: String? = null) {
         this.builder.addElements(
             CottontailGrpc.InsertMessage.InsertElement.newBuilder()
                 .setColumn(column.parseColumn())
-                .setValue(value?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build()))
+                .setValue(value?.convert() ?: CottontailGrpc.Literal.newBuilder().build()))
         return this
     }
 

@@ -61,7 +61,7 @@ class Update(entity: String? = null) {
             this.builder.addUpdates(
                 CottontailGrpc.UpdateMessage.UpdateElement.newBuilder()
                 .setColumn(assignment.first.parseColumn())
-                .setValue(CottontailGrpc.Expression.newBuilder().setLiteral(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build()))
+                .setValue(CottontailGrpc.Expression.newBuilder().setLiteral(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().build()))
             )
         }
         return this

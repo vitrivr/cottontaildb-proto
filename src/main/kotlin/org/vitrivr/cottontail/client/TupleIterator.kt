@@ -98,7 +98,7 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
                         else  -> UnsupportedOperationException("Vector data of type ${vector.vectorDataCase} is not supported by TupleIterator.")
                     }
                 }
-                CottontailGrpc.Literal.DataCase.NULLDATA -> null
+                CottontailGrpc.Literal.DataCase.DATA_NOT_SET -> null
                 else -> UnsupportedOperationException("Data of type ${data.dataCase} is not supported by TupleIterator.")
             }
         }

@@ -56,7 +56,7 @@ class BatchInsert(entity: String? = null) {
     fun append(vararg values: Any?): BatchInsert {
         val insert = CottontailGrpc.BatchInsertMessage.Insert.newBuilder()
         for (v in values) {
-            insert.addValues(v?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
+            insert.addValues(v?.convert() ?: CottontailGrpc.Literal.newBuilder().build())
         }
         this.builder.addInserts(insert)
         return this
