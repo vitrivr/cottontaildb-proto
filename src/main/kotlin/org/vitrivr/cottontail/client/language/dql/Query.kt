@@ -205,7 +205,7 @@ class Query(entity: String? = null) {
         /* Parse necessary functions. */
         val distanceColumn = name.parseColumn()
         val distanceFunction = CottontailGrpc.Function.newBuilder()
-            .setName(distance.functionName)
+            .setName(CottontailGrpc.FunctionName.newBuilder().setName(distance.functionName))
             .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn()))
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
 

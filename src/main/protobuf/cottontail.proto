@@ -99,24 +99,29 @@ service TXN {
     rpc ListLocks (google.protobuf.Empty) returns (stream QueryResponseMessage);
 }
 
-/** Identifier for a single schema.  */
+/** Identifier for a schema.  */
 message SchemaName {
     string name = 1;
 }
 
-/** Identifier for a single entity. */
+/** Identifier for a function. */
+message FunctionName {
+    string name = 1;
+}
+
+/** Identifier for an entity. */
 message EntityName {
     SchemaName schema = 1;
     string name = 2;
 }
 
-/** Identifier for a single index. */
+/** Identifier for an index. */
 message IndexName {
     EntityName entity = 1;
     string name = 2;
 }
 
-/** Identifier for a single column. */
+/** Identifier for a column. */
 message ColumnName {
     EntityName entity = 1;
     string name = 2;
@@ -211,6 +216,12 @@ message Expression {
         Literal literal = 1;
         ColumnName column = 2;
     }
+}
+
+/** A function; special type of logic usually executed on expressions used for nearest neighbor search (NNS) and other.*/
+message Function {
+    FunctionName name = 1;
+    repeated Expression arguments = 2;
 }
 
 /** A list of expressions. */
@@ -512,11 +523,6 @@ message Projection {
     }
 }
 
-/** Function; special type of query used for nearest neighbor search (NNS) and other.*/
-message Function {
-    string name = 1;
-    repeated Expression arguments = 2;
-}
 
 /** The boolean predicate ('WHERE') part of a QueryMessage. */
 message Where {
