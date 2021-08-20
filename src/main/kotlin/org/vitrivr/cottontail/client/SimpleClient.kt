@@ -164,7 +164,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @param query [Update] to execute.
      */
-    fun insert(query: Update, txId: Long? = null): TupleIterator {
+    fun update(query: Update, txId: Long? = null): TupleIterator {
         if (txId != null) {
             query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
         }
