@@ -129,7 +129,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun where(predicate: Predicate): Query {
-        this.builder.clearKnn()
+        this.builder.clearWhere()
         val builder = this.builder.whereBuilder
         when (predicate) {
             is Atomic -> builder.setAtomic(predicate.toPredicate())
