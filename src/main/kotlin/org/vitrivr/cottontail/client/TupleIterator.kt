@@ -5,12 +5,13 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 
 /**
  * A very simple utility class that wraps [CottontailGrpc.QueryResponseMessage] and provides more convenient means of access.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.3.0
  */
 class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : Iterator<TupleIterator.Tuple> {
 
@@ -20,7 +21,7 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
 
-    /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
+    /** Internal map of columns names to column indexes. */
     private val _columns = HashMap<String,Int>()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
@@ -29,10 +30,28 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
 
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     val numberOfColumns: Int
-        get() = this._columns.size
 
     init {
-        this.fetchNext()
+        if (results.hasNext()) {
+            /* Fetch data. */
+            val next = this.results.next()
+            this.buffer.addAll(next.tuplesList)
+
+            /* Prepare column data. */
+            this.numberOfColumns = next.columnsCount
+            val blocked = HashSet<String>()
+            next.columnsList.forEachIndexed { i,c ->
+                this._columns[c.fqn()] = i
+                if (!this._columns.contains(c.name) && !blocked.contains(c.name)) {
+                    this._columns[c.name] = i
+                } else {
+                    this._columns.remove(c.name)
+                    blocked.add(c.name)
+                }
+            }
+        } else {
+            this.numberOfColumns = 0
+        }
     }
 
     /**
@@ -54,11 +73,7 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
      * @return True on success, false otherwise.
      */
     private fun fetchNext(): Boolean = if (this.results.hasNext()) {
-        val next = this.results.next()
-        if (this._columns.isEmpty()) {
-            next.columnsList.forEachIndexed { i,c -> this._columns[c.fqn()] = i }
-        }
-        this.buffer.addAll(next.tuplesList)
+        this.buffer.addAll(this.results.next().tuplesList)
         true
     } else {
         false
