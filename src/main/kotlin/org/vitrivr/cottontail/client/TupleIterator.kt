@@ -39,14 +39,10 @@ class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMe
 
             /* Prepare column data. */
             this.numberOfColumns = next.columnsCount
-            val blocked = HashSet<String>()
             next.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
-                if (!this._columns.contains(c.name) && !blocked.contains(c.name)) {
-                    this._columns[c.name] = i
-                } else {
-                    this._columns.remove(c.name)
-                    blocked.add(c.name)
+                if (!this._columns.contains(c.name)) {
+                    this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
         } else {
