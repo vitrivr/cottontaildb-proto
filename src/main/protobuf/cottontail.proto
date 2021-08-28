@@ -86,11 +86,14 @@ service TXN {
     /** Starts a new transaction. */
     rpc Begin (google.protobuf.Empty) returns (TransactionId);
 
-    /** Performs a commit on a transaction. */
+    /** Performs a commit on a transaction. This method blocks if a query is currently executed. */
     rpc Commit (TransactionId) returns (google.protobuf.Empty);
 
-    /** Performs a rollback on a transaction and aborts it. */
+    /** Performs a rollback on a transaction and aborts it. This method blocks if a query is currently executed. */
     rpc Rollback (TransactionId) returns (google.protobuf.Empty);
+
+    /** Kills and performs a rollback on an ongoing transaction. This method can even be used when a query is being executed.*/
+    rpc Kill (TransactionId) returns (google.protobuf.Empty);
 
     /** Lists all active transactions. */
     rpc ListTransactions (google.protobuf.Empty) returns (stream QueryResponseMessage);
