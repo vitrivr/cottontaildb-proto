@@ -1,78 +1,116 @@
 package org.vitrivr.cottontail.client
 
+import io.grpc.Context
+import io.grpc.stub.StreamObserver
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 import java.util.*
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.collections.HashMap
-import kotlin.collections.HashSet
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * A very simple utility class that wraps [CottontailGrpc.QueryResponseMessage] and provides more convenient means of access.
  *
  * @author Ralph Gasser
- * @version 1.3.0
+ * @version 2.0.0
  */
-class TupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : Iterator<TupleIterator.Tuple> {
-
-    /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator())
+class TupleIterator(val context: Context.CancellableContext) :
+    Iterator<TupleIterator.Tuple>, StreamObserver<CottontailGrpc.QueryResponseMessage>, AutoCloseable {
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
-    private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
+    private var buffer = ArrayBlockingQueue<Tuple>(100)
 
     /** Internal map of columns names to column indexes. */
     private val _columns = HashMap<String,Int>()
 
-    /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
+    /** Internal flag indicating, that this [TupleIterator] has been initialized. */
+    private var _init: AtomicBoolean = AtomicBoolean(false)
+
+    /** Internal flag indicating, that this [TupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
+    private var _completed: AtomicBoolean = AtomicBoolean(false)
+
+    /** Internal flag indicating, that this [TupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
+    private var _error: AtomicReference<Throwable?> = AtomicReference(null)
+
+    /** Internal counter for the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
+    private var _numberOfColumns: AtomicInteger = AtomicInteger(0)
+
+   /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     val columns: Collection<String>
         get() = Collections.unmodifiableCollection(this._columns.keys)
 
-    /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
+    /** Number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     val numberOfColumns: Int
+        get() = this._numberOfColumns.get()
 
-    init {
-        if (results.hasNext()) {
-            /* Fetch data. */
-            val next = this.results.next()
-            this.buffer.addAll(next.tuplesList)
-
-            /* Prepare column data. */
-            this.numberOfColumns = next.columnsCount
-            next.columnsList.forEachIndexed { i,c ->
+    /**
+     * gRPC method: Called when another [CottontailGrpc.QueryResponseMessage] is available.
+     */
+    override fun onNext(value: CottontailGrpc.QueryResponseMessage) {
+        /* Update columns for this TupleIterator. */
+        if (!this._init.getAndSet(true)) {
+            this._numberOfColumns.set(value.columnsCount)
+            value.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
                 if (!this._columns.contains(c.name)) {
                     this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
-        } else {
-            this.numberOfColumns = 0
+        }
+
+        /* Buffer tuples. This part of the code blocks! */
+        for (tuple in value.tuplesList) {
+            this.buffer.put(Tuple(tuple))
         }
     }
 
     /**
-     * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
+     * gRPC method: Called when the server side reports an error.
      */
-    override fun hasNext(): Boolean = (this.buffer.isNotEmpty() || this.results.hasNext())
-
-    /**
-     * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
-     */
-    override fun next(): Tuple {
-        if (this.buffer.isEmpty() && !this.fetchNext()) throw IllegalStateException("TupleIterator is has not more values.")
-        return Tuple(this.buffer.poll()!!)
+    override fun onError(t: Throwable?) {
+        this._completed.set(true)
+        this.buffer.clear() /* Clear buffer. */
     }
 
     /**
-     * Fetches the next batch of [CottontailGrpc.QueryResponseMessage] into the [buffer].
-     *
-     * @return True on success, false otherwise.
+     * gRPC method: Called when the server side competes.
      */
-    private fun fetchNext(): Boolean = if (this.results.hasNext()) {
-        this.buffer.addAll(this.results.next().tuplesList)
-        true
-    } else {
-        false
+    override fun onCompleted() {
+        this._completed.set(true)
+    }
+
+    /**
+     * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
+     */
+    override fun hasNext(): Boolean {
+        val error = this._error.get()
+        if (error != null) {
+            throw error
+        }
+        return (this.buffer.isNotEmpty() || !this._completed.get())
+    }
+
+    /**
+     * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
+     */
+    override fun next(): Tuple = this.buffer.take()
+
+    /**
+     * Closes this [TupleIterator].
+     *
+     * Closing a [TupleIterator] for a query that has not completed (i.e. whose responses have not been drained) may leads to
+     * undefined behaviour on the server side and to a transaction that must be rolled back.
+     */
+    override fun close() {
+        if (!this._completed.getAndSet(true)) {
+            this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
+        }
+        this.buffer.clear() /* Clear buffer. */
     }
 
     /**
