@@ -6,9 +6,6 @@ import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 import java.util.*
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.HashMap
@@ -31,16 +28,16 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     private val _columns = HashMap<String,Int>()
 
     /** Internal flag indicating, that this [TupleIterator] has been initialized. */
-    private var _init: AtomicBoolean = AtomicBoolean(false)
+    @Volatile
+    private var init: Boolean = false
 
     /** Internal flag indicating, that this [TupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
-    private var _completed: AtomicBoolean = AtomicBoolean(false)
+    @Volatile
+    private var completed: Boolean =false
 
     /** Internal flag indicating, that this [TupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
-    private var _error: AtomicReference<Throwable?> = AtomicReference(null)
-
-    /** Internal counter for the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
-    private var _numberOfColumns: AtomicInteger = AtomicInteger(0)
+    @Volatile
+    private var error: Throwable? = null
 
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
@@ -48,33 +45,35 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /** The next [Tuple] to be dequeued. */
     private var next: Tuple? = null
 
-    /** A [Condition] used to signal, that the buffer is not empty. */
-    private val notEmpty: Condition = this.lock.newCondition()
-
     /** A [Condition] used to signal, that the buffer is not full. */
     private val notFull: Condition = this.lock.newCondition()
 
-   /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
+    /** A [Condition] used to signal, that the buffer is not empty or that the call has completed. */
+    private val notEmptyOrComplete: Condition = this.lock.newCondition()
+
+    /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     val columns: Collection<String>
         get() = Collections.unmodifiableCollection(this._columns.keys)
 
     /** Number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
-    val numberOfColumns: Int
-        get() = this._numberOfColumns.get()
+    @Volatile
+    var numberOfColumns: Int = 0
+        private set
 
     /**
      * gRPC method: Called when another [CottontailGrpc.QueryResponseMessage] is available.
      */
     override fun onNext(value: CottontailGrpc.QueryResponseMessage) = this.lock.withLock {
         /* Update columns for this TupleIterator. */
-        if (!this._init.getAndSet(true)) {
-            this._numberOfColumns.set(value.columnsCount)
+        if (!this.init) {
+            this.numberOfColumns = value.columnsCount
             value.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
                 if (!this._columns.contains(c.name)) {
                     this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
+            this.init = true
         }
 
         /* Buffer tuples. This part may block. */
@@ -83,7 +82,7 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
                 this.notFull.await()  /* Wait for notFull-condition. */
             }
             this.buffer.offer(Tuple(tuple))
-            this.notEmpty.signal() /* Signal notEmpty.condition. */
+            this.notEmptyOrComplete.signal() /* Signal notEmpty.condition. */
         }
     }
 
@@ -91,34 +90,34 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
      * gRPC method: Called when the server side reports an error.
      */
     override fun onError(t: Throwable?) {
-        this._completed.set(true)
+        this.completed = true
+        this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
     }
 
     /**
      * gRPC method: Called when the server side completes.
      */
     override fun onCompleted() {
-        this._completed.set(true)
+        this.completed = true
+        this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
     }
 
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun hasNext(): Boolean {
-        val error = this._error.get()
-        if (error != null) {
-            throw error
-        }
+        if (this.error != null) throw this.error!!
         this.lock.withLock {
             return if (this.buffer.isNotEmpty()) {
                 this.next = this.buffer.poll()
                 this.notFull.signal()
                 true
-            } else if (this._completed.get()) {
+            } else if (this.completed) {
                 this.next = null
                 false
             } else {
-                this.notEmpty.await()
+                this.notEmptyOrComplete.await()
+                if (this.completed) return false
                 this.next = this.buffer.poll()
                 this.notFull.signal()
                 true
@@ -143,8 +142,9 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
      * undefined behaviour on the server side and to a transaction that must be rolled back.
      */
     override fun close() {
-        if (!this._completed.getAndSet(true)) {
+        if (!this.completed) {
             this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
+            this.completed = true
         }
         this.buffer.clear() /* Clear buffer. */
     }
