@@ -45,6 +45,9 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
 
+    /** The next [Tuple] to be dequeued. */
+    private var next: Tuple? = null
+
     /** A [Condition] used to signal, that the buffer is not empty. */
     private val notEmpty: Condition = this.lock.newCondition()
 
@@ -110,6 +113,8 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
             if (this.buffer.isNotEmpty())  return true
             if (this._completed.get()) return false
             this.notEmpty.await()
+            this.next = this.buffer.poll()
+            this.notFull.signal()
             return true
         }
     }
@@ -117,10 +122,11 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
-    override fun next(): Tuple = this.lock.withLock {
-        val ret = this.buffer.poll()
-        this.notFull.signal()
-        return ret
+    override fun next(): Tuple {
+        val next = this.next
+        check(next != null) { "TupleIterator has been drained and now new element is available. "}
+        this.next = null
+        return next
     }
 
     /**
