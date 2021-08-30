@@ -10,6 +10,8 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.Condition
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.HashMap
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -19,11 +21,11 @@ import kotlin.coroutines.cancellation.CancellationException
  * @author Ralph Gasser
  * @version 2.0.0
  */
-class TupleIterator(val context: Context.CancellableContext) :
+class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int = 100) :
     Iterator<TupleIterator.Tuple>, StreamObserver<CottontailGrpc.QueryResponseMessage>, AutoCloseable {
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
-    private var buffer = ArrayBlockingQueue<Tuple>(100)
+    private var buffer = LinkedList<Tuple>()
 
     /** Internal map of columns names to column indexes. */
     private val _columns = HashMap<String,Int>()
@@ -40,6 +42,15 @@ class TupleIterator(val context: Context.CancellableContext) :
     /** Internal counter for the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     private var _numberOfColumns: AtomicInteger = AtomicInteger(0)
 
+    /** Internal lock used to synchronise access to buffer. */
+    private val lock = ReentrantLock()
+
+    /** A [Condition] used to signal, that the buffer is not empty. */
+    private val notEmpty: Condition = this.lock.newCondition()
+
+    /** A [Condition] used to signal, that the buffer is not full. */
+    private val notFull: Condition = this.lock.newCondition()
+
    /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     val columns: Collection<String>
         get() = Collections.unmodifiableCollection(this._columns.keys)
@@ -51,6 +62,7 @@ class TupleIterator(val context: Context.CancellableContext) :
     /**
      * gRPC method: Called when another [CottontailGrpc.QueryResponseMessage] is available.
      */
+    @Synchronized
     override fun onNext(value: CottontailGrpc.QueryResponseMessage) {
         /* Update columns for this TupleIterator. */
         if (!this._init.getAndSet(true)) {
@@ -63,23 +75,29 @@ class TupleIterator(val context: Context.CancellableContext) :
             }
         }
 
-        /* Buffer tuples. This part of the code blocks! */
+        /* Buffer tuples. This part may block. */
         for (tuple in value.tuplesList) {
-            this.buffer.put(Tuple(tuple))
+            if (this.buffer.size >= this.bufferSize) {
+                this.notFull.await()  /* Wait for notFull-condition. */
+            }
+            this.buffer.offer(Tuple(tuple))
+            this.notEmpty.signal() /* Signal notEmpty.condition. */
         }
     }
 
     /**
      * gRPC method: Called when the server side reports an error.
      */
+    @Synchronized
     override fun onError(t: Throwable?) {
         this._completed.set(true)
         this.buffer.clear() /* Clear buffer. */
     }
 
     /**
-     * gRPC method: Called when the server side competes.
+     * gRPC method: Called when the server side completes.
      */
+    @Synchronized
     override fun onCompleted() {
         this._completed.set(true)
     }
@@ -87,18 +105,31 @@ class TupleIterator(val context: Context.CancellableContext) :
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
+    @Synchronized
     override fun hasNext(): Boolean {
         val error = this._error.get()
         if (error != null) {
             throw error
         }
-        return (this.buffer.isNotEmpty() || !this._completed.get())
+        if (this.buffer.isNotEmpty()) {
+            return true
+        }
+        if (this._completed.get()) {
+            return false
+        }
+        this.notEmpty.await()
+        return true
     }
 
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
-    override fun next(): Tuple = this.buffer.take()
+    @Synchronized
+    override fun next(): Tuple {
+        val ret = this.buffer.poll()
+        this.notFull.signal()
+        return ret
+    }
 
     /**
      * Closes this [TupleIterator].
@@ -106,6 +137,7 @@ class TupleIterator(val context: Context.CancellableContext) :
      * Closing a [TupleIterator] for a query that has not completed (i.e. whose responses have not been drained) may leads to
      * undefined behaviour on the server side and to a transaction that must be rolled back.
      */
+    @Synchronized
     override fun close() {
         if (!this._completed.getAndSet(true)) {
             this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
