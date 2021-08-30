@@ -6,14 +6,14 @@ import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 import java.util.*
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.HashMap
-import kotlin.coroutines.cancellation.CancellationException
+import kotlin.concurrent.withLock
+import java.util.concurrent.CancellationException
 
 /**
  * A very simple utility class that wraps [CottontailGrpc.QueryResponseMessage] and provides more convenient means of access.
@@ -62,8 +62,7 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /**
      * gRPC method: Called when another [CottontailGrpc.QueryResponseMessage] is available.
      */
-    @Synchronized
-    override fun onNext(value: CottontailGrpc.QueryResponseMessage) {
+    override fun onNext(value: CottontailGrpc.QueryResponseMessage) = this.lock.withLock {
         /* Update columns for this TupleIterator. */
         if (!this._init.getAndSet(true)) {
             this._numberOfColumns.set(value.columnsCount)
@@ -88,16 +87,13 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /**
      * gRPC method: Called when the server side reports an error.
      */
-    @Synchronized
     override fun onError(t: Throwable?) {
         this._completed.set(true)
-        this.buffer.clear() /* Clear buffer. */
     }
 
     /**
      * gRPC method: Called when the server side completes.
      */
-    @Synchronized
     override fun onCompleted() {
         this._completed.set(true)
     }
@@ -105,27 +101,23 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
-    @Synchronized
     override fun hasNext(): Boolean {
         val error = this._error.get()
         if (error != null) {
             throw error
         }
-        if (this.buffer.isNotEmpty()) {
+        this.lock.withLock {
+            if (this.buffer.isNotEmpty())  return true
+            if (this._completed.get()) return false
+            this.notEmpty.await()
             return true
         }
-        if (this._completed.get()) {
-            return false
-        }
-        this.notEmpty.await()
-        return true
     }
 
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
-    @Synchronized
-    override fun next(): Tuple {
+    override fun next(): Tuple = this.lock.withLock {
         val ret = this.buffer.poll()
         this.notFull.signal()
         return ret
@@ -137,7 +129,6 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
      * Closing a [TupleIterator] for a query that has not completed (i.e. whose responses have not been drained) may leads to
      * undefined behaviour on the server side and to a transaction that must be rolled back.
      */
-    @Synchronized
     override fun close() {
         if (!this._completed.getAndSet(true)) {
             this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
