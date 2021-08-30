@@ -89,7 +89,7 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /**
      * gRPC method: Called when the server side reports an error.
      */
-    override fun onError(t: Throwable?) {
+    override fun onError(t: Throwable?) = this.lock.withLock {
         this.completed = true
         this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
     }
@@ -97,7 +97,7 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
     /**
      * gRPC method: Called when the server side completes.
      */
-    override fun onCompleted() {
+    override fun onCompleted() = this.lock.withLock {
         this.completed = true
         this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
     }
