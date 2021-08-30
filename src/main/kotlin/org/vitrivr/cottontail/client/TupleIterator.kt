@@ -110,12 +110,19 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
             throw error
         }
         this.lock.withLock {
-            if (this.buffer.isNotEmpty())  return true
-            if (this._completed.get()) return false
-            this.notEmpty.await()
-            this.next = this.buffer.poll()
-            this.notFull.signal()
-            return true
+            return if (this.buffer.isNotEmpty()) {
+                this.next = this.buffer.poll()
+                this.notFull.signal()
+                true
+            } else if (this._completed.get()) {
+                this.next = null
+                false
+            } else {
+                this.notEmpty.await()
+                this.next = this.buffer.poll()
+                this.notFull.signal()
+                true
+            }
         }
     }
 
