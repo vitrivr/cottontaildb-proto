@@ -123,7 +123,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     override fun next(): Tuple {
         var next = this.buffer.poll()
         while (next == null) {
-            if (this.completed) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected!")
+            if (this.completed) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().")
             this.notEmptyOrComplete.await()
             next = this.buffer.poll()
         }
