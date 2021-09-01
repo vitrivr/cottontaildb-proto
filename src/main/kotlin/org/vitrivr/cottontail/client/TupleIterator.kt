@@ -18,7 +18,7 @@ import java.util.concurrent.CancellationException
  * @author Ralph Gasser
  * @version 2.0.0
  */
-class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int = 100) :
+class TupleIterator(private val bufferSize: Int = 10) :
     Iterator<TupleIterator.Tuple>, StreamObserver<CottontailGrpc.QueryResponseMessage>, AutoCloseable {
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
@@ -50,6 +50,9 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
 
     /** A [Condition] used to signal, that the buffer is not empty or that the call has completed. */
     private val notEmptyOrComplete: Condition = this.lock.newCondition()
+
+    /** The [Context.CancellableContext] in which the query processed by this [TupleIterator] gets executed. */
+    val context: Context.CancellableContext = Context.current().withCancellation()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     val columns: Collection<String>
@@ -91,6 +94,7 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
      */
     override fun onError(t: Throwable?) = this.lock.withLock {
         this.completed = true
+        this.context.cancel(null)
         this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
     }
 
@@ -99,6 +103,7 @@ class TupleIterator(val context: Context.CancellableContext, val bufferSize: Int
      */
     override fun onCompleted() = this.lock.withLock {
         this.completed = true
+        this.context.cancel(null)
         this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
     }
 

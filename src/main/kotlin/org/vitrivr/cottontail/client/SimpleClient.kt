@@ -1,7 +1,6 @@
 package org.vitrivr.cottontail.client.stub
 
 import com.google.protobuf.Empty
-import io.grpc.Context
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
@@ -76,8 +75,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
     fun query(query: CottontailGrpc.QueryMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.dql.query(query, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.dql.query(query, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -103,8 +107,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
     fun explain(query: CottontailGrpc.QueryMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.dql.explain(query, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.dql.explain(query, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -130,8 +139,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the query response.
      */
     fun insert(query: CottontailGrpc.InsertMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.dml.insert(query, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.dml.insert(query, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -168,8 +182,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the query response.
      */
     fun insert(query: CottontailGrpc.BatchInsertMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.dml.insertBatch(query, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.dml.insertBatch(query, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -180,8 +199,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the query response.
      */
     fun update(query: CottontailGrpc.UpdateMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.dml.update(query, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.dml.update(query, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -205,8 +229,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the query response.
      */
     fun delete(query: CottontailGrpc.DeleteMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.dml.delete(query, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.dml.delete(query, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -230,8 +259,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun create(message: CottontailGrpc.CreateSchemaMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.createSchema(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.createSchema(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -255,8 +289,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun create(message: CottontailGrpc.CreateEntityMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.createEntity(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.createEntity(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -280,8 +319,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun create(message: CottontailGrpc.CreateIndexMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.createIndex(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.createIndex(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -305,8 +349,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun drop(message: CottontailGrpc.DropSchemaMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.dropSchema(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.dropSchema(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -330,8 +379,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun drop(message: CottontailGrpc.DropEntityMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.dropEntity(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.dropEntity(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -355,8 +409,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun drop(message: CottontailGrpc.DropIndexMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.dropIndex(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.dropIndex(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -380,8 +439,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun list(message: CottontailGrpc.ListSchemaMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.listSchemas(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.listSchemas(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -405,8 +469,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun list(message: CottontailGrpc.ListEntityMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.listEntities(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.listEntities(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -430,8 +499,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun about(message: CottontailGrpc.EntityDetailsMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.entityDetails(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.entityDetails(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
@@ -455,8 +529,13 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return [TupleIterator] containing the response.
      */
     fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
-        iterator.context.run { this.ddl.optimizeEntity(message, iterator) }
+        val iterator = TupleIterator()
+        var callStarted = false
+        iterator.context.run {
+            this.ddl.optimizeEntity(message, iterator)
+            callStarted = true
+        }
+        while (!callStarted) Thread.yield()
         return iterator
     }
 
