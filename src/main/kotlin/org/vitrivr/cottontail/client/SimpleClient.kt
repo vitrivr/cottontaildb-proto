@@ -78,12 +78,8 @@ class SimpleClient(private val channel: ManagedChannel) {
      */
     fun query(query: CottontailGrpc.QueryMessage): TupleIterator {
         val iterator = AsynchronousTupleIterator()
-        var started = false
-        iterator.context.run {
-            this.dql.query(query, iterator)
-            started = true
-        }
-        while (!started) Thread.yield() /* Wait for call to be issued before returning. */
+        iterator.context.run { this.dql.query(query, iterator) }
+        while (!iterator.started) Thread.yield() /* Wait for call to be issued before returning. */
         return iterator
     }
 
@@ -110,12 +106,8 @@ class SimpleClient(private val channel: ManagedChannel) {
      */
     fun explain(query: CottontailGrpc.QueryMessage): TupleIterator {
         val iterator = AsynchronousTupleIterator()
-        var started = false
-        iterator.context.run {
-            this.dql.explain(query, iterator)
-            started = true
-        }
-        while (!started) Thread.yield() /* Wait for call to be issued before returning. */
+        iterator.context.run { this.dql.explain(query, iterator) }
+        while (!iterator.started) Thread.yield() /* Wait for call to be issued before returning. */
         return iterator
     }
 

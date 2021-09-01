@@ -26,10 +26,6 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     /** Internal map of columns names to column indexes. */
     private val _columns = HashMap<String,Int>()
 
-    /** Internal flag indicating, that this [AsynchronousTupleIterator] has been initialized. */
-    @Volatile
-    private var init: Boolean = false
-
     /** Internal flag indicating, that this [AsynchronousTupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
     @Volatile
     private var error: Throwable? = null
@@ -63,12 +59,16 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     override var numberOfColumns: Int = 0
         private set
 
+    /** Flag indicating, that this [AsynchronousTupleIterator] has been initialized. */
+    @Volatile
+    var started: Boolean = false
+
     /**
      * gRPC method: Called when another [CottontailGrpc.QueryResponseMessage] is available.
      */
     override fun onNext(value: CottontailGrpc.QueryResponseMessage) = this.lock.withLock {
         /* Update columns for this TupleIterator. */
-        if (!this.init) {
+        if (!this.started) {
             this.numberOfColumns = value.columnsCount
             value.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
@@ -76,7 +76,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
                     this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
-            this.init = true
+            this.started = true
         }
 
         /* Buffer tuples. This part may block. */
