@@ -33,9 +33,6 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
 
-    /** The next [Tuple] to be dequeued. */
-    private var next: Tuple? = null
-
     /** A [Condition] used to signal, that the buffer is not full. */
     private val notFull: Condition = this.lock.newCondition()
 
@@ -113,20 +110,10 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     override fun hasNext(): Boolean {
         if (this.error != null) throw this.error!!
         this.lock.withLock {
-            return if (this.buffer.isNotEmpty()) {
-                this.next = this.buffer.poll()
-                this.notFull.signal()
-                true
-            } else if (this.completed) {
-                this.next = null
-                false
-            } else {
-                this.notEmptyOrComplete.await()
-                if (this.completed) return false
-                this.next = this.buffer.poll()
-                this.notFull.signal()
-                true
-            }
+            if (this.buffer.isNotEmpty()) return true
+            if (this.completed) return false
+            this.notEmptyOrComplete.await()
+            return this.buffer.isNotEmpty()
         }
     }
 
@@ -134,9 +121,13 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
      * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple {
-        val next = this.next
-        check(next != null) { "TupleIterator has been drained and now new element is available. "}
-        this.next = null
+        var next = this.buffer.poll()
+        while (next == null) {
+            if (this.completed) throw IllegalStateException("This TupleIterator has been drained and now new elements are to be expected!")
+            this.notEmptyOrComplete.await()
+            next = this.buffer.poll()
+        }
+        this.notFull.signal()
         return next
     }
 
@@ -150,6 +141,8 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
         if (!this.completed) {
             this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
             this.completed = true
+        } else {
+            this.context.cancel(null)
         }
         this.buffer.clear() /* Clear buffer. */
     }
