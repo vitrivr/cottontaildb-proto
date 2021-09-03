@@ -120,7 +120,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     /**
      * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
-    override fun next(): Tuple {
+    override fun next(): Tuple = this.lock.withLock {
         var next = this.buffer.poll()
         while (next == null) {
             if (this.completed) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().")
