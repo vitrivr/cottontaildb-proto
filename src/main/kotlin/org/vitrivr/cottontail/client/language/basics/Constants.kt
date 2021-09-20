@@ -25,6 +25,6 @@ object Constants {
     /** Constant used in DDL responses. Number of rows in a ENTITY database object (DBO). */
     const val COLUMN_NAME_ROWS = "rows"
 
-    /** The maximum message size in bytes. */
-    const val MAX_PAGE_SIZE_BYTES = 4_000_000
+    /** The maximum message size in bytes (slightly smaller than 4MB). */
+    const val MAX_PAGE_SIZE_BYTES = 3_900_000
 }
