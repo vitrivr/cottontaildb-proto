@@ -23,8 +23,6 @@ class Query(entity: String? = null) {
     /**
      * Adds a SELECT projection to this [Query].
      *
-     * Calling this method resets the PROJECTION part of the query.
-     *
      * @param fields The names of the columns to return.
      * @return [Query]
      */
@@ -41,15 +39,14 @@ class Query(entity: String? = null) {
     /**
      * Adds a SELECT projection to this [Query].
      *
-     * Calling this method resets the PROJECTION part of the query.
-     *
      * @param fields The names of the columns to return and their alias (null, if no alias is set).
+     * @param clear If set, the existing projection will be cleared.
      * @return [Query]
      */
-    fun select(vararg fields: Pair<String,String?>): Query {
-        this.builder.clearProjection()
+    fun select(vararg fields: Pair<String,String?>, clear: Boolean = false): Query {
         val builder = this.builder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
+        if (clear) builder.clearElements()
         for (field in fields) {
             val c = CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.first.parseColumn())
             if (field.second != null) {
@@ -66,14 +63,19 @@ class Query(entity: String? = null) {
      * Calling this method resets the PROJECTION part of the query.
      *
      * @param fields The names of the columns to return.
+     * @param clear If set, the existing projection will be cleared.
      * @return [Query]
      */
-    fun distinct(vararg fields: String): Query {
-        this.builder.clearProjection()
+    fun distinct(vararg fields: Pair<String,String?>, clear: Boolean = false): Query {
         val builder = this.builder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT
+        if (clear) builder.clearElements()
         for (field in fields) {
-            builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
+            val c = CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.first.parseColumn())
+            if (field.second != null) {
+                c.alias = field.second!!.parseColumn()
+            }
+            builder.addElements(c)
         }
         return this
     }
@@ -117,7 +119,6 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun from(entity: String): Query {
-        this.builder.clearFrom()
         this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         return this
     }
@@ -132,7 +133,6 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun sample(entity: String, seed: Long = System.currentTimeMillis()): Query {
-        this.builder.clearFrom()
         this.builder.setFrom(CottontailGrpc.From.newBuilder().setSample(CottontailGrpc.Sample.newBuilder().setEntity(entity.parseEntity()).setSeed(seed)))
         return this
     }
@@ -145,7 +145,6 @@ class Query(entity: String? = null) {
      */
     fun from(query: Query): Query {
         require(query != this) { "SUB-SELECT query cannot specify itself."}
-        this.builder.clearFrom()
         this.builder.setFrom(CottontailGrpc.From.newBuilder().setSubSelect(query.builder))
         return this
     }
@@ -157,7 +156,6 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun where(predicate: Predicate): Query {
-        this.builder.clearWhere()
         val builder = this.builder.whereBuilder
         when (predicate) {
             is Atomic -> builder.setAtomic(predicate.toPredicate())
@@ -184,7 +182,7 @@ class Query(entity: String? = null) {
     @Deprecated("Deprecated since version 0.13.0; use nns() function instead!", replaceWith = ReplaceWith("nns"))
     fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
         if (weight != null)throw UnsupportedOperationException("Weighted NNS is no longer supported by Cottontail DB. Use weighted distance function with respective arguments instead.")
-        return nns(column, query, Distances.valueOf(distance.uppercase()),"distance", k.toLong())
+        return nns(column, query, Distances.valueOf(distance.toUpperCase()),"distance", k.toLong())
     }
 
     /**
@@ -205,14 +203,49 @@ class Query(entity: String? = null) {
         /* Parse necessary functions. */
         val distanceColumn = name.parseColumn()
         val distanceFunction = CottontailGrpc.Function.newBuilder()
-            .setName(CottontailGrpc.FunctionName.newBuilder().setName(distance.functionName))
+            .setName(distance.toGrpc())
             .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn()))
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
 
         /* Update projection: Add distance column + alias. */
         this.builder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
+
         /* Update ORDER BY clause. */
         this.builder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.ASCENDING))
+
+        /* Update LIMIT clause. */
+        this.builder.limit = k
+        return this
+    }
+
+    /**
+     * Transforms this [Query] to a Farthest Neighbor Search (FNS) query and returns it.
+     *
+     * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
+     * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
+     * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
+     *
+     * @param column The column to perform NNS on. Type must be compatible with choice of distance function.
+     * @param query Query value to use. Type must be compatible with choice of distance function.
+     * @param distance The distance function to use. Function argument must be compatible with column type.
+     * @param name The name of the column that holds the calculated distance value.
+     * @param k The number of entries to return. It is highly recommended using a reasonable number here, since otherwise, Cottontail DB may run out of memory.
+     * @return This [Query]
+     */
+    fun fns(column: String, query: Any, distance: Distances, name: String, k: Long): Query {
+        /* Parse necessary functions. */
+        val distanceColumn = name.parseColumn()
+        val distanceFunction = CottontailGrpc.Function.newBuilder()
+            .setName(distance.toGrpc())
+            .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn()))
+            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
+
+        /* Update projection: Add distance column + alias. */
+        this.builder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
+
+        /* Update ORDER BY clause. */
+        this.builder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.DESCENDING))
+
         /* Update LIMIT clause. */
         this.builder.limit = k
         return this
@@ -222,15 +255,16 @@ class Query(entity: String? = null) {
      * Adds a ORDER BY-clause to this [Query] and returns it
      *
      * @param clauses ORDER BY clauses in the form of <column> <order>
+     * @param clear If set, the existing ORDER BY-clause will be cleared.
      * @return This [Query]
      */
-    fun order(vararg clauses: Pair<String,String>): Query {
-        this.builder.clearOrder()
+    fun order(vararg clauses: Pair<String,String>, clear: Boolean = false): Query {
         val builder = this.builder.orderBuilder
+        if (clear) builder.clearComponents()
         for (c in clauses) {
             val cBuilder = builder.addComponentsBuilder()
             cBuilder.column = c.first.parseColumn()
-            cBuilder.direction = CottontailGrpc.Order.Direction.valueOf(c.second.uppercase())
+            cBuilder.direction = CottontailGrpc.Order.Direction.valueOf(c.second.toUpperCase())
         }
         return this
     }
