@@ -97,6 +97,13 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
      * gRPC method: Called when the server side reports an error.
      */
     override fun onError(t: Throwable?) = this.lock.withLock {
+        /* If query hasn't started yet, mark it as started and signal (for results that produce errors). */
+        if (!this.started) {
+            this.started = true
+            this.notStarted.signalAll()
+        }
+
+        /* Mark query as completed and signal completeness! */
         this.completed = true
         this.context.cancel(null)
         this.notEmptyOrComplete.signalAll() /* Signal to prevent iterator from getting stuck after the last element. */
@@ -106,6 +113,13 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
      * gRPC method: Called when the server side completes.
      */
     override fun onCompleted() = this.lock.withLock {
+        /* If query hasn't started yet, mark it as started and signal (for empty results). */
+        if (!this.started) {
+            this.started = true
+            this.notStarted.signalAll()
+        }
+
+        /* Mark query as completed and signal completeness! */
         this.completed = true
         this.context.cancel(null)
         this.notEmptyOrComplete.signalAll() /* Signal to prevent iterator from getting stuck after the last element. */
