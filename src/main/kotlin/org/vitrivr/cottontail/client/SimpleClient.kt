@@ -105,8 +105,9 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
     fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator {
-        val iterator = TupleIterator(Context.current().withCancellation())
+        val iterator = AsynchronousTupleIterator()
         iterator.context.run { this.dql.batchQuery(query, iterator) }
+        while (!iterator.started) Thread.yield() /* Wait for call to be issued before returning. */
         return iterator
     }
 
