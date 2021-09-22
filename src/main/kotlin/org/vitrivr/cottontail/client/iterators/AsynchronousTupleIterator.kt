@@ -34,6 +34,9 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     private val lock = ReentrantLock()
 
     /** A [Condition] used to signal, that the buffer is not full. */
+    private val notStarted: Condition = this.lock.newCondition()
+
+    /** A [Condition] used to signal, that the buffer is not full. */
     private val notFull: Condition = this.lock.newCondition()
 
     /** A [Condition] used to signal, that the buffer is not empty or that the call has completed. */
@@ -44,7 +47,10 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
 
     /** Returns the columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override val columns: Collection<String>
-        get() = Collections.unmodifiableCollection(this._columns.keys)
+        get() = this.lock.withLock {
+            if (!this.started) this.notStarted.await()
+            Collections.unmodifiableCollection(this._columns.keys)
+        }
 
     /** Internal flag indicating, that this [AsynchronousTupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
     @Volatile
@@ -73,6 +79,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
                     this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
+            this.notStarted.signalAll()
             this.started = true
         }
 
@@ -82,7 +89,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
                 this.notFull.await()  /* Wait for notFull-condition. */
             }
             this.buffer.offer(TupleImpl(tuple))
-            this.notEmptyOrComplete.signal() /* Signal notEmpty.condition. */
+            this.notEmptyOrComplete.signalAll() /* Signal notEmpty.condition. */
         }
     }
 
@@ -92,7 +99,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     override fun onError(t: Throwable?) = this.lock.withLock {
         this.completed = true
         this.context.cancel(null)
-        this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
+        this.notEmptyOrComplete.signalAll() /* Signal to prevent iterator from getting stuck after the last element. */
     }
 
     /**
@@ -101,19 +108,20 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     override fun onCompleted() = this.lock.withLock {
         this.completed = true
         this.context.cancel(null)
-        this.notEmptyOrComplete.signal() /* Signal to prevent iterator from getting stuck after the last element. */
+        this.notEmptyOrComplete.signalAll() /* Signal to prevent iterator from getting stuck after the last element. */
     }
 
     /**
      * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
-    override fun hasNext(): Boolean {
+    override fun hasNext(): Boolean = this.lock.withLock {
+        if (!this.started) this.notStarted.await()
         if (this.error != null) throw this.error!!
         this.lock.withLock {
             if (this.buffer.isNotEmpty()) return true
-            if (this.completed) return false
+            if (this.completed || this.error != null) return false
             this.notEmptyOrComplete.await()
-            return this.buffer.isNotEmpty()
+            this.buffer.isNotEmpty()
         }
     }
 
@@ -121,13 +129,17 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
      * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple = this.lock.withLock {
+        if (!this.started) this.notStarted.await()
         var next = this.buffer.poll()
         while (next == null) {
+            if (this.error != null) throw this.error!!
             if (this.completed) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().")
             this.notEmptyOrComplete.await()
             next = this.buffer.poll()
         }
-        this.notFull.signal()
+
+        /* Signal that buffer is ready to receive data. */
+        this.notFull.signalAll()
         return next
     }
 
