@@ -1,5 +1,7 @@
 package org.vitrivr.cottontail.client.language.basics
 
+import org.vitrivr.cottontail.grpc.CottontailGrpc
+
 /*
 * An enumeration of all [Distances] supported by Cottontail DB for NNS.
 *
@@ -21,4 +23,11 @@ enum class Distances(val functionName: String) {
     INNERPRODUCT("innerproduct"),
     DOTP("innerproduct"),
     HAVERSINE("haversine");
+
+    /**
+     * Converts this [Distances] to a correspnding [CottontailGrpc.FunctionName]
+     *
+     * @return [CottontailGrpc.FunctionName] for this [Distances].
+     */
+    fun toGrpc() = CottontailGrpc.FunctionName.newBuilder().setName(this.functionName)
 }
