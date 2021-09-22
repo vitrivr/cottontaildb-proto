@@ -97,6 +97,18 @@ class SimpleClient(private val channel: ManagedChannel) {
     }
 
     /**
+     * Executes [CottontailGrpc.BatchedQueryMessage] through this [SimpleClient]
+     *
+     * @param query [CottontailGrpc.Query] to execute.
+     * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
+     */
+    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator {
+        val iterator = TupleIterator(Context.current().withCancellation())
+        iterator.context.run { this.dql.batchQuery(query, iterator) }
+        return iterator
+    }
+
+    /**
      * Explains [CottontailGrpc.Query] through this [SimpleClient]
      *
      * @param query [CottontailGrpc.Query] to executed.
