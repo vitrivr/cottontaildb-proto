@@ -18,7 +18,7 @@ import java.util.concurrent.CancellationException
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator, StreamObserver<CottontailGrpc.QueryResponseMessage> {
+class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterator, StreamObserver<CottontailGrpc.QueryResponseMessage> {
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private var buffer = LinkedList<Tuple>()
@@ -29,8 +29,11 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
 
-    /** A [Condition] used to signal, that the buffer is not full. */
+    /** A [Condition] used to signal, that the buffer is empty. */
     private val waitingForData: Condition = this.lock.newCondition()
+
+    /** A [Condition] used to signal, that the buffer is full. */
+    private val waitingForSpace: Condition = this.lock.newCondition()
 
     /** The [Context.CancellableContext] in which the query processed by this [AsynchronousTupleIterator] gets executed. */
     internal val context: Context.CancellableContext = Context.current().withCancellation()
@@ -38,7 +41,6 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
     /** Internal flag indicating, that this [AsynchronousTupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
     @Volatile
     private var error: Throwable? = null
-
 
     /** Internal flag indicating, that this [AsynchronousTupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
     @Volatile
@@ -75,9 +77,9 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
             }
             this.started = true
         }
-
         /* Buffer tuples. This part may block. */
         for (tuple in value.tuplesList) {
+            if (this.buffer.size >= this.bufferSize) this.waitingForSpace.await()
             this.buffer.offer(TupleImpl(tuple))
         }
 
@@ -149,6 +151,9 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 10): TupleIterator
             if (this.completed) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().")
             next = this.buffer.poll()
         } while (next == null)
+
+        /* Signal that buffer has space again and return data. */
+        this.waitingForSpace.signalAll()
         return next
     }
 
