@@ -130,9 +130,12 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
 
         /* Now check for available data. */
         do {
-            if (this.completed || this.error != null) return false
-            if (this.buffer.isNotEmpty()) return true
-            this.waitingForData.await()
+            when {
+                this.error != null -> throw this.error!!            /* Case Error ocurred: Throw it. */
+                this.buffer.isNotEmpty() ->  return@withLock true   /* Case Buffer has data: Return true. */
+                this.completed -> return@withLock true              /* Case Data loading has completed (AND buffer is empty): Return false. */
+                else -> this.waitingForData.await()                 /* Case Else: Wait for more data. */
+            }
         } while (true)
         false
     }
@@ -148,7 +151,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
         var next: Tuple?
         do {
             if (this.error != null) throw this.error!!
-            if (this.completed) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().")
+            if (this.completed && this.buffer.isEmpty()) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().")
             next = this.buffer.poll()
         } while (next == null)
 
