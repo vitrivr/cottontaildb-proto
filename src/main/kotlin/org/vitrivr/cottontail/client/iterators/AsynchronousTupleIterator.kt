@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.HashMap
 import kotlin.concurrent.withLock
 import java.util.concurrent.CancellationException
+import kotlin.collections.LinkedHashMap
 
 /**
  * A very simple utility class that wraps [CottontailGrpc.QueryResponseMessage] and provides more convenient means of access.
@@ -24,7 +25,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     private var buffer = LinkedList<Tuple>()
 
     /** Internal map of columns names to column indexes. */
-    private val _columns = HashMap<String,Int>()
+    private val _columns = LinkedHashMap<String,Int>()
 
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
