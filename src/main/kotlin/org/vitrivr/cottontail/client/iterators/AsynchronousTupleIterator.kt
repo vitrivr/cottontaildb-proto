@@ -102,6 +102,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
 
         /* Mark query as completed and signal completeness! */
         this.completed = true
+        this.error = t
         this.context.cancel(null)
 
         /* Signal that new data has become available. */
