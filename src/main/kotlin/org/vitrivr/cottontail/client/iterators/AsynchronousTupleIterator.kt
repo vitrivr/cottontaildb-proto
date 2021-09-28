@@ -76,19 +76,17 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
                     this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
-            this.waitingForData.signalAll()
             this.started = true
         }
+
         /* Buffer tuples. This part may block. */
         for (tuple in value.tuplesList) {
             if (this.buffer.size >= this.bufferSize) {
                 this.waitingForSpace.await()
             }
             this.buffer.offer(TupleImpl(tuple))
+            this.waitingForData.signalAll()
         }
-
-        /* Signal that new data has become available. */
-        this.waitingForData.signalAll()
     }
 
     /**
@@ -146,7 +144,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     }
 
     /**
-     * Returns true if this [AsnchronousTupleIterator] holds another [Tuple] and false otherwise.
+     * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple = this.lock.withLock {
         /* Wait here if no data has been received yet. */
