@@ -11,6 +11,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.HashMap
 import kotlin.concurrent.withLock
 import java.util.concurrent.CancellationException
+import kotlin.collections.LinkedHashMap
 
 /**
  * A very simple utility class that wraps [CottontailGrpc.QueryResponseMessage] and provides more convenient means of access.
@@ -24,7 +25,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     private var buffer = LinkedList<Tuple>()
 
     /** Internal map of columns names to column indexes. */
-    private val _columns = HashMap<String,Int>()
+    private val _columns = LinkedHashMap<String,Int>()
 
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
@@ -77,14 +78,15 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
             }
             this.started = true
         }
+
         /* Buffer tuples. This part may block. */
         for (tuple in value.tuplesList) {
-            if (this.buffer.size >= this.bufferSize) this.waitingForSpace.await()
+            if (this.buffer.size >= this.bufferSize) {
+                this.waitingForSpace.await()
+            }
             this.buffer.offer(TupleImpl(tuple))
+            this.waitingForData.signalAll()
         }
-
-        /* Signal that new data has become available. */
-        this.waitingForData.signalAll()
     }
 
     /**
@@ -98,6 +100,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
 
         /* Mark query as completed and signal completeness! */
         this.completed = true
+        this.error = t
         this.context.cancel(null)
 
         /* Signal that new data has become available. */
@@ -141,7 +144,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     }
 
     /**
-     * Returns true if this [AsnchronousTupleIterator] holds another [Tuple] and false otherwise.
+     * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple = this.lock.withLock {
         /* Wait here if no data has been received yet. */
