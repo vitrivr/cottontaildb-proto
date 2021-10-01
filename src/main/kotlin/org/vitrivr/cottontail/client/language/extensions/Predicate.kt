@@ -114,7 +114,7 @@ class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrp
         .setLeft(this.left)
         .setOp(this.operator)
         .setNot(this.not)
-        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setQuery(this.right.builder))
+        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setQuery(this.right.builder.queryBuilder))
 }
 
 /**
