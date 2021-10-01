@@ -1,6 +1,8 @@
 package org.vitrivr.cottontail.client.language.dql
 
+import org.vitrivr.cottontail.client.language.basics.Direction
 import org.vitrivr.cottontail.client.language.basics.Distances
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -10,7 +12,8 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.2.0
  */
-class Query(entity: String? = null) {
+@Suppress("UNCHECKED_CAST")
+class Query(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.Query.Builder]. */
     val builder = CottontailGrpc.QueryMessage.newBuilder()
 
@@ -25,7 +28,7 @@ class Query(entity: String? = null) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): Query {
+    override fun txId(txId: Long): Query {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -35,7 +38,7 @@ class Query(entity: String? = null) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): Query {
+    override fun queryId(queryId: String): Query {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }
@@ -202,44 +205,11 @@ class Query(entity: String? = null) {
     @Deprecated("Deprecated since version 0.13.0; use nns() function instead!", replaceWith = ReplaceWith("nns"))
     fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
         if (weight != null)throw UnsupportedOperationException("Weighted NNS is no longer supported by Cottontail DB. Use weighted distance function with respective arguments instead.")
-        return nns(column, query, Distances.valueOf(distance.uppercase()),"distance", k.toLong())
+        return neighborSearch(column, query, Distances.valueOf(distance.uppercase()),"distance", k.toLong())
     }
 
     /**
-     * Transforms this [Query] to a Nearest Neighbor Search (NNS) query and returns it.
-     *
-     * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
-     * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
-     * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
-     *
-     * @param column The column to perform NNS on. Type must be compatible with choice of distance function.
-     * @param query Query value to use. Type must be compatible with choice of distance function.
-     * @param distance The distance function to use. Function argument must be compatible with column type.
-     * @param name The name of the column that holds the calculated distance value.
-     * @param k The number of entries to return. It is highly recommended to use a reasonable number here, since otherwise, Cottontail DB may run out of memory.
-     * @return This [Query]
-     */
-    fun nns(column: String, query: Any, distance: Distances, name: String, k: Long): Query {
-        /* Parse necessary functions. */
-        val distanceColumn = name.parseColumn()
-        val distanceFunction = CottontailGrpc.Function.newBuilder()
-            .setName(distance.toGrpc())
-            .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn()))
-            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
-
-        /* Update projection: Add distance column + alias. */
-        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
-
-        /* Update ORDER BY clause. */
-        this.builder.queryBuilder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.ASCENDING))
-
-        /* Update LIMIT clause. */
-        this.builder.queryBuilder.limit = k
-        return this
-    }
-
-    /**
-     * Transforms this [Query] to a Farthest Neighbor Search (FNS) query and returns it.
+     * Transforms this [Query] to a Neighbor Search (NS) query and returns it.
      *
      * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
      * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
@@ -250,21 +220,22 @@ class Query(entity: String? = null) {
      * @param distance The distance function to use. Function argument must be compatible with column type.
      * @param name The name of the column that holds the calculated distance value.
      * @param k The number of entries to return. It is highly recommended using a reasonable number here, since otherwise, Cottontail DB may run out of memory.
+     * @param direction The desired sort direction. [Direction.ASC] for NNS and [Direction.DESC] for FNS.
      * @return This [Query]
      */
-    fun fns(column: String, query: Any, distance: Distances, name: String, k: Long): Query {
+    fun neighborSearch(column: String, query: Any, distance: Distances, name: String, k: Long, direction: Direction = Direction.ASC): Query {
         /* Parse necessary functions. */
         val distanceColumn = name.parseColumn()
         val distanceFunction = CottontailGrpc.Function.newBuilder()
             .setName(distance.toGrpc())
             .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn()))
-            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
+            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.convertAnyToVector())))
 
         /* Update projection: Add distance column + alias. */
         this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
 
         /* Update ORDER BY clause. */
-        this.builder.queryBuilder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.DESCENDING))
+        this.builder.queryBuilder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(direction.toGrpc()))
 
         /* Update LIMIT clause. */
         this.builder.queryBuilder.limit = k
@@ -319,5 +290,25 @@ class Query(entity: String? = null) {
     fun clear(): Query {
         this.builder.queryBuilder.clear()
         return this
+    }
+
+    /**
+     * Tries to convert [Any] to a [CottontailGrpc.Vector].
+     *
+     * Only works for compatible types, otherwise throws an [IllegalStateException]
+     *
+     * @return [CottontailGrpc.Vector]
+     */
+    private fun Any.convertAnyToVector(): CottontailGrpc.Vector = when (this) {
+        is Array<*> -> {
+            require(this[0] is Number) { "Only arrays of numbers can be converted to vector literals." }
+            (this as Array<Number>).toVector()
+        }
+        is BooleanArray -> this.toVector()
+        is IntArray -> this.toVector()
+        is LongArray -> this.toVector()
+        is FloatArray -> this.toVector()
+        is DoubleArray -> this.toVector()
+        else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to vector element is not supported.")
     }
 }

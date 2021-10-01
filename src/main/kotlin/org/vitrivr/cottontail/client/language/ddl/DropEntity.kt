@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,7 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class DropEntity(name: String) {
+class DropEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
     val builder = CottontailGrpc.DropEntityMessage.newBuilder()
 
@@ -22,7 +23,7 @@ class DropEntity(name: String) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): DropEntity {
+    override fun txId(txId: Long): DropEntity {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -32,7 +33,7 @@ class DropEntity(name: String) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): DropEntity {
+    override fun queryId(queryId: String): DropEntity {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }

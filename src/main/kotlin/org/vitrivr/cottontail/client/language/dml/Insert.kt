@@ -1,8 +1,8 @@
 package org.vitrivr.cottontail.client.language.dml
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
-import org.vitrivr.cottontail.client.language.extensions.toLiteral
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -11,7 +11,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.2.0
  */
-class Insert(entity: String? = null) {
+class Insert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.InsertMessage.Builder]. */
     val builder = CottontailGrpc.InsertMessage.newBuilder()
 
@@ -26,7 +26,7 @@ class Insert(entity: String? = null) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): Insert {
+    override fun txId(txId: Long): Insert {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -36,7 +36,7 @@ class Insert(entity: String? = null) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): Insert {
+    override fun queryId(queryId: String): Insert {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }
@@ -82,28 +82,5 @@ class Insert(entity: String? = null) {
             this.value(assignment.first, assignment.second)
         }
         return this
-    }
-
-    /**
-     * Converts an [Any] to a [CottontailGrpc.Literal]
-     *
-     * @return [CottontailGrpc.Literal]
-     */
-    private fun Any.convert(): CottontailGrpc.Literal = when(this) {
-        is Array<*> -> (this as Array<Number>).toLiteral()
-        is BooleanArray -> this.toLiteral()
-        is IntArray -> this.toLiteral()
-        is LongArray -> this.toLiteral()
-        is FloatArray -> this.toLiteral()
-        is DoubleArray -> this.toLiteral()
-        is Boolean -> this.toLiteral()
-        is Byte -> this.toLiteral()
-        is Short -> this.toLiteral()
-        is Int -> this.toLiteral()
-        is Long -> this.toLiteral()
-        is Float -> this.toLiteral()
-        is Double -> this.toLiteral()
-        is String -> this.toLiteral()
-        else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to literal is not supported.")
     }
 }

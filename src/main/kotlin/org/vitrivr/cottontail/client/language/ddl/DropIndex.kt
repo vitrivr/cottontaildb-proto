@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseIndex
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,7 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class DropIndex(name: String) {
+class DropIndex(name: String): LanguageFeature() {
     val builder = CottontailGrpc.DropIndexMessage.newBuilder()
 
     init {
@@ -21,7 +22,7 @@ class DropIndex(name: String) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): DropIndex {
+    override fun txId(txId: Long): DropIndex {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -31,7 +32,7 @@ class DropIndex(name: String) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): DropIndex {
+    override fun queryId(queryId: String): DropIndex {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }

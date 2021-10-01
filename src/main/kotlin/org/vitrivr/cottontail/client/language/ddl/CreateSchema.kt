@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseSchema
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,7 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class CreateSchema(name: String) {
+class CreateSchema(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.CreateSchemaMessage.Builder]. */
     val builder = CottontailGrpc.CreateSchemaMessage.newBuilder()
 
@@ -22,7 +23,7 @@ class CreateSchema(name: String) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): CreateSchema {
+    override fun txId(txId: Long): CreateSchema {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -32,7 +33,7 @@ class CreateSchema(name: String) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): CreateSchema {
+    override fun queryId(queryId: String): CreateSchema {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }

@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseSchema
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,7 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class DropSchema(name: String) {
+class DropSchema(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.DropSchemaMessage.Builder]. */
     val builder = CottontailGrpc.DropSchemaMessage.newBuilder()
 
@@ -22,7 +23,7 @@ class DropSchema(name: String) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): DropSchema {
+    override fun txId(txId: Long): DropSchema {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -32,7 +33,7 @@ class DropSchema(name: String) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): DropSchema {
+    override fun queryId(queryId: String): DropSchema {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }

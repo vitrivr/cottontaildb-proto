@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -8,7 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class ListSchemas {
+class ListSchemas: LanguageFeature() {
     /** Internal [CottontailGrpc.ListSchemaMessage.Builder]. */
     val builder = CottontailGrpc.ListSchemaMessage.newBuilder()
 
@@ -17,7 +18,7 @@ class ListSchemas {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): ListSchemas {
+    override fun txId(txId: Long): ListSchemas {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -27,7 +28,7 @@ class ListSchemas {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): ListSchemas {
+    override fun queryId(queryId: String): ListSchemas {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }

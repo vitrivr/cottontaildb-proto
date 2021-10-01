@@ -122,8 +122,12 @@ class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrp
  *
  * @return [CottontailGrpc.Literal]
  */
+@Suppress("UNCHECKED_CAST")
 private fun Any.convert(): CottontailGrpc.Literal = when(this) {
-    is Array<*> -> (this as Array<Number>).toLiteral()
+    is Array<*> -> {
+        require(this[0] is Number) { "Only arrays of numbers can be converted to vector literals." }
+        (this as Array<Number>).toLiteral()
+    }
     is BooleanArray -> this.toLiteral()
     is IntArray -> this.toLiteral()
     is LongArray -> this.toLiteral()

@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,7 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class AboutEntity(name: String) {
+class AboutEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
     val builder = CottontailGrpc.EntityDetailsMessage.newBuilder()
 
@@ -22,7 +23,7 @@ class AboutEntity(name: String) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): AboutEntity {
+    override fun txId(txId: Long): AboutEntity {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -32,7 +33,7 @@ class AboutEntity(name: String) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): AboutEntity {
+    override fun queryId(queryId: String): AboutEntity {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }

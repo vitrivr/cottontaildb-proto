@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.ddl
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseIndex
 import org.vitrivr.cottontail.grpc.CottontailGrpc
@@ -10,7 +11,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class CreateIndex(name: String, type: CottontailGrpc.IndexType) {
+class CreateIndex(name: String, type: CottontailGrpc.IndexType): LanguageFeature() {
 
     val builder = CottontailGrpc.CreateIndexMessage.newBuilder()
 
@@ -24,7 +25,7 @@ class CreateIndex(name: String, type: CottontailGrpc.IndexType) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): CreateIndex {
+    override fun txId(txId: Long): CreateIndex {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -34,7 +35,7 @@ class CreateIndex(name: String, type: CottontailGrpc.IndexType) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): CreateIndex {
+    override fun queryId(queryId: String): CreateIndex {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }

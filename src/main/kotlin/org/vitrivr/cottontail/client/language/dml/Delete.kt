@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.dml
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,7 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.2.0
  */
-class Delete(entity: String? = null) {
+class Delete(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
     val builder = CottontailGrpc.DeleteMessage.newBuilder()
 
@@ -24,7 +25,7 @@ class Delete(entity: String? = null) {
      *
      * @param txId The new transaction ID.
      */
-    fun txId(txId: Long): Delete {
+    override fun txId(txId: Long): Delete {
         this.builder.txIdBuilder.value = txId
         return this
     }
@@ -34,7 +35,7 @@ class Delete(entity: String? = null) {
      *
      * @param queryId The new query ID.
      */
-    fun queryId(queryId: String): Delete {
+    override fun queryId(queryId: String): Delete {
         this.builder.txIdBuilder.queryId = queryId
         return this
     }
