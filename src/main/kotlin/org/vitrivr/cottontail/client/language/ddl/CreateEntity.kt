@@ -19,6 +19,26 @@ class CreateEntity(name: String) {
     }
 
     /**
+     * Sets the transaction ID for this [CreateEntity].
+     *
+     * @param txId The new transaction ID.
+     */
+    fun txId(txId: Long): CreateEntity {
+        this.builder.txIdBuilder.value = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [CreateEntity].
+     *
+     * @param queryId The new query ID.
+     */
+    fun queryId(queryId: String): CreateEntity {
+        this.builder.txIdBuilder.queryId = queryId
+        return this
+    }
+
+    /**
      * Adds a column to this [CreateEntity].
      *
      * @param name The name of the column.

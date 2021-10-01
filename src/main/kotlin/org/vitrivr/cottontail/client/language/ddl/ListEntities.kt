@@ -16,4 +16,24 @@ class ListEntities(name: String) {
     init {
         this.builder.schema = name.parseSchema()
     }
+
+    /**
+     * Sets the transaction ID for this [ListEntities].
+     *
+     * @param txId The new transaction ID.
+     */
+    fun txId(txId: Long): ListEntities {
+        this.builder.txIdBuilder.value = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [ListEntities].
+     *
+     * @param queryId The new query ID.
+     */
+    fun queryId(queryId: String): ListEntities {
+        this.builder.txIdBuilder.queryId = queryId
+        return this
+    }
 }

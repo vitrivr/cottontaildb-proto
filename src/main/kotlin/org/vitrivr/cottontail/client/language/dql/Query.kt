@@ -8,16 +8,36 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class Query(entity: String? = null) {
     /** Internal [CottontailGrpc.Query.Builder]. */
-    val builder = CottontailGrpc.Query.newBuilder()
+    val builder = CottontailGrpc.QueryMessage.newBuilder()
 
     init {
         if (entity != null) {
-            this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+            this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         }
+    }
+
+    /**
+     * Sets the transaction ID for this [Query].
+     *
+     * @param txId The new transaction ID.
+     */
+    fun txId(txId: Long): Query {
+        this.builder.txIdBuilder.value = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [Query].
+     *
+     * @param queryId The new query ID.
+     */
+    fun queryId(queryId: String): Query {
+        this.builder.txIdBuilder.queryId = queryId
+        return this
     }
 
     /**
@@ -27,8 +47,8 @@ class Query(entity: String? = null) {
      * @return [Query]
      */
     fun select(vararg fields: String): Query {
-        this.builder.clearProjection()
-        val builder = this.builder.projectionBuilder
+        this.builder.queryBuilder.clearProjection()
+        val builder = this.builder.queryBuilder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
         for (field in fields) {
             builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
@@ -44,7 +64,7 @@ class Query(entity: String? = null) {
      * @return [Query]
      */
     fun select(vararg fields: Pair<String,String?>, clear: Boolean = false): Query {
-        val builder = this.builder.projectionBuilder
+        val builder = this.builder.queryBuilder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
         if (clear) builder.clearElements()
         for (field in fields) {
@@ -67,7 +87,7 @@ class Query(entity: String? = null) {
      * @return [Query]
      */
     fun distinct(vararg fields: Pair<String,String?>, clear: Boolean = false): Query {
-        val builder = this.builder.projectionBuilder
+        val builder = this.builder.queryBuilder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT
         if (clear) builder.clearElements()
         for (field in fields) {
@@ -88,8 +108,8 @@ class Query(entity: String? = null) {
      * @return [Query]
      */
     fun count(): Query {
-        this.builder.clearProjection()
-        val builder = this.builder.projectionBuilder
+        this.builder.queryBuilder.clearProjection()
+        val builder = this.builder.queryBuilder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.COUNT
         builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
         return this
@@ -103,8 +123,8 @@ class Query(entity: String? = null) {
      * @return [Query]
      */
     fun exists(): Query {
-        this.builder.clearProjection()
-        val builder = this.builder.projectionBuilder
+        this.builder.queryBuilder.clearProjection()
+        val builder = this.builder.queryBuilder.projectionBuilder
         builder.op = CottontailGrpc.Projection.ProjectionOperation.EXISTS
         builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
         return this
@@ -119,7 +139,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun from(entity: String): Query {
-        this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
+        this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         return this
     }
 
@@ -133,7 +153,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun sample(entity: String, seed: Long = System.currentTimeMillis()): Query {
-        this.builder.setFrom(CottontailGrpc.From.newBuilder().setSample(CottontailGrpc.Sample.newBuilder().setEntity(entity.parseEntity()).setSeed(seed)))
+        this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setSample(CottontailGrpc.Sample.newBuilder().setEntity(entity.parseEntity()).setSeed(seed)))
         return this
     }
 
@@ -145,7 +165,7 @@ class Query(entity: String? = null) {
      */
     fun from(query: Query): Query {
         require(query != this) { "SUB-SELECT query cannot specify itself."}
-        this.builder.setFrom(CottontailGrpc.From.newBuilder().setSubSelect(query.builder))
+        this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setSubSelect(query.builder.queryBuilder))
         return this
     }
 
@@ -156,7 +176,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun where(predicate: Predicate): Query {
-        val builder = this.builder.whereBuilder
+        val builder = this.builder.queryBuilder.whereBuilder
         when (predicate) {
             is Atomic -> builder.setAtomic(predicate.toPredicate())
             is And -> builder.setCompound(predicate.toPredicate())
@@ -208,13 +228,13 @@ class Query(entity: String? = null) {
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
 
         /* Update projection: Add distance column + alias. */
-        this.builder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
+        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
 
         /* Update ORDER BY clause. */
-        this.builder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.ASCENDING))
+        this.builder.queryBuilder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.ASCENDING))
 
         /* Update LIMIT clause. */
-        this.builder.limit = k
+        this.builder.queryBuilder.limit = k
         return this
     }
 
@@ -241,13 +261,13 @@ class Query(entity: String? = null) {
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.toVector())))
 
         /* Update projection: Add distance column + alias. */
-        this.builder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
+        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
 
         /* Update ORDER BY clause. */
-        this.builder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.DESCENDING))
+        this.builder.queryBuilder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(CottontailGrpc.Order.Direction.DESCENDING))
 
         /* Update LIMIT clause. */
-        this.builder.limit = k
+        this.builder.queryBuilder.limit = k
         return this
     }
 
@@ -259,7 +279,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun order(vararg clauses: Pair<String,String>, clear: Boolean = false): Query {
-        val builder = this.builder.orderBuilder
+        val builder = this.builder.queryBuilder.orderBuilder
         if (clear) builder.clearComponents()
         for (c in clauses) {
             val cBuilder = builder.addComponentsBuilder()
@@ -276,7 +296,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun skip(skip: Long): Query {
-        this.builder.skip = skip
+        this.builder.queryBuilder.skip = skip
         return this
     }
 
@@ -287,7 +307,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun limit(limit: Long): Query {
-        this.builder.limit = limit
+        this.builder.queryBuilder.limit = limit
         return this
     }
 
@@ -297,7 +317,7 @@ class Query(entity: String? = null) {
      * @return This [Query]
      */
     fun clear(): Query {
-        this.builder.clear()
+        this.builder.queryBuilder.clear()
         return this
     }
 }

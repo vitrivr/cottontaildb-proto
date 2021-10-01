@@ -20,6 +20,26 @@ class CreateIndex(name: String, type: CottontailGrpc.IndexType) {
     }
 
     /**
+     * Sets the transaction ID for this [CreateIndex].
+     *
+     * @param txId The new transaction ID.
+     */
+    fun txId(txId: Long): CreateIndex {
+        this.builder.txIdBuilder.value = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [CreateIndex].
+     *
+     * @param queryId The new query ID.
+     */
+    fun queryId(queryId: String): CreateIndex {
+        this.builder.txIdBuilder.queryId = queryId
+        return this
+    }
+
+    /**
      * Adds a column to this [CreateIndex].
      *
      * @param column The name of the column

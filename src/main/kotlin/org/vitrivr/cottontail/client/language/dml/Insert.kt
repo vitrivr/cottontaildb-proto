@@ -9,7 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.2
+ * @version 1.2.0
  */
 class Insert(entity: String? = null) {
     /** Internal [CottontailGrpc.InsertMessage.Builder]. */
@@ -19,6 +19,26 @@ class Insert(entity: String? = null) {
         if (entity != null) {
             this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         }
+    }
+
+    /**
+     * Sets the transaction ID for this [Update].
+     *
+     * @param txId The new transaction ID.
+     */
+    fun txId(txId: Long): Insert {
+        this.builder.txIdBuilder.value = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [Update].
+     *
+     * @param queryId The new query ID.
+     */
+    fun queryId(queryId: String): Insert {
+        this.builder.txIdBuilder.queryId = queryId
+        return this
     }
 
     /**

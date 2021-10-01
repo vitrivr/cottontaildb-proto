@@ -7,7 +7,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A DELETE query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.2.0
  */
 class Delete(entity: String? = null) {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
@@ -17,6 +17,26 @@ class Delete(entity: String? = null) {
         if (entity != null) {
             this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         }
+    }
+
+    /**
+     * Sets the transaction ID for this [Delete].
+     *
+     * @param txId The new transaction ID.
+     */
+    fun txId(txId: Long): Delete {
+        this.builder.txIdBuilder.value = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [Delete].
+     *
+     * @param queryId The new query ID.
+     */
+    fun queryId(queryId: String): Delete {
+        this.builder.txIdBuilder.queryId = queryId
+        return this
     }
 
     /**
