@@ -79,7 +79,6 @@ fun String.parseOperator(): CottontailGrpc.ComparisonOperator = when(val value =
     "<=" -> CottontailGrpc.ComparisonOperator.LEQUAL
     "NOT IN" -> CottontailGrpc.ComparisonOperator.IN
     "NOT LIKE" -> CottontailGrpc.ComparisonOperator.LIKE
-    "NOT MATCH" -> CottontailGrpc.ComparisonOperator.MATCH
     "IS NULL" -> CottontailGrpc.ComparisonOperator.ISNULL
     "IS NOT NULL" -> CottontailGrpc.ComparisonOperator.ISNULL
     else -> CottontailGrpc.ComparisonOperator.valueOf(value)
@@ -91,6 +90,6 @@ fun String.parseOperator(): CottontailGrpc.ComparisonOperator = when(val value =
  * @return [Boolean]
  */
 fun String.parseNot(): Boolean = when(this.uppercase()) {
-    "!=", "!==", "NOT IN", "NOT LIKE", "NOT MATCH", "IS NOT NULL" -> true
+    "!=", "!==", "NOT IN", "NOT LIKE", "IS NOT NULL" -> true
     else -> false
 }
