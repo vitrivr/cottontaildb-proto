@@ -205,7 +205,19 @@ class Query(entity: String? = null): LanguageFeature() {
     @Deprecated("Deprecated since version 0.13.0; use nns() function instead!", replaceWith = ReplaceWith("nns"))
     fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
         if (weight != null)throw UnsupportedOperationException("Weighted NNS is no longer supported by Cottontail DB. Use weighted distance function with respective arguments instead.")
-        return neighborSearch(column, query, Distances.valueOf(distance.uppercase()),"distance", k.toLong())
+
+        /* Calculate distance. */
+        distance(column, query, Distances.valueOf(distance.uppercase()),"distance")
+
+        /* Update ORDER BY clause. */
+        this.builder.queryBuilder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(
+            CottontailGrpc.ColumnName.newBuilder().setName("distance")
+        ).setDirection(Direction.ASC.toGrpc()))
+
+        /* Update LIMIT clause. */
+        this.builder.queryBuilder.limit = k.toLong()
+
+        return this
     }
 
     /**
@@ -215,30 +227,49 @@ class Query(entity: String? = null): LanguageFeature() {
      * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
      * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
      *
-     * @param column The column to perform NNS on. Type must be compatible with choice of distance function.
+     * @param probingColumn The column to perform NNS on. Type must be compatible with choice of distance function.
      * @param query Query value to use. Type must be compatible with choice of distance function.
      * @param distance The distance function to use. Function argument must be compatible with column type.
      * @param name The name of the column that holds the calculated distance value.
-     * @param k The number of entries to return. It is highly recommended using a reasonable number here, since otherwise, Cottontail DB may run out of memory.
-     * @param direction The desired sort direction. [Direction.ASC] for NNS and [Direction.DESC] for FNS.
      * @return This [Query]
      */
-    fun neighborSearch(column: String, query: Any, distance: Distances, name: String, k: Long, direction: Direction = Direction.ASC): Query {
+    fun distance(probingColumn: String, query: Any, distance: Distances, name: String): Query {
         /* Parse necessary functions. */
         val distanceColumn = name.parseColumn()
         val distanceFunction = CottontailGrpc.Function.newBuilder()
             .setName(distance.toGrpc())
-            .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn()))
+            .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(probingColumn.parseColumn()))
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.convertAnyToVector())))
 
         /* Update projection: Add distance column + alias. */
         this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
 
-        /* Update ORDER BY clause. */
-        this.builder.queryBuilder.orderBuilder.addComponents(CottontailGrpc.Order.Component.newBuilder().setColumn(distanceColumn).setDirection(direction.toGrpc()))
-
         /* Update LIMIT clause. */
-        this.builder.queryBuilder.limit = k
+        return this
+    }
+
+    /**
+     * Transforms this [Query] to a Farthest Neighbor Search (FNS) query and returns it.
+     *
+     * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
+     * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
+     * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
+     *
+     * @param probingColumn The column to perform fulltext search on.
+     * @param query Query [String] value to use. Type must be compatible with choice of distance function.
+     * @param name The name of the column that holds the calculated distance value.
+     * @return This [Query]
+     */
+    fun fulltext(probingColumn: String, query: String, name: String): Query {
+        val scoreColumn = name.parseColumn()
+        val fulltextFunction = CottontailGrpc.Function.newBuilder()
+            .setName(CottontailGrpc.FunctionName.newBuilder().setName("fulltext"))
+            .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(probingColumn.parseColumn()))
+            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setStringData(query)))
+
+        /* Update projection: Add distance column + alias. */
+        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(scoreColumn).setFunction(fulltextFunction))
+
         return this
     }
 
