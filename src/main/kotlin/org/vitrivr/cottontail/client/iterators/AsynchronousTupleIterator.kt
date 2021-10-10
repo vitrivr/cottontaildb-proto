@@ -61,6 +61,10 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
 
     /** Number of columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override var numberOfColumns: Int = 0
+        get() = this.lock.withLock {
+            if (!this.started) this.waitingForData.await()
+            field
+        }
         private set
 
     /**
@@ -72,9 +76,6 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
             this.numberOfColumns = value.columnsCount
             value.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
-                if (!this._columns.contains(c.name)) {
-                    this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
-                }
             }
             this.started = true
         }
