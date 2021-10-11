@@ -4,7 +4,6 @@ import com.google.protobuf.Empty
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
-import org.vitrivr.cottontail.client.iterators.AsynchronousTupleIterator
 import org.vitrivr.cottontail.client.iterators.TupleIterator
 import org.vitrivr.cottontail.client.iterators.SynchronousTupleIterator
 import org.vitrivr.cottontail.client.language.ddl.*
@@ -24,7 +23,7 @@ import org.vitrivr.cottontail.grpc.*
 class SimpleClient(private val channel: ManagedChannel) {
 
     /** Endpoint used for executing a query through Cottontail DB. */
-    private val dql by lazy { DQLGrpc.newStub(this.channel)  }
+    private val dql by lazy { DQLGrpc.newBlockingStub(this.channel)  }
 
     /** Endpoint used for managing data Cottontail DB. */
     private val dml by lazy { DMLGrpc.newBlockingStub(this.channel)  }
@@ -76,11 +75,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun query(query: CottontailGrpc.QueryMessage): TupleIterator {
-        val iterator = AsynchronousTupleIterator()
-        iterator.context.run { this.dql.query(query, iterator) }
-        return iterator
-    }
+    fun query(query: CottontailGrpc.QueryMessage): TupleIterator = SynchronousTupleIterator(this.dql.query(query))
 
     /**
      * Executes [Query] through this [SimpleClient]
@@ -96,11 +91,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator {
-        val iterator = AsynchronousTupleIterator()
-        iterator.context.run { this.dql.batchQuery(query, iterator) }
-        return iterator
-    }
+    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator = SynchronousTupleIterator(this.dql.batchQuery(query))
 
     /**
      * Explains [CottontailGrpc.Query] through this [SimpleClient]
@@ -108,11 +99,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.Query] to executed.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator {
-        val iterator = AsynchronousTupleIterator()
-        iterator.context.run { this.dql.explain(query, iterator) }
-        return iterator
-    }
+    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator = SynchronousTupleIterator(this.dql.explain(query))
 
     /**
      * Executes [Query] through this [SimpleClient]

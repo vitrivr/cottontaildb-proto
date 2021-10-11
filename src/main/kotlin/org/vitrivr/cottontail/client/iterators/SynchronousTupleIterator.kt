@@ -1,5 +1,7 @@
 package org.vitrivr.cottontail.client.iterators
 
+import io.grpc.Context
+import io.grpc.Status
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
@@ -27,6 +29,12 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     /** Internal map of simple names to column indexes. */
     private val _simple = HashMap<String,Int>()
 
+    /** The [Context.CancellableContext] in which the query processed by this [SynchronousTupleIterator] gets executed. */
+    private val _context: Context.CancellableContext = Context.current().withCancellation()
+
+    /* The [Context.CancellableContext] in which the query processed by this [SynchronousTupleIterator] gets executed. */
+    private val _restore = this._context.attach()
+
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: Collection<String>
         get() = Collections.unmodifiableCollection(this._columns.keys)
@@ -39,7 +47,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     override val numberOfColumns: Int
 
     init {
-        if (results.hasNext()) {
+        /* Start loading first results. */
+        if (!this.results.hasNext()) {
             /* Fetch data. */
             val next = this.results.next()
             this.buffer.addAll(next.tuplesList)
@@ -53,7 +62,10 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
                 }
             }
         } else {
+            /* Case: Empty resultset. */
             this.numberOfColumns = 0
+            this._context.detach(this._context)
+            this._context.close()
         }
     }
 
@@ -66,11 +78,17 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple {
-        if (this.buffer.isEmpty() && !this.fetchNext()) throw IllegalStateException("TupleIterator is has not more values.")
+        if (this.buffer.isEmpty() && !this.fetchNext()) throw IllegalStateException("TupleIterator is has no more values.")
         return TupleImpl(this.buffer.poll()!!)
     }
 
-    override fun close() {/* No op. */ }
+    /**
+     * Closes this [SynchronousTupleIterator].
+     */
+    override fun close() {
+        this._context.cancel(Status.CANCELLED
+            .withDescription("TupleIterator was prematurely closed by the user.").asException())  /* w/o effect if context has been closed. */
+    }
 
     /**
      * Fetches the next batch of [CottontailGrpc.QueryResponseMessage] into the [buffer].
@@ -81,6 +99,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         this.buffer.addAll(this.results.next().tuplesList)
         true
     } else {
+        this._restore.detach(this._context)
+        this._context.close()
         false
     }
 
