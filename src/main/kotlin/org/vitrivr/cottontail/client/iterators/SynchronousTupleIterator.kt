@@ -48,7 +48,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
 
     init {
         /* Start loading first results. */
-        if (!this.results.hasNext()) {
+        if (this.results.hasNext()) {
             /* Fetch data. */
             val next = this.results.next()
             this.buffer.addAll(next.tuplesList)
