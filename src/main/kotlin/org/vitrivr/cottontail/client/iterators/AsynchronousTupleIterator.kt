@@ -72,7 +72,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     /**
      * gRPC method: Called when another [CottontailGrpc.QueryResponseMessage] is available.
      */
-    override fun onNext(value: CottontailGrpc.QueryResponseMessage) = this.lock.withLock {
+    override fun onNext(value: CottontailGrpc.QueryResponseMessage) {
         /* Update columns for this TupleIterator. */
         if (this.started.compareAndSet(false, true)) {
             this.numberOfColumns = value.columnsCount
@@ -82,24 +82,29 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
                     this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
-            this.waitingForData.signalAll()
+
+            /* Critical section: Signal that data loading has started! */
+            this.lock.withLock {  this.waitingForData.signalAll() }
         }
 
-        /* Buffer tuples. This part may block. */
+        /* Buffer tuples. */
         for (tuple in value.tuplesList) {
-            if (this.buffer.size >= this.bufferSize) {
-                this.waitingForData.signalAll()
-                this.waitingForSpace.await()
-            }
             this.buffer.offer(TupleImpl(tuple))
         }
-        this.waitingForData.signalAll()
+
+        /* Critical section: Signal that new data has become available and block for buffer to become empty. */
+        this.lock.withLock {
+            this.waitingForData.signalAll()
+            if (this.buffer.size >= this.bufferSize) {
+                this.waitingForSpace.await()
+            }
+        }
     }
 
     /**
      * gRPC method: Called when the server side reports an error.
      */
-    override fun onError(t: Throwable?) = this.lock.withLock {
+    override fun onError(t: Throwable?) {
         /* If query hasn't started yet, mark it as started and signal (for results that produce errors). */
         this.started.compareAndSet(false, true)
 
@@ -110,13 +115,13 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
         }
 
         /* Signal that new data has become available. */
-        this.waitingForData.signalAll()
+        this.lock.withLock { this.waitingForData.signalAll() }
     }
 
     /**
      * gRPC method: Called when the server side completes.
      */
-    override fun onCompleted() = this.lock.withLock {
+    override fun onCompleted() {
         /* If query hasn't started yet, mark it as started and signal (for empty results). */
         this.started.compareAndSet(false, true)
 
@@ -125,8 +130,8 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
             this.context.cancel(null)
         }
 
-        /* Signal that new data has become available. */
-        this.waitingForData.signalAll()
+        /* Critical section: Signal that new data has become available. */
+        this.lock.withLock { this.waitingForData.signalAll() }
     }
 
     /**
@@ -164,7 +169,9 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
         } while (next == null)
 
         /* Signal that buffer has space again and return data. */
-        this.waitingForSpace.signalAll()
+        if (this.buffer.size < this.bufferSize) {
+            this.waitingForSpace.signalAll()
+        }
         return next
     }
 
@@ -177,9 +184,10 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     override fun close() {
         if (this._completed.compareAndSet(false, true)) {
             this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
+        } else {
             this.context.cancel(null)
-            this.buffer.clear()
         }
+        this.buffer.clear()
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
