@@ -140,10 +140,10 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
         /* Now check for available data. */
         do {
             when {
-                this.error != null -> throw this.error!!            /* Case Error ocurred: Throw it. */
-                this.buffer.isNotEmpty() ->  return@withLock true   /* Case Buffer has data: Return true. */
-                this.completed -> return@withLock false             /* Case Data loading has completed (AND buffer is empty): Return false. */
-                else -> this.waitingForData.await()                 /* Case Else: Wait for more data. */
+                this.error != null -> throw this.error!!   /* Case Error occurred: Throw it. */
+                this.completed -> break                    /* Case Data loading has completed (AND buffer is empty): Return false. */
+                this.buffer.isNotEmpty() -> return true    /* Case Buffer has data: Return true. */
+                else -> this.waitingForData.await()        /* Case Else: Wait for more data. */
             }
         } while (true)
         false
