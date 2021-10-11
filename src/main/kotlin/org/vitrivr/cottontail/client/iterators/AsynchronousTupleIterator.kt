@@ -10,7 +10,6 @@ import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import java.util.concurrent.CancellationException
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.collections.LinkedHashMap
 
 /**
@@ -47,24 +46,29 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     private var error: Throwable? = null
 
     /** Internal flag indicating, that this [AsynchronousTupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
-    override val completed: Boolean
-        get() = this._completed.get()
-    private val _completed = AtomicBoolean(false)
+    @Volatile
+    override var completed: Boolean = false
+        private set
 
     /** Flag indicating, that this [AsynchronousTupleIterator] has been initialized. */
-    private val started = AtomicBoolean(false)
+    @Volatile
+    private var started = false
+
+    /** Flag indicating, that this [AsynchronousTupleIterator] has been closes. */
+    @Volatile
+    private var closed = false
 
     /** Returns the columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override val columns: Collection<String>
         get() = this.lock.withLock {
-            if (!this.started.get()) this.waitingForData.await()
+            if (!this.started) this.waitingForData.await()
             Collections.unmodifiableCollection(this._columns.keys)
         }
 
     /** Number of columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override var numberOfColumns: Int = 0
         get() = this.lock.withLock {
-            if (!this.started.get()) this.waitingForData.await()
+            if (!this.started) this.waitingForData.await()
             field
         }
         private set
@@ -74,7 +78,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      */
     override fun onNext(value: CottontailGrpc.QueryResponseMessage) = this.lock.withLock {
         /* Update columns for this TupleIterator. */
-        if (this.started.compareAndSet(false, true)) {
+        if (!this.started) {
             this.numberOfColumns = value.columnsCount
             value.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
@@ -84,16 +88,20 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
             }
 
             /* Critical section: Signal that data loading has started! */
+            this.started = true
             this.waitingForData.signalAll()
         }
 
         /* Wait for space to become available... */
-        if (this.buffer.size >= this.bufferSize) {
-            this.waitingForSpace.await()
-        }
 
-        /*...buffer tuples... */
+
+        /* Buffer tuples; wait for space to become available if necessary... */
         for (tuple in value.tuplesList) {
+            if (this.buffer.size >= this.bufferSize) {
+                this.waitingForData.signalAll()
+                this.waitingForSpace.await()
+                if (this.closed) return /* Check if this AsynchronousTupleIterator has been closed in the meanwhile, and abort if so. */
+            }
             this.buffer.offer(TupleImpl(tuple))
         }
 
@@ -104,51 +112,58 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     /**
      * gRPC method: Called when the server side reports an error.
      */
-    override fun onError(t: Throwable?) {
+    override fun onError(t: Throwable?) = this.lock.withLock {
         /* If query hasn't started yet, mark it as started and signal (for results that produce errors). */
-        this.started.compareAndSet(false, true)
+        if (!this.started) {
+            this.started = true
+            this.waitingForData.signalAll()
+        }
 
         /* Mark query as completed and signal completeness! */
-        if (this._completed.compareAndSet(false, true)) {
+        if (!this.completed) {
             this.error = t
+            this.completed = true
             this.context.cancel(null)
         }
 
         /* Signal that new data has become available. */
-        this.lock.withLock { this.waitingForData.signalAll() }
+         this.waitingForData.signalAll()
     }
 
     /**
      * gRPC method: Called when the server side completes.
      */
-    override fun onCompleted() {
+    override fun onCompleted() = this.lock.withLock {
         /* If query hasn't started yet, mark it as started and signal (for empty results). */
-        this.started.compareAndSet(false, true)
+        if (!this.started) {
+            this.started = true
+            this.waitingForData.signalAll()
+        }
 
         /* Mark query as completed and signal completeness! */
-        if (this._completed.compareAndSet(false, true)) {
+        if (!this.completed) {
+            this.completed = true
             this.context.cancel(null)
         }
 
         /* Critical section: Signal that new data has become available. */
-        this.lock.withLock { this.waitingForData.signalAll() }
+        this.waitingForData.signalAll()
     }
 
     /**
      * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun hasNext(): Boolean = this.lock.withLock {
+        check(!this.closed) { "This TupleIterator has been closed and can no longer be used!" }
+
         /* Wait here if no data has been received yet. */
-        if (!this.started.get()) this.waitingForData.await()
+        if (!this.started) this.waitingForData.await()
 
         /* Now check for available data. */
         do {
-            when {
-                this.error != null -> throw this.error!!   /* Case Error occurred: Throw it. */
-                this.completed -> break                    /* Case Data loading has completed (AND buffer is empty): Return false. */
-                this.buffer.isNotEmpty() -> return true    /* Case Buffer has data: Return true. */
-                else -> this.waitingForData.await()        /* Case Else: Wait for more data. */
-            }
+            if (this.completed) throw this.error ?: break
+            if (this.buffer.isNotEmpty()) return true
+            this.waitingForData.await()
         } while (true)
         false
     }
@@ -157,21 +172,21 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      * Returns true if this [AsynchronousTupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple = this.lock.withLock {
+        check(!this.closed) { "This TupleIterator has been closed and can no longer be used!" }
+
         /* Wait here if no data has been received yet. */
-        if (!this.started.get()) this.waitingForData.await()
+        if (!this.started) this.waitingForData.await()
 
         /* Poll for tuple to become available. */
         var next: Tuple?
         do {
+            check(!(this.completed && this.buffer.isEmpty())) { throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().") }
             if (this.error != null) throw this.error!!
-            if (this.completed && this.buffer.isEmpty()) throw IllegalStateException("This TupleIterator has been drained and no new elements are to be expected! It is recommended to check if new elements available using hasNext() before a call to next().")
             next = this.buffer.poll()
         } while (next == null)
 
         /* Signal that buffer has space again and return data. */
-        if (this.buffer.size < this.bufferSize) {
-            this.waitingForSpace.signalAll()
-        }
+        if (this.buffer.size < this.bufferSize) this.waitingForSpace.signal()
         return next
     }
 
@@ -181,13 +196,20 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      * Closing a [AsynchronousTupleIterator] for a query that has not completed (i.e. whose responses have not been drained) may leads to
      * undefined behaviour on the server side and to a transaction that must be rolled back.
      */
-    override fun close() {
-        if (this._completed.compareAndSet(false, true)) {
-            this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
-        } else {
-            this.context.cancel(null)
+    override fun close() = this.lock.withLock {
+        if (!this.closed) {
+            this.closed = true
+            if (!this.completed) {
+                this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
+            }
+
+            /* Clear buffer. */
+            this.buffer.clear()
+
+            /* Signal to all (potentially) waiting locks. */
+            this.waitingForData.signalAll()
+            this.waitingForSpace.signalAll()
         }
-        this.buffer.clear()
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
