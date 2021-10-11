@@ -10,6 +10,7 @@ import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import java.util.concurrent.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.collections.LinkedHashMap
 
 /**
@@ -46,25 +47,24 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     private var error: Throwable? = null
 
     /** Internal flag indicating, that this [AsynchronousTupleIterator] has completed (i.e. no more [Tuple]s will be returned) */
-    @Volatile
-    override var completed: Boolean = false
-        private set
+    override val completed: Boolean
+        get() = this._completed.get()
+    private val _completed = AtomicBoolean(false)
 
     /** Flag indicating, that this [AsynchronousTupleIterator] has been initialized. */
-    @Volatile
-    var started: Boolean = false
+    private val started = AtomicBoolean(false)
 
     /** Returns the columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override val columns: Collection<String>
         get() = this.lock.withLock {
-            if (!this.started) this.waitingForData.await()
+            if (!this.started.get()) this.waitingForData.await()
             Collections.unmodifiableCollection(this._columns.keys)
         }
 
     /** Number of columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override var numberOfColumns: Int = 0
         get() = this.lock.withLock {
-            if (!this.started) this.waitingForData.await()
+            if (!this.started.get()) this.waitingForData.await()
             field
         }
         private set
@@ -74,7 +74,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      */
     override fun onNext(value: CottontailGrpc.QueryResponseMessage) = this.lock.withLock {
         /* Update columns for this TupleIterator. */
-        if (!this.started) {
+        if (this.started.compareAndSet(false, true)) {
             this.numberOfColumns = value.columnsCount
             value.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
@@ -82,7 +82,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
                     this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
-            this.started = true
+            this.waitingForData.signalAll()
         }
 
         /* Buffer tuples. This part may block. */
@@ -100,14 +100,13 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      */
     override fun onError(t: Throwable?) = this.lock.withLock {
         /* If query hasn't started yet, mark it as started and signal (for results that produce errors). */
-        if (!this.started) {
-            this.started = true
-        }
+        this.started.compareAndSet(false, true)
 
         /* Mark query as completed and signal completeness! */
-        this.completed = true
-        this.error = t
-        this.context.cancel(null)
+        if (this._completed.compareAndSet(false, true)) {
+            this.error = t
+            this.context.cancel(null)
+        }
 
         /* Signal that new data has become available. */
         this.waitingForData.signalAll()
@@ -118,13 +117,12 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      */
     override fun onCompleted() = this.lock.withLock {
         /* If query hasn't started yet, mark it as started and signal (for empty results). */
-        if (!this.started) {
-            this.started = true
-        }
+        this.started.compareAndSet(false, true)
 
         /* Mark query as completed and signal completeness! */
-        this.completed = true
-        this.context.cancel(null)
+        if (this._completed.compareAndSet(false, true)) {
+            this.context.cancel(null)
+        }
 
         /* Signal that new data has become available. */
         this.waitingForData.signalAll()
@@ -135,7 +133,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      */
     override fun hasNext(): Boolean = this.lock.withLock {
         /* Wait here if no data has been received yet. */
-        if (!this.started) this.waitingForData.await()
+        if (!this.started.get()) this.waitingForData.await()
 
         /* Now check for available data. */
         do {
@@ -154,7 +152,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      */
     override fun next(): Tuple = this.lock.withLock {
         /* Wait here if no data has been received yet. */
-        if (!this.started) this.waitingForData.await()
+        if (!this.started.get()) this.waitingForData.await()
 
         /* Poll for tuple to become available. */
         var next: Tuple?
@@ -176,12 +174,10 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
      * undefined behaviour on the server side and to a transaction that must be rolled back.
      */
     override fun close() {
-        if (!this.completed) {
+        if (this._completed.compareAndSet(false, true)) {
             this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
-            this.buffer.clear()
-            this.completed = true
-        } else {
             this.context.cancel(null)
+            this.buffer.clear()
         }
     }
 
