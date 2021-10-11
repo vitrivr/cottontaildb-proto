@@ -24,6 +24,9 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     /** Internal map of columns names to column indexes. */
     private val _columns = HashMap<String,Int>()
 
+    /** Internal map of simple names to column indexes. */
+    private val _simple = HashMap<String,Int>()
+
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: Collection<String>
         get() = Collections.unmodifiableCollection(this._columns.keys)
@@ -45,8 +48,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
             this.numberOfColumns = next.columnsCount
             next.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
-                if (!this._columns.contains(c.name)) {
-                    this._columns[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
+                if (!this._simple.contains(c.name)) {
+                    this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
         } else {
@@ -82,18 +85,18 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
-        override operator fun get(name: String) = get(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override  fun asBoolean(name: String) = asBoolean(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asInt(name: String) = asInt(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asLong(name: String) = asLong(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asFloat(name: String) = asFloat(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asDouble(name: String) = asDouble(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asBooleanVector(name: String) = asBooleanVector(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asIntVector(name: String) = asIntVector(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asLongVector(name: String) = asLongVector(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asFloatVector(name: String) = asFloatVector(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asDoubleVector(name: String) = asDoubleVector(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asDate(name: String) = asDate(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asString(name: String) = asString(this@SynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
+        override fun indexForName(name: String) = (this@SynchronousTupleIterator._columns[name] ?: this@SynchronousTupleIterator._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
+        override fun asBoolean(name: String) = asBoolean(indexForName(name))
+        override fun asInt(name: String) = asInt(indexForName(name))
+        override fun asLong(name: String) = asLong(indexForName(name))
+        override fun asFloat(name: String) = asFloat(indexForName(name))
+        override fun asDouble(name: String) = asDouble(indexForName(name))
+        override fun asBooleanVector(name: String) = asBooleanVector(indexForName(name))
+        override fun asIntVector(name: String) = asIntVector(indexForName(name))
+        override fun asLongVector(name: String) = asLongVector(indexForName(name))
+        override fun asFloatVector(name: String) = asFloatVector(indexForName(name))
+        override fun asDoubleVector(name: String) = asDoubleVector(indexForName(name))
+        override fun asDate(name: String) = asDate(indexForName(name))
+        override fun asString(name: String) = asString(indexForName(name))
     }
 }

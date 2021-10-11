@@ -41,8 +41,11 @@ abstract class Tuple(tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
         }
     }
 
+
+    abstract fun indexForName(name: String): Int
+
+    operator fun get(name: String) = this.values[indexForName(name)]
     operator fun get(index: Int): Any? = this.values[index]
-    abstract operator fun get(name: String): Any?
 
     fun asBoolean(index: Int): Boolean? {
         val value = this.values[index]

@@ -8,7 +8,6 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.collections.HashMap
 import kotlin.concurrent.withLock
 import java.util.concurrent.CancellationException
 import kotlin.collections.LinkedHashMap
@@ -26,6 +25,9 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
 
     /** Internal map of columns names to column indexes. */
     private val _columns = LinkedHashMap<String,Int>()
+
+    /** Internal map of simple names to column indexes. */
+    private val _simple = LinkedHashMap<String,Int>()
 
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
@@ -76,6 +78,9 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
             this.numberOfColumns = value.columnsCount
             value.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
+                if (!this._simple.contains(c.name)) {
+                    this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
+                }
             }
             this.started = true
         }
@@ -181,18 +186,18 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
-        override operator fun get(name: String) = get(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asBoolean(name: String) = asBoolean(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asInt(name: String) = asInt(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asLong(name: String) = asLong(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asFloat(name: String) = asFloat(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asDouble(name: String) = asDouble(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asBooleanVector(name: String) = asBooleanVector(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asIntVector(name: String) = asIntVector(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asLongVector(name: String) = asLongVector(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asFloatVector(name: String) = asFloatVector(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asDoubleVector(name: String) = asDoubleVector(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asDate(name: String) = asDate(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
-        override fun asString(name: String) = asString(this@AsynchronousTupleIterator._columns[name] ?: throw IllegalArgumentException("Column $name not known to this TupleIterator."))
+        override fun indexForName(name: String) =  (this@AsynchronousTupleIterator._columns[name] ?: this@AsynchronousTupleIterator._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
+        override fun asBoolean(name: String) = asBoolean(indexForName(name))
+        override fun asInt(name: String) = asInt(indexForName(name))
+        override fun asLong(name: String) = asLong(indexForName(name))
+        override fun asFloat(name: String) = asFloat(indexForName(name))
+        override fun asDouble(name: String) = asDouble(indexForName(name))
+        override fun asBooleanVector(name: String) = asBooleanVector(indexForName(name))
+        override fun asIntVector(name: String) = asIntVector(indexForName(name))
+        override fun asLongVector(name: String) = asLongVector(indexForName(name))
+        override fun asFloatVector(name: String) = asFloatVector(indexForName(name))
+        override fun asDoubleVector(name: String) = asDoubleVector(indexForName(name))
+        override fun asDate(name: String) = asDate(indexForName(name))
+        override fun asString(name: String) = asString(indexForName(name))
     }
 }
