@@ -32,6 +32,9 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     /** Internal lock used to synchronise access to buffer. */
     private val lock = ReentrantLock()
 
+    /** A [Condition] used to signal, that data loading has started. */
+    private val waitingForStart: Condition = this.lock.newCondition()
+
     /** A [Condition] used to signal, that the buffer is empty. */
     private val waitingForData: Condition = this.lock.newCondition()
 
@@ -61,14 +64,14 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     /** Returns the columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override val columns: Collection<String>
         get() = this.lock.withLock {
-            if (!this.started) this.waitingForData.await()
+            if (!this.started) this.waitingForStart.await()
             Collections.unmodifiableCollection(this._columns.keys)
         }
 
     /** Number of columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
     override var numberOfColumns: Int = 0
         get() = this.lock.withLock {
-            if (!this.started) this.waitingForData.await()
+            if (!this.started) this.waitingForStart.await()
             field
         }
         private set
@@ -87,67 +90,69 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
                 }
             }
 
-            /* Critical section: Signal that data loading has started! */
+            /* Signal that data loading has started! */
             this.started = true
-            this.waitingForData.signalAll()
+            this.waitingForStart.signalAll()
         }
 
-        /* Wait for space to become available... */
 
 
         /* Buffer tuples; wait for space to become available if necessary... */
         for (tuple in value.tuplesList) {
-            if (this.buffer.size >= this.bufferSize) {
-                this.waitingForData.signalAll()
+            while (this.buffer.size >= this.bufferSize) {
                 this.waitingForSpace.await()
-                if (this.closed) return /* Check if this AsynchronousTupleIterator has been closed in the meanwhile, and abort if so. */
             }
             this.buffer.offer(TupleImpl(tuple))
+            this.waitingForData.signal()
         }
 
         /*  ...and signal that new data has become available. */
-        this.waitingForData.signalAll()
+        this.waitingForData.signal()
     }
 
     /**
      * gRPC method: Called when the server side reports an error.
      */
     override fun onError(t: Throwable?) = this.lock.withLock {
-        /* If query hasn't started yet, mark it as started and signal (for results that produce errors). */
-        if (!this.started) {
-            this.started = true
-            this.waitingForData.signalAll()
-        }
-
         /* Mark query as completed and signal completeness! */
         if (!this.completed) {
             this.error = t
             this.completed = true
-            this.context.cancel(null)
+        }
+
+        /* If query hasn't started yet, mark it as started and signal (for results that produce errors). */
+        if (!this.started) {
+            this.started = true
+            this.waitingForStart.signalAll()
         }
 
         /* Signal that new data has become available. */
-         this.waitingForData.signalAll()
+        this.waitingForData.signalAll()
+        this.context.cancel(null)
+        Unit
     }
 
     /**
      * gRPC method: Called when the server side completes.
      */
     override fun onCompleted() = this.lock.withLock {
-        /* If query hasn't started yet, mark it as started and signal (for empty results). */
-        if (!this.started) {
-            this.started = true
-            this.waitingForData.signalAll()
-        }
-
         /* Mark query as completed and signal completeness! */
         if (!this.completed) {
             this.completed = true
             this.context.cancel(null)
         }
 
-        /* Critical section: Signal that new data has become available. */
+        /* If query hasn't started yet, mark it as started and signal (for empty results). */
+        this.lock.lock()
+        if (!this.started) {
+            this.started = true
+            this.waitingForStart.signalAll()
+        }
+
+        /* Signal that new data has become available. */
         this.waitingForData.signalAll()
+        this.context.cancel(null)
+        Unit
     }
 
     /**
@@ -157,7 +162,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
         check(!this.closed) { "This TupleIterator has been closed and can no longer be used!" }
 
         /* Wait here if no data has been received yet. */
-        if (!this.started) this.waitingForData.await()
+        if (!this.started) this.waitingForStart.await()
 
         /* Now check for available data. */
         do {
@@ -175,7 +180,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
         check(!this.closed) { "This TupleIterator has been closed and can no longer be used!" }
 
         /* Wait here if no data has been received yet. */
-        if (!this.started) this.waitingForData.await()
+        if (!this.started) this.waitingForStart.await()
 
         /* Poll for tuple to become available. */
         var next: Tuple?
@@ -207,6 +212,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
             this.buffer.clear()
 
             /* Signal to all (potentially) waiting locks. */
+            this.waitingForStart.signalAll()
             this.waitingForData.signalAll()
             this.waitingForSpace.signalAll()
         }
