@@ -88,11 +88,12 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
         /* Buffer tuples. This part may block. */
         for (tuple in value.tuplesList) {
             if (this.buffer.size >= this.bufferSize) {
+                this.waitingForData.signalAll()
                 this.waitingForSpace.await()
             }
             this.buffer.offer(TupleImpl(tuple))
-            this.waitingForData.signalAll()
         }
+        this.waitingForData.signalAll()
     }
 
     /**
