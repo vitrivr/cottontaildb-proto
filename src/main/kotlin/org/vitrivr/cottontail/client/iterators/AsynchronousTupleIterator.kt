@@ -72,7 +72,7 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     /**
      * gRPC method: Called when another [CottontailGrpc.QueryResponseMessage] is available.
      */
-    override fun onNext(value: CottontailGrpc.QueryResponseMessage) {
+    override fun onNext(value: CottontailGrpc.QueryResponseMessage) = this.lock.withLock {
         /* Update columns for this TupleIterator. */
         if (this.started.compareAndSet(false, true)) {
             this.numberOfColumns = value.columnsCount
@@ -84,21 +84,21 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
             }
 
             /* Critical section: Signal that data loading has started! */
-            this.lock.withLock {  this.waitingForData.signalAll() }
+            this.waitingForData.signalAll()
         }
 
-        /* Buffer tuples. */
+        /* Wait for space to become available... */
+        if (this.buffer.size >= this.bufferSize) {
+            this.waitingForSpace.await()
+        }
+
+        /*...buffer tuples... */
         for (tuple in value.tuplesList) {
             this.buffer.offer(TupleImpl(tuple))
         }
 
-        /* Critical section: Signal that new data has become available and block for buffer to become empty. */
-        this.lock.withLock {
-            this.waitingForData.signalAll()
-            if (this.buffer.size >= this.bufferSize) {
-                this.waitingForSpace.await()
-            }
-        }
+        /*  ...and signal that new data has become available. */
+        this.waitingForData.signalAll()
     }
 
     /**
