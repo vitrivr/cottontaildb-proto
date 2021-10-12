@@ -3,10 +3,9 @@ package org.vitrivr.cottontail.client
 import com.google.protobuf.Empty
 import io.grpc.Context
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
 import org.vitrivr.cottontail.client.iterators.TupleIterator
-import org.vitrivr.cottontail.client.iterators.SynchronousTupleIterator
+import org.vitrivr.cottontail.client.iterators.TupleIteratorImpl
 import org.vitrivr.cottontail.client.language.ddl.*
 import org.vitrivr.cottontail.client.language.dml.BatchInsert
 import org.vitrivr.cottontail.client.language.dml.Delete
@@ -15,7 +14,6 @@ import org.vitrivr.cottontail.client.language.dql.Query
 import org.vitrivr.cottontail.client.language.dml.Update
 import org.vitrivr.cottontail.grpc.*
 import java.util.concurrent.*
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * A simple Cottontail DB client for querying and data management.
@@ -23,20 +21,7 @@ import java.util.concurrent.atomic.AtomicLong
  * @author Ralph Gasser
  * @version 2.1.0
  */
-class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: Int = 5, queueSize: Int = 10): AutoCloseable {
-
-    companion object {
-        private val THREADS = AtomicLong(0L)
-    }
-
-    /** The [ThreadPoolExecutor] used by this [SimpleClient]. */
-    private val executor = ThreadPoolExecutor(corePoolSize, maxPoolSize, 60, TimeUnit.SECONDS, ArrayBlockingQueue(queueSize), ThreadFactory {
-        Thread("cottontail-simpleclient-" + THREADS.incrementAndGet())
-    })
-
-    /** The [ManagedChannel] used by this [SimpleClient]. */
-    private val channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().executor(this.executor).build()
-
+class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
 
     /** Internal flag used to track closed state of this [SimpleClient]. */
     @Volatile
@@ -78,7 +63,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
     fun query(query: CottontailGrpc.QueryMessage): TupleIterator {
         val stub = DQLGrpc.newBlockingStub(this.channel)
         val context = Context.CancellableContext.current().withCancellation()
-        return context.call { SynchronousTupleIterator(stub.query(query), context) }
+        return context.call { TupleIteratorImpl(stub.query(query), context) }
     }
 
     /**
@@ -98,7 +83,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
     fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator {
         val stub = DQLGrpc.newBlockingStub(this.channel)
         val context = Context.CancellableContext.current().withCancellation()
-        return context.call { SynchronousTupleIterator(stub.batchQuery(query), context) }
+        return context.call { TupleIteratorImpl(stub.batchQuery(query), context) }
     }
 
     /**
@@ -110,7 +95,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
     fun explain(query: CottontailGrpc.QueryMessage): TupleIterator {
         val stub = DQLGrpc.newBlockingStub(this.channel)
         val context = Context.CancellableContext.current().withCancellation()
-        return context.call { SynchronousTupleIterator(stub.explain(query), context) }
+        return context.call { TupleIteratorImpl(stub.explain(query), context) }
     }
 
     /**
@@ -129,7 +114,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun insert(query: CottontailGrpc.InsertMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.insert(query))
+        return TupleIteratorImpl(stub.insert(query))
     }
 
     /**
@@ -147,7 +132,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun insert(query: CottontailGrpc.BatchInsertMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.insertBatch(query))
+        return TupleIteratorImpl(stub.insertBatch(query))
     }
 
     /**
@@ -166,7 +151,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun update(query: CottontailGrpc.UpdateMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.update(query))
+        return TupleIteratorImpl(stub.update(query))
     }
 
     /**
@@ -186,7 +171,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun delete(query: CottontailGrpc.DeleteMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.delete(query))
+        return TupleIteratorImpl(stub.delete(query))
     }
 
     /**
@@ -205,7 +190,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun create(message: CottontailGrpc.CreateSchemaMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.createSchema(message))
+        return TupleIteratorImpl(stub.createSchema(message))
     }
 
     /**
@@ -224,7 +209,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun create(message: CottontailGrpc.CreateEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.createEntity(message))
+        return TupleIteratorImpl(stub.createEntity(message))
     }
 
     /**
@@ -243,7 +228,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun create(message: CottontailGrpc.CreateIndexMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.createIndex(message))
+        return TupleIteratorImpl(stub.createIndex(message))
     }
 
     /**
@@ -262,7 +247,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun drop(message: CottontailGrpc.DropSchemaMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.dropSchema(message))
+        return TupleIteratorImpl(stub.dropSchema(message))
     }
 
     /**
@@ -281,7 +266,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun drop(message: CottontailGrpc.DropEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.dropEntity(message))
+        return TupleIteratorImpl(stub.dropEntity(message))
     }
 
     /**
@@ -300,7 +285,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun drop(message: CottontailGrpc.DropIndexMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.dropIndex(message))
+        return TupleIteratorImpl(stub.dropIndex(message))
     }
 
     /**
@@ -319,7 +304,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun list(message: CottontailGrpc.ListSchemaMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.listSchemas(message))
+        return TupleIteratorImpl(stub.listSchemas(message))
     }
 
     /**
@@ -338,7 +323,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun list(message: CottontailGrpc.ListEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.listEntities(message))
+        return TupleIteratorImpl(stub.listEntities(message))
     }
 
     /**
@@ -357,7 +342,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun about(message: CottontailGrpc.EntityDetailsMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.entityDetails(message))
+        return TupleIteratorImpl(stub.entityDetails(message))
     }
 
     /**
@@ -376,7 +361,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun truncate(message: CottontailGrpc.TruncateEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.truncateEntity(message))
+        return TupleIteratorImpl(stub.truncateEntity(message))
     }
 
     /**
@@ -387,7 +372,7 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      */
     fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        return SynchronousTupleIterator(stub.optimizeEntity(message))
+        return TupleIteratorImpl(stub.optimizeEntity(message))
     }
 
     /**

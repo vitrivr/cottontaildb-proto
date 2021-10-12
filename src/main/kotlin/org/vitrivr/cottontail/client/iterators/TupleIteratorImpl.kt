@@ -14,7 +14,7 @@ import java.util.*
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext? = null) : TupleIterator {
+class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext? = null) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
     constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator(), null)
@@ -47,7 +47,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
 
-    /** Flag indicating, that this [SynchronousTupleIterator] has been closed. */
+    /** Flag indicating, that this [TupleIteratorImpl] has been closed. */
     @Volatile
     var closed: Boolean = false
         private set
@@ -69,6 +69,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
             }
         } else {
             this.context?.close() /* Context can be closed right away. */
+            this.closed = true
             this.numberOfColumns = 0
         }
     }
@@ -87,7 +88,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     }
 
     /**
-     * Closes this [SynchronousTupleIterator].
+     * Closes this [TupleIteratorImpl].
      */
     override fun close() {
         if (!this.closed) {
@@ -105,12 +106,13 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         this.buffer.addAll(this.results.next().tuplesList)
         true
     } else {
+        this.closed = true
         this.context?.close() /* Context can be closed. */
         false
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
-        override fun indexForName(name: String) = (this@SynchronousTupleIterator._columns[name] ?: this@SynchronousTupleIterator._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
+        override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
         override fun asBoolean(name: String) = asBoolean(indexForName(name))
         override fun asInt(name: String) = asInt(indexForName(name))
         override fun asLong(name: String) = asLong(indexForName(name))
