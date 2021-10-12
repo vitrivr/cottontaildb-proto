@@ -5,7 +5,6 @@ import io.grpc.Status
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
-import kotlin.collections.HashMap
 
 /**
  * A [TupleIterator] used for retrieving [Tuple]s in a synchronous fashion.
@@ -15,10 +14,10 @@ import kotlin.collections.HashMap
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext) : TupleIterator {
+class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext? = null) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext) : this(sequenceOf(result).iterator(), context)
+    constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator(), null)
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
@@ -28,9 +27,6 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
 
     /** Internal map of simple names to column indexes. */
     private val _simple = LinkedHashMap<String,Int>()
-
-    /** The [Context.CancellableContext] in which the query processed by this [SynchronousTupleIterator] gets executed. */
-    private val localContext = this.context.attach().withCancellation()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: List<String>
@@ -54,7 +50,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     /** Flag indicating, that this [SynchronousTupleIterator] has been closed. */
     @Volatile
     var closed: Boolean = false
-        private set;
+        private set
 
     init {
         /* Start loading first results. */
@@ -72,10 +68,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
                 }
             }
         } else {
-            /* Case: Empty resultset. */
+            this.context?.close() /* Context can be closed right away. */
             this.numberOfColumns = 0
-            this.closed = true
-            this.localContext.detachAndCancel(this.context, null)
         }
     }
 
@@ -98,7 +92,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     override fun close() {
         if (!this.closed) {
             this.closed = true
-            this.localContext.detachAndCancel(this.context, Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
+            this.context?.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
         }
     }
 
@@ -111,8 +105,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         this.buffer.addAll(this.results.next().tuplesList)
         true
     } else {
-        this.closed = true
-        this.localContext.detachAndCancel(this.context, null)
+        this.context?.close() /* Context can be closed. */
         false
     }
 
