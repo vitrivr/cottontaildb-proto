@@ -15,10 +15,10 @@ import kotlin.collections.HashMap
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : TupleIterator {
+class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, val context: Context.CancellableContext) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator())
+    constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext) : this(sequenceOf(result).iterator(), context)
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
@@ -30,10 +30,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     private val _simple = HashMap<String,Int>()
 
     /** The [Context.CancellableContext] in which the query processed by this [SynchronousTupleIterator] gets executed. */
-    private val _context: Context.CancellableContext = Context.current().withCancellation()
-
-    /* The [Context.CancellableContext] in which the query processed by this [SynchronousTupleIterator] gets executed. */
-    private val _restore = this._context.attach()
+    private val localContext = context.withCancellation()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: Collection<String>
@@ -45,10 +42,6 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
 
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
-
-    /** Internal flag indicating, that this [SynchronousTupleIterator] has been closed. */
-    @Volatile
-    private var closed: Boolean = false
 
     init {
         /* Start loading first results. */
@@ -68,9 +61,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         } else {
             /* Case: Empty resultset. */
             this.numberOfColumns = 0
-            this.closed = true
-            this._restore.detach(this._context)
-            this._context.close()
+            this.localContext.detachAndCancel(context, null)
         }
     }
 
@@ -91,11 +82,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
      * Closes this [SynchronousTupleIterator].
      */
     override fun close() {
-        if (!this.closed) {
-            this._restore.detach(this._context)
-            this._context.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())  /* w/o effect if context has been closed. */
-            this.closed = true
-        }
+        this.localContext.detachAndCancel(context, Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
     }
 
     /**
@@ -107,9 +94,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         this.buffer.addAll(this.results.next().tuplesList)
         true
     } else {
-        this.closed = true
-        this._restore.detach(this._context)
-        this._context.close()
+        this.localContext.detachAndCancel(context, null)
         false
     }
 
