@@ -30,7 +30,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     private val _simple = LinkedHashMap<String,Int>()
 
     /** The [Context.CancellableContext] in which the query processed by this [SynchronousTupleIterator] gets executed. */
-    private val localContext = context.withCancellation()
+    private val localContext = this.context.attach().withCancellation()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: List<String>
@@ -51,6 +51,11 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
 
+    /** Flag indicating, that this [SynchronousTupleIterator] has been closed. */
+    @Volatile
+    var closed: Boolean = false
+        private set;
+
     init {
         /* Start loading first results. */
         if (this.results.hasNext()) {
@@ -69,7 +74,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         } else {
             /* Case: Empty resultset. */
             this.numberOfColumns = 0
-            this.localContext.detachAndCancel(context, null)
+            this.closed = true
+            this.localContext.detachAndCancel(this.context, null)
         }
     }
 
@@ -90,7 +96,10 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
      * Closes this [SynchronousTupleIterator].
      */
     override fun close() {
-        this.localContext.detachAndCancel(context, Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
+        if (!this.closed) {
+            this.closed = true
+            this.localContext.detachAndCancel(this.context, Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
+        }
     }
 
     /**
@@ -102,7 +111,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         this.buffer.addAll(this.results.next().tuplesList)
         true
     } else {
-        this.localContext.detachAndCancel(context, null)
+        this.closed = true
+        this.localContext.detachAndCancel(this.context, null)
         false
     }
 
