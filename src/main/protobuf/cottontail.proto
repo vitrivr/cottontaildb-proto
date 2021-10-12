@@ -84,16 +84,16 @@ service DQL {
  */
 service TXN {
     /** Starts a new transaction. */
-    rpc Begin (google.protobuf.Empty) returns (TransactionId);
+    rpc Begin (google.protobuf.Empty) returns (Metadata);
 
     /** Performs a commit on a transaction. This method blocks if a query is currently executed. */
-    rpc Commit (TransactionId) returns (google.protobuf.Empty);
+    rpc Commit (Metadata) returns (google.protobuf.Empty);
 
     /** Performs a rollback on a transaction and aborts it. This method blocks if a query is currently executed. */
-    rpc Rollback (TransactionId) returns (google.protobuf.Empty);
+    rpc Rollback (Metadata) returns (google.protobuf.Empty);
 
     /** Kills and performs a rollback on an ongoing transaction. This method can even be used when a query is being executed.*/
-    rpc Kill (TransactionId) returns (google.protobuf.Empty);
+    rpc Kill (Metadata) returns (google.protobuf.Empty);
 
     /** Lists all active transactions. */
     rpc ListTransactions (google.protobuf.Empty) returns (stream QueryResponseMessage);
@@ -143,24 +143,10 @@ enum IndexType {
     NONBUCKETING_SUPERBIT_LSH = 8;
 }
 
-/** A transaction ID in Cottontail DB. */
-message TransactionId {
-    int64 value = 1;
+/** Query metadata used in Cottontail DB. */
+message Metadata {
+    int64 transactionId = 1;
     string queryId = 2;
-}
-
-/** Describes a basic transaction in Cottontail DB. */
-message Transaction {
-    TransactionId tid = 1;
-    Status status = 2;
-    int64 created = 3;
-    int64 completed = 4;
-    enum Status {
-        CREATED = 0;
-        RUNNING = 1;
-        COMPLETED = 2;
-        ERROR = 3;
-    }
 }
 
 /* The storage engine employed by a Cottontail DB column. */
@@ -306,73 +292,73 @@ message Complex64Vector {
 
 /** Message to create a new schema. */
 message CreateSchemaMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to drop schema. */
 message DropSchemaMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to list schemata. */
 message ListSchemaMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
 }
 
 /** Message to create an entity. */
 message CreateEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityDefinition definition = 2;
 }
 
 /** Message to drop an entity. */
 message DropEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to drop an entity. */
 message TruncateEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to drop an entity. */
 message OptimizeEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to list entities. */
 message EntityDetailsMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to list entities. */
 message ListEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to create an index. */
 message CreateIndexMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     IndexDefinition definition = 2;
     bool rebuild = 3;
 }
 
 /** Message to drop an index. */
 message DropIndexMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     IndexName index = 2;
 }
 
 /** Message to rebuild an index. */
 message RebuildIndexMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     IndexName index = 2;
 }
 
@@ -402,7 +388,7 @@ message IndexDefinition {
 
 /** Message for inserting data into an entity. */
 message InsertMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     repeated InsertElement elements = 3;
     message InsertElement {
@@ -414,7 +400,7 @@ message InsertMessage {
 
 /** Message for batch-inserting data into an entity. */
 message BatchInsertMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     repeated ColumnName columns = 3;
     repeated Insert inserts = 4;
@@ -425,7 +411,7 @@ message BatchInsertMessage {
 
 /** Message for updating data in an entity. */
 message UpdateMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     Where where = 3;
     repeated UpdateElement updates = 4;
@@ -437,7 +423,7 @@ message UpdateMessage {
 
 /** Message for deleting data from an entity. */
 message DeleteMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     Where where = 3;
 }
@@ -448,13 +434,13 @@ message DeleteMessage {
 
 /* A single query that should be executed. */
 message QueryMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     Query query = 2;
 }
 
 /* A batched query that should be executed. */
 message BatchedQueryMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     repeated Query query = 2;
 }
 
@@ -471,7 +457,7 @@ message Query {
 
 /* A query response message. */
 message QueryResponseMessage {
-    TransactionId tid = 1;
+    Metadata tid = 1;
     repeated ColumnName columns = 2; /* Columns returned by this QueryResponseMessage. */
     repeated Tuple tuples = 3; /* List of tuples returned (data in order of columns). */
     message Tuple {

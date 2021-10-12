@@ -26,7 +26,7 @@ class Delete(entity: String? = null): LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): Delete {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -36,7 +36,7 @@ class Delete(entity: String? = null): LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): Delete {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 

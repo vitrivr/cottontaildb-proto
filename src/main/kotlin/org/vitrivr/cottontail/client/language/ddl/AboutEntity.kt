@@ -8,7 +8,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A message to retrieves information about an entity.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 class AboutEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
@@ -24,7 +24,7 @@ class AboutEntity(name: String): LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): AboutEntity {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -34,7 +34,7 @@ class AboutEntity(name: String): LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): AboutEntity {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 }

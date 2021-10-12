@@ -7,7 +7,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A message to list all schemas.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 class ListSchemas: LanguageFeature() {
     /** Internal [CottontailGrpc.ListSchemaMessage.Builder]. */
@@ -19,7 +19,7 @@ class ListSchemas: LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): ListSchemas {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -29,7 +29,7 @@ class ListSchemas: LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): ListSchemas {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 }

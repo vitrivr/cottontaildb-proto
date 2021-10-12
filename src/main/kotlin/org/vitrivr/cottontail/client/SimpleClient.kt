@@ -32,7 +32,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      *
      * @return The ID of the newly begun transaction.
      */
-    fun begin(): Long = TXNGrpc.newBlockingStub(this.channel).begin(Empty.getDefaultInstance()).value
+    fun begin(): Long = TXNGrpc.newBlockingStub(this.channel).begin(Empty.getDefaultInstance()).transactionId
 
     /**
      * Commits a transaction through this [SimpleClient].
@@ -40,7 +40,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param txId The transaction ID to commit.
      */
     fun commit(txId: Long) {
-        val tx = CottontailGrpc.TransactionId.newBuilder().setValue(txId).build()
+        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).commit(tx)
     }
 
@@ -50,8 +50,18 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param txId The transaction ID to rollback.
      */
     fun rollback(txId: Long) {
-        val tx = CottontailGrpc.TransactionId.newBuilder().setValue(txId).build()
+        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).rollback(tx)
+    }
+
+    /**
+     * Kills and rolls back a transaction through this [SimpleClient].
+     *
+     * @param txId The transaction ID to kill and rollback.
+     */
+    fun kill(txId: Long) {
+        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
+        TXNGrpc.newBlockingStub(this.channel).kill(tx)
     }
 
     /**

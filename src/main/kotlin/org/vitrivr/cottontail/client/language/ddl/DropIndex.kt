@@ -23,7 +23,7 @@ class DropIndex(name: String): LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): DropIndex {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -33,7 +33,7 @@ class DropIndex(name: String): LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): DropIndex {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 }
