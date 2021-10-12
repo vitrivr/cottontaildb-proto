@@ -13,9 +13,9 @@ import kotlin.collections.HashMap
  * Usually used with unary, server-side calls that only return a limited amount of data.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
-class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, val context: Context.CancellableContext) : TupleIterator {
+class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
     constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext) : this(sequenceOf(result).iterator(), context)
@@ -24,17 +24,25 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
 
     /** Internal map of columns names to column indexes. */
-    private val _columns = HashMap<String,Int>()
+    private val _columns = LinkedHashMap<String,Int>()
 
     /** Internal map of simple names to column indexes. */
-    private val _simple = HashMap<String,Int>()
+    private val _simple = LinkedHashMap<String,Int>()
 
     /** The [Context.CancellableContext] in which the query processed by this [SynchronousTupleIterator] gets executed. */
     private val localContext = context.withCancellation()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
-    override val columns: Collection<String>
-        get() = Collections.unmodifiableCollection(this._columns.keys)
+    override val columns: List<String>
+        get() = this._columns.keys.toList()
+
+    /**
+     *  [List] of column names returned by this [TupleIterator] in order of occurrence. Contains simple names.
+     *
+     *  Since simple names may collide, list may be incomplete for given query.
+     */
+    override val simple: List<String>
+        get() = this._simple.keys.toList()
 
     /** False as long [Iterator] can return values. */
     override val completed: Boolean
