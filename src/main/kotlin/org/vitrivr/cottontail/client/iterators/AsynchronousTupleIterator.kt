@@ -62,10 +62,15 @@ class AsynchronousTupleIterator(private val bufferSize: Int = 100): TupleIterato
     private var closed = false
 
     /** Returns the columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
-    override val columns: Collection<String>
+    override val columns: List<String>
         get() = this.lock.withLock {
             if (!this.started) this.waitingForStart.await()
-            Collections.unmodifiableCollection(this._columns.keys)
+            this._columns.keys.toList()
+        }
+    override val simple: List<String>
+        get() = this.lock.withLock {
+            if (!this.started) this.waitingForStart.await()
+            this._simple.keys.toList()
         }
 
     /** Number of columns contained in the [Tuple]s returned by this [AsynchronousTupleIterator]. */
