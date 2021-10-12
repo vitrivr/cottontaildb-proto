@@ -14,10 +14,10 @@ import java.util.*
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext? = null) : TupleIterator {
+class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator(), null)
+    constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator())
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
@@ -27,6 +27,9 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
 
     /** Internal map of simple names to column indexes. */
     private val _simple = LinkedHashMap<String,Int>()
+
+    /** [Context.CancellableContext] to which this [TupleIterator] is bound.  */
+    private val _iteratorContext = Context.current().withCancellation()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: List<String>
@@ -48,29 +51,34 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     override val numberOfColumns: Int
 
     /** Flag indicating, that this [TupleIteratorImpl] has been closed. */
-    @Volatile
-    var closed: Boolean = false
-        private set
+    val closed: Boolean
+        get() = this._iteratorContext.isCancelled
 
     init {
-        /* Start loading first results. */
-        if (this.results.hasNext()) {
-            /* Fetch data. */
-            val next = this.results.next()
-            this.buffer.addAll(next.tuplesList)
+        val restore = this._iteratorContext.attach()
+        var close = false
+        try {
+            /* Start loading first results. */
+            if (this.results.hasNext()) {
+                /* Fetch data. */
+                val next = this.results.next()
+                this.buffer.addAll(next.tuplesList)
 
-            /* Prepare column data. */
-            this.numberOfColumns = next.columnsCount
-            next.columnsList.forEachIndexed { i,c ->
-                this._columns[c.fqn()] = i
-                if (!this._simple.contains(c.name)) {
-                    this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
+                /* Prepare column data. */
+                this.numberOfColumns = next.columnsCount
+                next.columnsList.forEachIndexed { i,c ->
+                    this._columns[c.fqn()] = i
+                    if (!this._simple.contains(c.name)) {
+                        this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
+                    }
                 }
+            } else {
+                close = true
+                this.numberOfColumns = 0
             }
-        } else {
-            this.context?.close() /* Context can be closed right away. */
-            this.closed = true
-            this.numberOfColumns = 0
+        } finally {
+            restore.detach(this._iteratorContext)
+            if (close) this._iteratorContext.close()
         }
     }
 
@@ -78,31 +86,43 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun hasNext(): Boolean {
-        if (this.buffer.isNotEmpty()) return true
-        if (this.closed) return false
-        if (!this.results.hasNext()) {
-            this.closed = true
-            this.context?.close() /* Context can be closed. */
-            return false
+        val restore = this._iteratorContext.attach()
+        var close = false
+        try {
+            if (this.buffer.isNotEmpty()) return true
+            if (this.closed) return false
+            if (!this.results.hasNext()) {
+                close = true
+                return false
+            }
+            return true
+        } finally {
+            restore.detach(this._iteratorContext)
+            if (close)this._iteratorContext.close()
         }
-        return true
     }
 
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple {
-        if (this.buffer.isEmpty()) {
-            check(!this.closed) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
-            if (this.results.hasNext()) {
-                this.buffer.addAll(this.results.next().tuplesList)
-            } else {
-                this.closed = true
-                this.context?.close() /* Context can be closed. */
-                throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
+        val restore = this._iteratorContext.attach()
+        var close = false
+        try {
+            if (this.buffer.isEmpty()) {
+                check(!this.closed) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
+                if (this.results.hasNext()) {
+                    this.buffer.addAll(this.results.next().tuplesList)
+                } else {
+                    close = true
+                    throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
+                }
             }
+            return TupleImpl(this.buffer.poll()!!)
+        } finally {
+            restore.detach(this._iteratorContext)
+            if (close)this._iteratorContext.close()
         }
-        return TupleImpl(this.buffer.poll()!!)
     }
 
     /**
@@ -110,8 +130,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
      */
     override fun close() {
         if (!this.closed) {
-            this.closed = true
-            this.context?.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
+            this._iteratorContext.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException()) /* Context can be closed. */
         }
     }
 
