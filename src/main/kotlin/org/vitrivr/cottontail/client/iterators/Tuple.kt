@@ -7,12 +7,12 @@ import java.util.*
  * A [Tuple] as returned by the [TupleIterator].
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.1.1
  */
-abstract class Tuple(tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
+abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
     /** Internal list of values. */
-    private val values: Array<Any?> = Array(tuple.dataCount) { it ->
-        val data = tuple.dataList[it]
+    private val values: Array<Any?> = Array(raw.dataCount) { it ->
+        val data = raw.dataList[it]
         when (data.dataCase) {
             CottontailGrpc.Literal.DataCase.BOOLEANDATA -> data.booleanData
             CottontailGrpc.Literal.DataCase.INTDATA -> data.intData
