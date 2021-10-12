@@ -46,6 +46,10 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
 
+    /** Internal flag indicating, that this [SynchronousTupleIterator] has been closed. */
+    @Volatile
+    private var closed: Boolean = false
+
     init {
         /* Start loading first results. */
         if (this.results.hasNext()) {
@@ -64,7 +68,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         } else {
             /* Case: Empty resultset. */
             this.numberOfColumns = 0
-            this._context.detach(this._context)
+            this.closed = true
+            this._restore.detach(this._context)
             this._context.close()
         }
     }
@@ -86,8 +91,11 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
      * Closes this [SynchronousTupleIterator].
      */
     override fun close() {
-        this._context.cancel(Status.CANCELLED
-            .withDescription("TupleIterator was prematurely closed by the user.").asException())  /* w/o effect if context has been closed. */
+        if (!this.closed) {
+            this._restore.detach(this._context)
+            this._context.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())  /* w/o effect if context has been closed. */
+            this.closed = true
+        }
     }
 
     /**
@@ -99,6 +107,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         this.buffer.addAll(this.results.next().tuplesList)
         true
     } else {
+        this.closed = true
         this._restore.detach(this._context)
         this._context.close()
         false
