@@ -77,13 +77,31 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
-    override fun hasNext(): Boolean = (this.buffer.isNotEmpty() || this.results.hasNext())
+    override fun hasNext(): Boolean {
+        if (this.buffer.isNotEmpty()) return true
+        if (this.closed) return false
+        if (!this.results.hasNext()) {
+            this.closed = true
+            this.context?.close() /* Context can be closed. */
+            return false
+        }
+        return true
+    }
 
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple {
-        if (this.buffer.isEmpty() && !this.fetchNext()) throw IllegalStateException("TupleIterator is has no more values.")
+        if (this.buffer.isEmpty()) {
+            check(!this.closed) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
+            if (this.results.hasNext()) {
+                this.buffer.addAll(this.results.next().tuplesList)
+            } else {
+                this.closed = true
+                this.context?.close() /* Context can be closed. */
+                throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
+            }
+        }
         return TupleImpl(this.buffer.poll()!!)
     }
 
@@ -95,20 +113,6 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
             this.closed = true
             this.context?.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
         }
-    }
-
-    /**
-     * Fetches the next batch of [CottontailGrpc.QueryResponseMessage] into the [buffer].
-     *
-     * @return True on success, false otherwise.
-     */
-    private fun fetchNext(): Boolean = if (this.results.hasNext()) {
-        this.buffer.addAll(this.results.next().tuplesList)
-        true
-    } else {
-        this.closed = true
-        this.context?.close() /* Context can be closed. */
-        false
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
