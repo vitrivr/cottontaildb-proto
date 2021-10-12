@@ -366,6 +366,14 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Truncates the given entity through this [SimpleClient].
      *
+     * @param message [TruncateEntity] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun truncate(message: TruncateEntity): TupleIterator = this.truncate(message.builder.build())
+
+    /**
+     * Truncates the given entity through this [SimpleClient].
+     *
      * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
