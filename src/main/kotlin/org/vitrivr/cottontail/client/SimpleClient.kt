@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong
  * A simple Cottontail DB client for querying and data management.
  *
  * @author Ralph Gasser
- * @version 2.0.0
+ * @version 2.1.0
  */
 class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: Int = 5, queueSize: Int = 10): AutoCloseable {
 
@@ -366,6 +366,17 @@ class SimpleClient(host: String, port: Int, corePoolSize: Int = 2, maxPoolSize: 
      * @return [TupleIterator] containing the response.
      */
     fun about(message: AboutEntity): TupleIterator = this.about(message.builder.build())
+
+    /**
+     * Truncates the given entity through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun truncate(message: CottontailGrpc.TruncateEntityMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.truncateEntity(message), this.context)
+    }
 
     /**
      * Optimizes an entity through this [SimpleClient].
