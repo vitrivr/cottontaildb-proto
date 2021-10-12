@@ -22,18 +22,6 @@ import org.vitrivr.cottontail.grpc.*
  */
 class SimpleClient(private val channel: ManagedChannel) {
 
-    /** Endpoint used for executing a query through Cottontail DB. */
-    private val dql by lazy { DQLGrpc.newBlockingStub(this.channel)  }
-
-    /** Endpoint used for managing data Cottontail DB. */
-    private val dml by lazy { DMLGrpc.newBlockingStub(this.channel)  }
-
-    /** Endpoint used for managing data Cottontail DB. */
-    private val ddl by lazy { DDLGrpc.newBlockingStub(this.channel)  }
-
-    /** Endpoint used for transaction management through Cottontail DB. */
-    private val tx by lazy { TXNGrpc.newBlockingStub(this.channel)  }
-
     /**
      * Constructor to create a Cottontail DB client with a new [ManagedChannel].
      *
@@ -47,7 +35,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @return The ID of the newly begun transaction.
      */
-    fun begin(): Long = this.tx.begin(Empty.getDefaultInstance()).value
+    fun begin(): Long = TXNGrpc.newBlockingStub(this.channel).begin(Empty.getDefaultInstance()).value
 
     /**
      * Commits a transaction through this [SimpleClient].
@@ -56,7 +44,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      */
     fun commit(txId: Long) {
         val tx = CottontailGrpc.TransactionId.newBuilder().setValue(txId).build()
-        this.tx.commit(tx)
+        TXNGrpc.newBlockingStub(this.channel).commit(tx)
     }
 
     /**
@@ -66,7 +54,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      */
     fun rollback(txId: Long) {
         val tx = CottontailGrpc.TransactionId.newBuilder().setValue(txId).build()
-        this.tx.rollback(tx)
+        TXNGrpc.newBlockingStub(this.channel).rollback(tx)
     }
 
     /**
@@ -75,7 +63,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun query(query: CottontailGrpc.QueryMessage): TupleIterator = SynchronousTupleIterator(this.dql.query(query))
+    fun query(query: CottontailGrpc.QueryMessage): TupleIterator {
+        val stub = DQLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.query(query))
+    }
 
     /**
      * Executes [Query] through this [SimpleClient]
@@ -91,7 +82,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator = SynchronousTupleIterator(this.dql.batchQuery(query))
+    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator {
+        val stub = DQLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.batchQuery(query))
+    }
 
     /**
      * Explains [CottontailGrpc.Query] through this [SimpleClient]
@@ -99,7 +93,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.Query] to executed.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator = SynchronousTupleIterator(this.dql.explain(query))
+    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator {
+        val stub = DQLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.explain(query))
+    }
 
     /**
      * Executes [Query] through this [SimpleClient]
@@ -115,7 +112,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.InsertMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: CottontailGrpc.InsertMessage): TupleIterator = SynchronousTupleIterator(this.dml.insert(query))
+    fun insert(query: CottontailGrpc.InsertMessage): TupleIterator {
+        val stub = DMLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.insert(query))
+    }
 
     /**
      * Executes this [Insert] through this [SimpleClient]
@@ -130,7 +130,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.BatchInsertMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: CottontailGrpc.BatchInsertMessage): TupleIterator = SynchronousTupleIterator(this.dml.insertBatch(query))
+    fun insert(query: CottontailGrpc.BatchInsertMessage): TupleIterator {
+        val stub = DMLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.insertBatch(query))
+    }
 
     /**
      * Executes this [BatchInsert] through this [SimpleClient]
@@ -146,7 +149,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.UpdateMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun update(query: CottontailGrpc.UpdateMessage): TupleIterator = SynchronousTupleIterator(this.dml.update(query))
+    fun update(query: CottontailGrpc.UpdateMessage): TupleIterator {
+        val stub = DMLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.update(query))
+    }
 
     /**
      * Executes this [Update] through this [SimpleClient]
@@ -163,7 +169,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param query [CottontailGrpc.DeleteMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun delete(query: CottontailGrpc.DeleteMessage): TupleIterator = SynchronousTupleIterator(this.dml.delete(query))
+    fun delete(query: CottontailGrpc.DeleteMessage): TupleIterator {
+        val stub = DMLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.delete(query))
+    }
 
     /**
      * Executes this [Delete] through this [SimpleClient]
@@ -179,7 +188,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.CreateSchemaMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateSchemaMessage): TupleIterator = SynchronousTupleIterator(this.ddl.createSchema(message))
+    fun create(message: CottontailGrpc.CreateSchemaMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.createSchema(message))
+    }
 
     /**
      * Creates a new schema through this [SimpleClient].
@@ -195,7 +207,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.CreateEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateEntityMessage): TupleIterator = SynchronousTupleIterator(this.ddl.createEntity(message))
+    fun create(message: CottontailGrpc.CreateEntityMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.createEntity(message))
+    }
 
     /**
      * Creates a new entity through this [SimpleClient].
@@ -211,7 +226,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.CreateIndexMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateIndexMessage): TupleIterator = SynchronousTupleIterator(this.ddl.createIndex(message))
+    fun create(message: CottontailGrpc.CreateIndexMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.createIndex(message))
+    }
 
     /**
      * Creates a new index through this [SimpleClient].
@@ -227,7 +245,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.DropSchemaMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropSchemaMessage): TupleIterator = SynchronousTupleIterator(this.ddl.dropSchema(message))
+    fun drop(message: CottontailGrpc.DropSchemaMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.dropSchema(message))
+    }
 
     /**
      * Drops a schema through this [SimpleClient].
@@ -243,7 +264,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.DropEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropEntityMessage): TupleIterator = SynchronousTupleIterator(this.ddl.dropEntity(message))
+    fun drop(message: CottontailGrpc.DropEntityMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.dropEntity(message))
+    }
 
     /**
      * Drops an entity through this [SimpleClient].
@@ -259,7 +283,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.DropIndexMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropIndexMessage): TupleIterator = SynchronousTupleIterator(this.ddl.dropIndex(message))
+    fun drop(message: CottontailGrpc.DropIndexMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.dropIndex(message))
+    }
 
     /**
      * Drops an index through this [SimpleClient].
@@ -275,7 +302,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.ListSchemaMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun list(message: CottontailGrpc.ListSchemaMessage): TupleIterator = SynchronousTupleIterator(this.ddl.listSchemas(message))
+    fun list(message: CottontailGrpc.ListSchemaMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.listSchemas(message))
+    }
 
     /**
      * Lists all schemas through this [SimpleClient].
@@ -291,7 +321,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.ListEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun list(message: CottontailGrpc.ListEntityMessage): TupleIterator = SynchronousTupleIterator(this.ddl.listEntities(message))
+    fun list(message: CottontailGrpc.ListEntityMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.listEntities(message))
+    }
 
     /**
      * Lists all entities in a schema through this [SimpleClient].
@@ -307,7 +340,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.EntityDetailsMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun about(message: CottontailGrpc.EntityDetailsMessage): TupleIterator = SynchronousTupleIterator(this.ddl.entityDetails(message))
+    fun about(message: CottontailGrpc.EntityDetailsMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.entityDetails(message))
+    }
 
     /**
      * Lists detailed information about an entity through this [SimpleClient].
@@ -323,7 +359,10 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator = SynchronousTupleIterator(this.ddl.optimizeEntity(message))
+    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        return SynchronousTupleIterator(stub.optimizeEntity(message))
+    }
 
     /**
      * Optimizes an entity through this [SimpleClient].
