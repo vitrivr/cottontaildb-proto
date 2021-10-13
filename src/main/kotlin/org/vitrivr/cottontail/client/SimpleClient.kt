@@ -529,11 +529,11 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val autoCommit = metadata.transactionId <= 0L /* Determine based on original metadata, whether auto commit is desired. */
         if (!context.isCancelled) {
             if (!forced) {
-                if (autoCommit) this.commit(iterator.transactionId)
                 context.close()
+                if (autoCommit) this.commit(iterator.transactionId)
             } else {
-                this.rollback(iterator.transactionId)
                 context.cancel(CancellationException("Cottontail DB results iterator was forcefully closed by the user."))
+                this.rollback(iterator.transactionId)
             }
         }
     }
