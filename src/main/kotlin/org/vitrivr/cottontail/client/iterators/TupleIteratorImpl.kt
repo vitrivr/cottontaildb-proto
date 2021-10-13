@@ -68,7 +68,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
                         this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                     }
                 }
-                close = false
+                close = !this.results.hasNext()
             }
         } finally {
             if (close) {
