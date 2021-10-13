@@ -533,7 +533,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
                 if (autoCommit) this.commit(iterator.transactionId)
             } else {
                 context.cancel(CancellationException("Cottontail DB results iterator was forcefully closed by the user."))
-                this.rollback(iterator.transactionId)
+                if (autoCommit) this.rollback(iterator.transactionId)
             }
         }
     }
