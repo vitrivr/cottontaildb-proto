@@ -29,7 +29,10 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     private val _simple = LinkedHashMap<String,Int>()
 
     /** [Context.CancellableContext] to which this [TupleIterator] is bound.  */
-    private val _iteratorContext = Context.current().withCancellation()
+    private val context = Context.current().withCancellation()
+
+    /** [Context] that was active before this [TupleIteratorImpl] was instantiated.  */
+    private val restoreTo = this.context.attach()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: List<String>
@@ -50,35 +53,24 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
 
-    /** Flag indicating, that this [TupleIteratorImpl] has been closed. */
-    val closed: Boolean
-        get() = this._iteratorContext.isCancelled
-
     init {
-        val restore = this._iteratorContext.attach()
-        var close = false
-        try {
-            /* Start loading first results. */
-            if (this.results.hasNext()) {
-                /* Fetch data. */
-                val next = this.results.next()
-                this.buffer.addAll(next.tuplesList)
+        /* Start loading first results. */
+        if (this.results.hasNext()) {
+            /* Fetch data. */
+            val next = this.results.next()
+            this.buffer.addAll(next.tuplesList)
 
-                /* Prepare column data. */
-                this.numberOfColumns = next.columnsCount
-                next.columnsList.forEachIndexed { i,c ->
-                    this._columns[c.fqn()] = i
-                    if (!this._simple.contains(c.name)) {
-                        this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
-                    }
+            /* Prepare column data. */
+            this.numberOfColumns = next.columnsCount
+            next.columnsList.forEachIndexed { i,c ->
+                this._columns[c.fqn()] = i
+                if (!this._simple.contains(c.name)) {
+                    this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
-            } else {
-                close = true
-                this.numberOfColumns = 0
             }
-        } finally {
-            restore.detach(this._iteratorContext)
-            if (close) this._iteratorContext.close()
+        } else {
+            this.context.detachAndCancel(this.restoreTo, null)
+            this.numberOfColumns = 0
         }
     }
 
@@ -86,51 +78,37 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun hasNext(): Boolean {
-        val restore = this._iteratorContext.attach()
-        var close = false
-        try {
-            if (this.buffer.isNotEmpty()) return true
-            if (this.closed) return false
-            if (!this.results.hasNext()) {
-                close = true
-                return false
-            }
-            return true
-        } finally {
-            restore.detach(this._iteratorContext)
-            if (close)this._iteratorContext.close()
+        if (this.buffer.isNotEmpty()) return true
+        if (this.context.isCancelled) return false
+        if (!this.results.hasNext()) {
+            this.context.detachAndCancel(this.restoreTo, null)
+            return false
         }
+        return true
     }
 
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple {
-        val restore = this._iteratorContext.attach()
-        var close = false
-        try {
-            if (this.buffer.isEmpty()) {
-                check(!this.closed) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
-                if (this.results.hasNext()) {
-                    this.buffer.addAll(this.results.next().tuplesList)
-                } else {
-                    close = true
-                    throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
-                }
+        if (this.buffer.isEmpty()) {
+            check(!this.context.isCancelled) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
+            if (this.results.hasNext()) {
+                this.buffer.addAll(this.results.next().tuplesList)
+            } else {
+                this.context.detachAndCancel(this.restoreTo, null)
+                throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
             }
-            return TupleImpl(this.buffer.poll()!!)
-        } finally {
-            restore.detach(this._iteratorContext)
-            if (close)this._iteratorContext.close()
         }
+        return TupleImpl(this.buffer.poll()!!)
     }
 
     /**
      * Closes this [TupleIteratorImpl].
      */
     override fun close() {
-        if (!this.closed) {
-            this._iteratorContext.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException()) /* Context can be closed. */
+        if (!this.context.isCancelled) {
+            this.context.detachAndCancel(this.restoreTo, Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
         }
     }
 

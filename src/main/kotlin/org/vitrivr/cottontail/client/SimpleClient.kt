@@ -6,6 +6,7 @@ import io.grpc.ManagedChannel
 import io.grpc.StatusRuntimeException
 import org.vitrivr.cottontail.client.iterators.TupleIterator
 import org.vitrivr.cottontail.client.iterators.TupleIteratorImpl
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.ddl.*
 import org.vitrivr.cottontail.client.language.dml.BatchInsert
 import org.vitrivr.cottontail.client.language.dml.Delete
@@ -15,19 +16,24 @@ import org.vitrivr.cottontail.client.language.dml.Update
 import org.vitrivr.cottontail.grpc.*
 
 /**
- * A simple Cottontail DB client for querying and data management.
+ * A simple Cottontail DB client for querying, data management and data definition. Can work with [LanguageFeature]s
+ * and classical [CottontailGrpc] messages.
+ *
+ * As opposed to the pure gRPC implementation, the [SimpleClient] offers some advanced functionality such
+ * as a more convenient [TupleIterator] and cancelable queries.
+ *
+ * The [SimpleClient] wraps a [ManagedChannel]. It remains to the caller, to setup and close that [ManagedChannel].
  *
  * @author Ralph Gasser
  * @version 2.1.0
  */
 class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
 
-    /** Internal flag used to track closed state of this [SimpleClient]. */
-    @Volatile
-    private var closed: Boolean = false
+    /** [Context.CancellableContext] that can be used to cancel all queries that are currently being executed by this [SimpleClient]. */
+    private val context = Context.current().withCancellation()
 
-    /** Context that can be used to cancel all queries that are currently being executed by this [SimpleClient]. */
-    private val clientContext = Context.CancellableContext.current().withCancellation()
+    /** The [Context] that was active before instantiation of this [SimpleClient]. */
+    private val restoreTo = this.context.attach()
 
     /**
      * Begins a new transaction through this [SimpleClient].
@@ -41,7 +47,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      *
      * @param txId The transaction ID to commit.
      */
-    fun commit(txId: Long) = this.clientContext.run {
+    fun commit(txId: Long) {
         val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).commit(tx)
     }
@@ -51,7 +57,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      *
      * @param txId The transaction ID to rollback.
      */
-    fun rollback(txId: Long) = this.clientContext.run {
+    fun rollback(txId: Long) {
         val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).rollback(tx)
     }
@@ -61,7 +67,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      *
      * @param txId The transaction ID to kill and rollback.
      */
-    fun kill(txId: Long) = this.clientContext.run {
+    fun kill(txId: Long) {
         val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).kill(tx)
     }
@@ -72,9 +78,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param query [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun query(query: CottontailGrpc.QueryMessage): TupleIterator = this.clientContext.call {
+    fun query(query: CottontailGrpc.QueryMessage): TupleIterator {
         val stub = DQLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.query(query))
+        return TupleIteratorImpl(stub.query(query))
     }
 
     /**
@@ -91,9 +97,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param query [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator = this.clientContext.call {
+    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator {
         val stub = DQLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.batchQuery(query))
+        return TupleIteratorImpl(stub.batchQuery(query))
     }
 
     /**
@@ -102,9 +108,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param query [CottontailGrpc.Query] to executed.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator = this.clientContext.call {
+    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator {
         val stub = DQLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.explain(query))
+        return TupleIteratorImpl(stub.explain(query))
     }
 
     /**
@@ -121,9 +127,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param query [CottontailGrpc.InsertMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: CottontailGrpc.InsertMessage): TupleIterator = this.clientContext.call {
+    fun insert(query: CottontailGrpc.InsertMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.insert(query))
+        return TupleIteratorImpl(stub.insert(query))
     }
 
     /**
@@ -139,9 +145,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param query [CottontailGrpc.BatchInsertMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: CottontailGrpc.BatchInsertMessage): TupleIterator = this.clientContext.call {
+    fun insert(query: CottontailGrpc.BatchInsertMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.insertBatch(query))
+        return TupleIteratorImpl(stub.insertBatch(query))
     }
 
     /**
@@ -158,9 +164,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param query [CottontailGrpc.UpdateMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun update(query: CottontailGrpc.UpdateMessage): TupleIterator = this.clientContext.call {
+    fun update(query: CottontailGrpc.UpdateMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.update(query))
+        return TupleIteratorImpl(stub.update(query))
     }
 
     /**
@@ -178,9 +184,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param query [CottontailGrpc.DeleteMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun delete(query: CottontailGrpc.DeleteMessage): TupleIterator = this.clientContext.call {
+    fun delete(query: CottontailGrpc.DeleteMessage): TupleIterator {
         val stub = DMLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.delete(query))
+        return TupleIteratorImpl(stub.delete(query))
     }
 
     /**
@@ -197,9 +203,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.CreateSchemaMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateSchemaMessage): TupleIterator = this.clientContext.call {
+    fun create(message: CottontailGrpc.CreateSchemaMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.createSchema(message))
+        return TupleIteratorImpl(stub.createSchema(message))
     }
 
     /**
@@ -216,9 +222,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.CreateEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateEntityMessage): TupleIterator = this.clientContext.call {
+    fun create(message: CottontailGrpc.CreateEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.createEntity(message))
+        return TupleIteratorImpl(stub.createEntity(message))
     }
 
     /**
@@ -235,9 +241,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.CreateIndexMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateIndexMessage): TupleIterator = this.clientContext.call {
+    fun create(message: CottontailGrpc.CreateIndexMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.createIndex(message))
+        return TupleIteratorImpl(stub.createIndex(message))
     }
 
     /**
@@ -254,9 +260,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.DropSchemaMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropSchemaMessage): TupleIterator = this.clientContext.call {
+    fun drop(message: CottontailGrpc.DropSchemaMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.dropSchema(message))
+        return TupleIteratorImpl(stub.dropSchema(message))
     }
 
     /**
@@ -273,9 +279,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.DropEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropEntityMessage): TupleIterator = this.clientContext.call {
+    fun drop(message: CottontailGrpc.DropEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.dropEntity(message))
+        return TupleIteratorImpl(stub.dropEntity(message))
     }
 
     /**
@@ -292,9 +298,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.DropIndexMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropIndexMessage): TupleIterator = this.clientContext.call {
+    fun drop(message: CottontailGrpc.DropIndexMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.dropIndex(message))
+        return TupleIteratorImpl(stub.dropIndex(message))
     }
 
     /**
@@ -311,9 +317,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.ListSchemaMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun list(message: CottontailGrpc.ListSchemaMessage): TupleIterator = this.clientContext.call {
+    fun list(message: CottontailGrpc.ListSchemaMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.listSchemas(message))
+        return TupleIteratorImpl(stub.listSchemas(message))
     }
 
     /**
@@ -330,9 +336,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.ListEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun list(message: CottontailGrpc.ListEntityMessage): TupleIterator = this.clientContext.call {
+    fun list(message: CottontailGrpc.ListEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.listEntities(message))
+        return TupleIteratorImpl(stub.listEntities(message))
     }
 
     /**
@@ -349,9 +355,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.EntityDetailsMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun about(message: CottontailGrpc.EntityDetailsMessage): TupleIterator = this.clientContext.call {
+    fun about(message: CottontailGrpc.EntityDetailsMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.entityDetails(message))
+        return TupleIteratorImpl(stub.entityDetails(message))
     }
 
     /**
@@ -376,9 +382,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun truncate(message: CottontailGrpc.TruncateEntityMessage): TupleIterator = this.clientContext.call {
+    fun truncate(message: CottontailGrpc.TruncateEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.truncateEntity(message))
+        return TupleIteratorImpl(stub.truncateEntity(message))
     }
 
     /**
@@ -387,9 +393,9 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator = this.clientContext.call {
+    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator {
         val stub = DDLGrpc.newBlockingStub(this.channel)
-        TupleIteratorImpl(stub.optimizeEntity(message))
+        return TupleIteratorImpl(stub.optimizeEntity(message))
     }
 
     /**
@@ -416,8 +422,8 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * Closes this [SimpleClient].
      */
     override fun close() {
-        if (!this.clientContext.isCancelled) {
-            this.clientContext.close()
+        if (!this.context.isCancelled) {
+            this.context.detachAndCancel(this.restoreTo, null)
         }
     }
 }
