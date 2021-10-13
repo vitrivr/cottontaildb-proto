@@ -1,10 +1,8 @@
 package org.vitrivr.cottontail.client.iterators
 
-import io.grpc.Context
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
-import java.util.concurrent.CancellationException
 
 /**
  * A [TupleIterator] used for retrieving [Tuple]s in a synchronous fashion.
@@ -16,12 +14,11 @@ import java.util.concurrent.CancellationException
  */
 class TupleIteratorImpl internal constructor(
     private val results: Iterator<CottontailGrpc.QueryResponseMessage>,
-    private val context: Context.CancellableContext,
-    private val onComplete: ((TupleIterator, Boolean) -> Unit)
+    private val finalizer: ((TupleIterator, Boolean) -> Unit)
 ) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext, onComplete: ((TupleIterator, Boolean) -> Unit)): this(sequenceOf(result).iterator(), context, onComplete)
+    constructor(result: CottontailGrpc.QueryResponseMessage, onComplete: ((TupleIterator, Boolean) -> Unit)): this(sequenceOf(result).iterator(), onComplete)
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private val buffer = LinkedList<Tuple>()
@@ -56,23 +53,22 @@ class TupleIteratorImpl internal constructor(
 
     init {
         /* Start loading first results. */
-        val restoreTo = this.context.attach()
-        try {
-            /* Fetch first element. */
-            val next = this.results.next()
+        val next = this.results.next()
 
-            /* Assign metadata, columns and data. */
-            this.transactionId = next.metadata.transactionId
-            this.queryId = next.metadata.queryId
-            next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
-            next.columnsList.forEachIndexed { i,c ->
-                this._columns[c.fqn()] = i
-                if (!this._simple.contains(c.name)) {
-                    this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
-                }
+        /* Assign metadata, columns and data. */
+        this.transactionId = next.metadata.transactionId
+        this.queryId = next.metadata.queryId
+        next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
+        next.columnsList.forEachIndexed { i,c ->
+            this._columns[c.fqn()] = i
+            if (!this._simple.contains(c.name)) {
+                this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
             }
-        } finally {
-            this.context.detach(restoreTo)
+        }
+
+        /** Call finalizer if no more data is available. */
+        if (!this.results.hasNext()) {
+            this.finalizer.invoke(this, true)
         }
     }
 
@@ -80,55 +76,33 @@ class TupleIteratorImpl internal constructor(
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun hasNext(): Boolean {
-        val restoreTo = this.context.attach()
-        var close = false
-        try {
-            if (this.buffer.isNotEmpty()) return true
-            if (this.context.isCancelled) return false
-            close = !this.results.hasNext()
-            return !close
-        } finally {
-            if (close) {
-                this.context.detachAndCancel(restoreTo, null)
-                this.onComplete.invoke(this, true)
-            } else {
-                this.context.detach(restoreTo)
-            }
+        if (this.buffer.isNotEmpty()) return true
+        if (!this.results.hasNext()) {
+            this.finalizer.invoke(this, true)
+            return false
         }
+        return true
     }
 
     /**
      * Returns true if this [TupleIterator] holds another [Tuple] and false otherwise.
      */
     override fun next(): Tuple {
-        val restoreTo = this.context.attach()
-        var close = false
-        try {
-            if (this.buffer.isEmpty()) {
-                check(!this.context.isCancelled) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
-                close = !this.results.hasNext()
-                check(close) { "TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next()." }
-                this.results.next().tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
+        if (this.buffer.isEmpty()) {
+            if (!this.results.hasNext()) {
+                this.finalizer.invoke(this, true)
+                throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
             }
-            return this.buffer.poll()!!
-        } finally {
-            if (close) {
-                this.context.detachAndCancel(restoreTo, null)
-                this.onComplete.invoke(this, true)
-            } else {
-                this.context.detach(restoreTo)
-            }
+            this.results.next().tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
         }
+        return this.buffer.poll()!!
     }
 
     /**
      * Closes this [TupleIteratorImpl].
      */
     override fun close() {
-        if (!this.context.isCancelled) {
-            this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
-            this.onComplete.invoke(this, false)
-        }
+        this.finalizer.invoke(this, false)
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
