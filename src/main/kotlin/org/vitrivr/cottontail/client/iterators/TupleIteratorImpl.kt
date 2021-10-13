@@ -14,10 +14,14 @@ import java.util.concurrent.CancellationException
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext) : TupleIterator {
+class TupleIteratorImpl internal constructor(
+    private val results: Iterator<CottontailGrpc.QueryResponseMessage>,
+    private val context: Context.CancellableContext,
+    private val onComplete: ((TupleIterator, Boolean) -> Unit)
+) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext) : this(sequenceOf(result).iterator(), context)
+    constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext, onComplete: ((TupleIterator, Boolean) -> Unit)): this(sequenceOf(result).iterator(), context, onComplete)
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private val buffer = LinkedList<Tuple>()
@@ -27,6 +31,12 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
 
     /** Internal map of simple names to column indexes. */
     private val _simple = LinkedHashMap<String,Int>()
+
+    /** The ID of the Cottontail DB transaction this [TupleIterator] is associated with. */
+    override val transactionId: Long
+
+    /** The ID of the Cottontail DB query this [TupleIterator] is associated with. */
+    override val queryId: String
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: List<String>
@@ -40,10 +50,6 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     override val simple: List<String>
         get() = this._simple.keys.toList()
 
-    /** False as long [Iterator] can return values. */
-    override val completed: Boolean
-        get() = !this.results.hasNext()
-
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
         get() = this.columns.size
@@ -51,12 +57,13 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     init {
         /* Start loading first results. */
         val restoreTo = this.context.attach()
-        var close = false
         try {
             /* Fetch first element. */
             val next = this.results.next()
 
-            /* Assign columns and ata. */
+            /* Assign metadata, columns and data. */
+            this.transactionId = next.metadata.transactionId
+            this.queryId = next.metadata.queryId
             next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
             next.columnsList.forEachIndexed { i,c ->
                 this._columns[c.fqn()] = i
@@ -64,13 +71,8 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
                     this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
             }
-            close = !this.results.hasNext()
         } finally {
-            if (close) {
-                this.context.detachAndCancel(restoreTo, null)
-            } else {
-                this.context.detach(restoreTo)
-            }
+            this.context.detach(restoreTo)
         }
     }
 
@@ -88,6 +90,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
         } finally {
             if (close) {
                 this.context.detachAndCancel(restoreTo, null)
+                this.onComplete.invoke(this, true)
             } else {
                 this.context.detach(restoreTo)
             }
@@ -111,6 +114,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
         } finally {
             if (close) {
                 this.context.detachAndCancel(restoreTo, null)
+                this.onComplete.invoke(this, true)
             } else {
                 this.context.detach(restoreTo)
             }
@@ -123,6 +127,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     override fun close() {
         if (!this.context.isCancelled) {
             this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
+            this.onComplete.invoke(this, false)
         }
     }
 

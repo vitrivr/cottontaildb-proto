@@ -457,7 +457,7 @@ message Query {
 
 /* A query response message. */
 message QueryResponseMessage {
-    Metadata tid = 1;
+    Metadata metadata = 1;
     repeated ColumnName columns = 2; /* Columns returned by this QueryResponseMessage. */
     repeated Tuple tuples = 3; /* List of tuples returned (data in order of columns). */
     message Tuple {

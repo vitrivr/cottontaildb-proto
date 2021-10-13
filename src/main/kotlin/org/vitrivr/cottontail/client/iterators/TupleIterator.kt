@@ -7,8 +7,11 @@ package org.vitrivr.cottontail.client.iterators
  * @version 1.1.0
  */
 interface TupleIterator : Iterator<Tuple>, AutoCloseable {
-    /** Returns true if this [TupleIterator] is done fetching messages. */
-    val completed: Boolean
+    /** The ID of the Cottontail DB transaction this [TupleIterator] is associated with. */
+    val transactionId: Long
+
+    /** The ID of the Cottontail DB query this [TupleIterator] is associated with. */
+    val queryId: String
 
     /** Number of columns returned by this [TupleIterator]. */
     val numberOfColumns: Int

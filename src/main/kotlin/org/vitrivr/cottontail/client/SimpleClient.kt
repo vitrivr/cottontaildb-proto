@@ -21,7 +21,8 @@ import kotlin.coroutines.cancellation.CancellationException
  * and classical [CottontailGrpc] messages.
  *
  * As opposed to the pure gRPC implementation, the [SimpleClient] offers some advanced functionality such
- * as a more convenient [TupleIterator] and cancelable queries.
+ * as a more convenient [TupleIterator], cancelable queries and auto commit of 'simple' queries without
+ * explicit transaction context.
  *
  * The [SimpleClient] wraps a [ManagedChannel]. It remains to the caller, to setup and close that [ManagedChannel].
  *
@@ -73,14 +74,22 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Executes [CottontailGrpc.Query] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.Query] to execute.
+     * @param message [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun query(query: CottontailGrpc.QueryMessage): TupleIterator = this.context.call {
+    fun query(message: CottontailGrpc.QueryMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.query(query), inner)
+            TupleIteratorImpl(stub.query(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -95,28 +104,44 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Executes [CottontailGrpc.BatchedQueryMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.Query] to execute.
+     * @param message [CottontailGrpc.Query] to execute.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun batchedQuery(query: CottontailGrpc.BatchedQueryMessage): TupleIterator = this.context.call {
+    fun batchedQuery(message: CottontailGrpc.BatchedQueryMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.batchQuery(query), inner)
+            TupleIteratorImpl(stub.batchQuery(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
     /**
      * Explains [CottontailGrpc.Query] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.Query] to executed.
+     * @param message [CottontailGrpc.Query] to executed.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun explain(query: CottontailGrpc.QueryMessage): TupleIterator = this.context.call {
+    fun explain(message: CottontailGrpc.QueryMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.explain(query), inner)
+            TupleIteratorImpl(stub.explain(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -131,14 +156,22 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Executes this [CottontailGrpc.InsertMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.InsertMessage] to execute.
+     * @param message [CottontailGrpc.InsertMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: CottontailGrpc.InsertMessage): TupleIterator = this.context.call {
+    fun insert(message: CottontailGrpc.InsertMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.insert(query), inner)
+            TupleIteratorImpl(stub.insert(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -152,14 +185,22 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Executes this [CottontailGrpc.BatchInsertMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.BatchInsertMessage] to execute.
+     * @param message [CottontailGrpc.BatchInsertMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: CottontailGrpc.BatchInsertMessage): TupleIterator = this.context.call {
+    fun insert(message: CottontailGrpc.BatchInsertMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.insertBatch(query), inner)
+            TupleIteratorImpl(stub.insertBatch(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -174,14 +215,22 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Executes this [CottontailGrpc.UpdateMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.UpdateMessage] to execute.
+     * @param message [CottontailGrpc.UpdateMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun update(query: CottontailGrpc.UpdateMessage): TupleIterator = this.context.call {
+    fun update(message: CottontailGrpc.UpdateMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.update(query), inner)
+            TupleIteratorImpl(stub.update(message), inner){ iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -197,14 +246,22 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Explains [CottontailGrpc.DeleteMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.DeleteMessage] to execute.
+     * @param message [CottontailGrpc.DeleteMessage] to execute.
      * @return [TupleIterator] containing the query response.
      */
-    fun delete(query: CottontailGrpc.DeleteMessage): TupleIterator = this.context.call {
+    fun delete(message: CottontailGrpc.DeleteMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.delete(query), inner)
+            TupleIteratorImpl(stub.delete(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -226,7 +283,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.createSchema(message), inner)
+            TupleIteratorImpl(stub.createSchema(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -248,7 +313,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.createEntity(message), inner)
+            TupleIteratorImpl(stub.createEntity(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -270,7 +343,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val stub = DDLGrpc.newBlockingStub(this.channel)
         val inner = Context.current().withCancellation()
         inner.call {
-            TupleIteratorImpl(stub.createIndex(message), inner)
+            TupleIteratorImpl(stub.createIndex(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -292,7 +373,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.dropSchema(message), inner)
+            TupleIteratorImpl(stub.dropSchema(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -314,7 +403,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.dropEntity(message), inner)
+            TupleIteratorImpl(stub.dropEntity(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -336,7 +433,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.dropIndex(message), inner)
+            TupleIteratorImpl(stub.dropIndex(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -358,7 +463,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.listSchemas(message), inner)
+            TupleIteratorImpl(stub.listSchemas(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -380,7 +493,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.listEntities(message), inner)
+            TupleIteratorImpl(stub.listEntities(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -402,7 +523,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.entityDetails(message), inner)
+            TupleIteratorImpl(stub.entityDetails(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -432,7 +561,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.truncateEntity(message), inner)
+            TupleIteratorImpl(stub.truncateEntity(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
@@ -446,7 +583,15 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.optimizeEntity(message), inner)
+            TupleIteratorImpl(stub.optimizeEntity(message), inner) { iterator, success ->
+                if (message.metadata.transactionId <= 0L) {
+                    if (success) {
+                        this.commit(iterator.transactionId)
+                    } else {
+                        this.rollback(iterator.transactionId)
+                    }
+                }
+            }
         }
     }
 
