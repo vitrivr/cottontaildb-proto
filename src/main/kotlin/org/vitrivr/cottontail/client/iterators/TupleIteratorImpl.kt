@@ -31,9 +31,6 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     /** [Context.CancellableContext] to which this [TupleIterator] is bound.  */
     private val context = Context.current().withCancellation()
 
-    /** [Context] that was active before this [TupleIteratorImpl] was instantiated.  */
-    private val restoreTo = this.context.attach()
-
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: List<String>
         get() = this._columns.keys.toList()
@@ -98,7 +95,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
             return true
         } finally {
             if (close) {
-                this.context.detachAndCancel(this.restoreTo, null)
+                this.context.detachAndCancel(restoreTo, null)
             } else {
                 this.context.detach(restoreTo)
             }
@@ -124,7 +121,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
             return TupleImpl(this.buffer.poll()!!)
         } finally {
             if (close) {
-                this.context.detachAndCancel(this.restoreTo, null)
+                this.context.detachAndCancel(restoreTo, null)
             } else {
                 this.context.detach(restoreTo)
             }
