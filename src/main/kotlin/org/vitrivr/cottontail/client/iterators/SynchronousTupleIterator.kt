@@ -14,13 +14,13 @@ import java.util.*
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : TupleIterator {
+class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
     constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator())
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
-    private var buffer = LinkedList<CottontailGrpc.QueryResponseMessage.Tuple>()
+    private val buffer = LinkedList<Tuple>()
 
     /** Internal map of columns names to column indexes. */
     private val _columns = LinkedHashMap<String,Int>()
@@ -54,22 +54,20 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     init {
         /* Start loading first results. */
         val restoreTo = this.context.attach()
-        var close = true
+        var close = false
         try {
-            if (this.results.hasNext()) {
-                /* Fetch data. */
-                val next = this.results.next()
-                this.buffer.addAll(next.tuplesList)
+            /* Fetch first element. */
+            val next = this.results.next()
 
-                /* Prepare column data. */
-                next.columnsList.forEachIndexed { i,c ->
-                    this._columns[c.fqn()] = i
-                    if (!this._simple.contains(c.name)) {
-                        this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
-                    }
+            /* Assign columns and ata. */
+            next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
+            next.columnsList.forEachIndexed { i,c ->
+                this._columns[c.fqn()] = i
+                if (!this._simple.contains(c.name)) {
+                    this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
                 }
-                close = !this.results.hasNext()
             }
+            close = !this.results.hasNext()
         } finally {
             if (close) {
                 this.context.detachAndCancel(restoreTo, null)
@@ -111,14 +109,11 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
         try {
             if (this.buffer.isEmpty()) {
                 check(!this.context.isCancelled) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
-                if (this.results.hasNext()) {
-                    this.buffer.addAll(this.results.next().tuplesList)
-                } else {
-                    close = true
-                    throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
-                }
+                close = !this.results.hasNext()
+                check(close) { "TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next()." }
+                this.results.next().tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
             }
-            return TupleImpl(this.buffer.poll()!!)
+            return this.buffer.poll()!!
         } finally {
             if (close) {
                 this.context.detachAndCancel(restoreTo, null)
@@ -129,7 +124,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     }
 
     /**
-     * Closes this [TupleIteratorImpl].
+     * Closes this [SynchronousTupleIterator].
      */
     override fun close() {
         if (!this.context.isCancelled) {
@@ -138,7 +133,7 @@ class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryRespon
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
-        override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
+        override fun indexForName(name: String) = (this@SynchronousTupleIterator._columns[name] ?: this@SynchronousTupleIterator._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
         override fun asBoolean(name: String) = asBoolean(indexForName(name))
         override fun asInt(name: String) = asInt(indexForName(name))
         override fun asLong(name: String) = asLong(indexForName(name))
