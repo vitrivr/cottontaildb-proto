@@ -82,7 +82,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.query(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -106,7 +106,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.batchQuery(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -122,7 +122,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.explain(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -146,7 +146,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.insert(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -169,7 +169,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.insertBatch(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -193,7 +193,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.update(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -218,7 +218,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.delete(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -242,7 +242,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.createSchema(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -266,7 +266,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.createEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -290,7 +290,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             TupleIteratorImpl(stub.createIndex(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -314,7 +314,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.dropSchema(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -338,7 +338,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.dropEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -362,7 +362,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.dropIndex(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -386,7 +386,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.listSchemas(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -410,7 +410,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.listEntities(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -434,7 +434,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.entityDetails(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -466,7 +466,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.truncateEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
@@ -482,7 +482,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
             TupleIteratorImpl(stub.optimizeEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, context, success)
+                finalizeQuery(message.metadata, iterator, inner, success)
             }
         }
     }
