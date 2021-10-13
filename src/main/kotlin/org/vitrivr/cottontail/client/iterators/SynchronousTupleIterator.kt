@@ -86,11 +86,8 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
         try {
             if (this.buffer.isNotEmpty()) return true
             if (this.context.isCancelled) return false
-            if (!this.results.hasNext()) {
-                close = true
-                return false
-            }
-            return true
+            close = !this.results.hasNext()
+            return !close
         } finally {
             if (close) {
                 this.context.detachAndCancel(restoreTo, null)
@@ -105,7 +102,7 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
      */
     override fun next(): Tuple {
         val restoreTo = this.context.attach()
-        var close = true
+        var close = false
         try {
             if (this.buffer.isEmpty()) {
                 check(!this.context.isCancelled) { "TupleIterator has been drained and closed. Call hasNext() to ensure that elements are available before calling next()." }
