@@ -68,7 +68,7 @@ class TupleIteratorImpl internal constructor(
 
         /** Call finalizer if no more data is available. */
         if (!this.results.hasNext()) {
-            this.finalizer.invoke(this, true)
+            this.finalizer.invoke(this, false)
         }
     }
 
@@ -78,7 +78,7 @@ class TupleIteratorImpl internal constructor(
     override fun hasNext(): Boolean {
         if (this.buffer.isNotEmpty()) return true
         if (!this.results.hasNext()) {
-            this.finalizer.invoke(this, true)
+            this.finalizer.invoke(this, false)
             return false
         }
         return true
@@ -90,7 +90,7 @@ class TupleIteratorImpl internal constructor(
     override fun next(): Tuple {
         if (this.buffer.isEmpty()) {
             if (!this.results.hasNext()) {
-                this.finalizer.invoke(this, true)
+                this.finalizer.invoke(this, false)
                 throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
             }
             this.results.next().tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
@@ -102,7 +102,7 @@ class TupleIteratorImpl internal constructor(
      * Closes this [TupleIteratorImpl].
      */
     override fun close() {
-        this.finalizer.invoke(this, false)
+        this.finalizer.invoke(this, true)
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
