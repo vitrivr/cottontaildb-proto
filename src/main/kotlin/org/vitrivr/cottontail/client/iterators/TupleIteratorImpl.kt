@@ -1,10 +1,10 @@
 package org.vitrivr.cottontail.client.iterators
 
 import io.grpc.Context
-import io.grpc.Status
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
+import java.util.concurrent.CancellationException
 
 /**
  * A [TupleIterator] used for retrieving [Tuple]s in a synchronous fashion.
@@ -14,10 +14,10 @@ import java.util.*
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.QueryResponseMessage>) : TupleIterator {
+class TupleIteratorImpl(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage) : this(sequenceOf(result).iterator())
+    constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext) : this(sequenceOf(result).iterator(), context)
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private val buffer = LinkedList<Tuple>()
@@ -27,9 +27,6 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
 
     /** Internal map of simple names to column indexes. */
     private val _simple = LinkedHashMap<String,Int>()
-
-    /** [Context.CancellableContext] to which this [TupleIterator] is bound.  */
-    private val context = Context.current().withCancellation()
 
     /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val columns: List<String>
@@ -121,16 +118,16 @@ class SynchronousTupleIterator(private val results: Iterator<CottontailGrpc.Quer
     }
 
     /**
-     * Closes this [SynchronousTupleIterator].
+     * Closes this [TupleIteratorImpl].
      */
     override fun close() {
         if (!this.context.isCancelled) {
-            this.context.cancel(Status.CANCELLED.withDescription("TupleIterator was prematurely closed by the user.").asException())
+            this.context.cancel(CancellationException("TupleIterator was prematurely closed by the user."))
         }
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
-        override fun indexForName(name: String) = (this@SynchronousTupleIterator._columns[name] ?: this@SynchronousTupleIterator._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
+        override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
         override fun asBoolean(name: String) = asBoolean(indexForName(name))
         override fun asInt(name: String) = asInt(indexForName(name))
         override fun asLong(name: String) = asLong(indexForName(name))
