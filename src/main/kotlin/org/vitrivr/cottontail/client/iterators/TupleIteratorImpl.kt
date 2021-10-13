@@ -1,8 +1,10 @@
 package org.vitrivr.cottontail.client.iterators
 
+import io.grpc.Context
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
+import java.util.concurrent.CancellationException
 
 /**
  * A [TupleIterator] used for retrieving [Tuple]s in a synchronous fashion.
@@ -12,13 +14,10 @@ import java.util.*
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class TupleIteratorImpl internal constructor(
-    private val results: Iterator<CottontailGrpc.QueryResponseMessage>,
-    private val finalizer: ((TupleIterator, Boolean) -> Unit)
-) : TupleIterator {
+class TupleIteratorImpl internal constructor(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext) : TupleIterator {
 
     /** Constructor for single [CottontailGrpc.QueryResponseMessage]. */
-    constructor(result: CottontailGrpc.QueryResponseMessage, onComplete: ((TupleIterator, Boolean) -> Unit)): this(sequenceOf(result).iterator(), onComplete)
+    constructor(result: CottontailGrpc.QueryResponseMessage, context: Context.CancellableContext): this(sequenceOf(result).iterator(), context)
 
     /** Internal buffer with pre-loaded [CottontailGrpc.QueryResponseMessage.Tuple]. */
     private val buffer = LinkedList<Tuple>()
@@ -68,7 +67,7 @@ class TupleIteratorImpl internal constructor(
 
         /** Call finalizer if no more data is available. */
         if (!this.results.hasNext()) {
-            this.finalizer.invoke(this, false)
+            this.context.close()
         }
     }
 
@@ -78,7 +77,7 @@ class TupleIteratorImpl internal constructor(
     override fun hasNext(): Boolean {
         if (this.buffer.isNotEmpty()) return true
         if (!this.results.hasNext()) {
-            this.finalizer.invoke(this, false)
+            this.context.close()
             return false
         }
         return true
@@ -90,7 +89,8 @@ class TupleIteratorImpl internal constructor(
     override fun next(): Tuple {
         if (this.buffer.isEmpty()) {
             if (!this.results.hasNext()) {
-                this.finalizer.invoke(this, false)
+                /* Should never be reached. */
+                this.context.close()
                 throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
             }
             this.results.next().tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
@@ -102,7 +102,7 @@ class TupleIteratorImpl internal constructor(
      * Closes this [TupleIteratorImpl].
      */
     override fun close() {
-        this.finalizer.invoke(this, true)
+        this.context.cancel(CancellationException("TupleIterator has been prematurely closed by user."))
     }
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {

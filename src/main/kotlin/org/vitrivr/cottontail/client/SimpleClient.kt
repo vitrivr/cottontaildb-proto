@@ -21,8 +21,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * and classical [CottontailGrpc] messages.
  *
  * As opposed to the pure gRPC implementation, the [SimpleClient] offers some advanced functionality such
- * as a more convenient [TupleIterator], cancelable queries and auto commit of 'simple' queries without
- * explicit transaction context.
+ * as a more convenient [TupleIterator] and cancelable queries.
  *
  * The [SimpleClient] wraps a [ManagedChannel]. It remains to the caller, to setup and close that [ManagedChannel].
  *
@@ -81,9 +80,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.query(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.query(message), inner)
         }
     }
 
@@ -105,9 +102,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.batchQuery(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.batchQuery(message), inner)
         }
     }
 
@@ -121,9 +116,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DQLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.explain(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.explain(message), inner)
         }
     }
 
@@ -145,9 +138,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.insert(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.insert(message), inner)
         }
     }
 
@@ -168,9 +159,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.insertBatch(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.insertBatch(message), inner)
         }
     }
 
@@ -192,9 +181,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.update(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.update(message), inner)
         }
     }
 
@@ -217,9 +204,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DMLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.delete(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.delete(message), inner)
         }
     }
 
@@ -241,9 +226,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.createSchema(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.createSchema(message), inner)
         }
     }
 
@@ -265,9 +248,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.createEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.createEntity(message), inner)
         }
     }
 
@@ -289,9 +270,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val stub = DDLGrpc.newBlockingStub(this.channel)
         val inner = Context.current().withCancellation()
         inner.call {
-            TupleIteratorImpl(stub.createIndex(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.createIndex(message), inner)
         }
     }
 
@@ -313,9 +292,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.dropSchema(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.dropSchema(message), inner)
         }
     }
 
@@ -337,9 +314,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.dropEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.dropEntity(message), inner)
         }
     }
 
@@ -361,9 +336,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.dropIndex(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.dropIndex(message), inner)
         }
     }
 
@@ -385,9 +358,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.listSchemas(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.listSchemas(message), inner)
         }
     }
 
@@ -409,9 +380,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.listEntities(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.listEntities(message), inner)
         }
     }
 
@@ -433,9 +402,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.entityDetails(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.entityDetails(message), inner)
         }
     }
 
@@ -465,9 +432,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.truncateEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.truncateEntity(message), inner)
         }
     }
 
@@ -481,9 +446,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.optimizeEntity(message)) { iterator, success ->
-                finalizeQuery(message.metadata, iterator, inner, success)
-            }
+            TupleIteratorImpl(stub.optimizeEntity(message), inner)
         }
     }
 
@@ -513,28 +476,6 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     override fun close() {
         if (!this.context.isCancelled) {
             this.context.cancel(CancellationException("Cottontail DB client was closed by the user."))
-        }
-    }
-
-    /**
-     * Internal method used to finalize [TupleIterator]s after having been drained or closed by the user. This method takes care of
-     * executing auto-commit, if necessary, and closing the associated [Context.CancellableContext].
-     *
-     * @param metadata The original [CottontailGrpc.Metadata] attached to the query.
-     * @param iterator The [TupleIterator] that resulted from the query.
-     * @param iterator The [Context.CancellableContex] in which the query was executed.
-     * @param forced Flag indicating, that [TupleIterator] was forcefully closed.
-     */
-    private fun finalizeQuery(metadata: CottontailGrpc.Metadata, iterator: TupleIterator, context: Context.CancellableContext, forced: Boolean) {
-        val autoCommit = metadata.transactionId <= 0L /* Determine based on original metadata, whether auto commit is desired. */
-        if (!context.isCancelled) {
-            if (!forced) {
-                context.close()
-                if (autoCommit) this.commit(iterator.transactionId)
-            } else {
-                context.cancel(CancellationException("Cottontail DB results iterator was forcefully closed by the user."))
-                if (autoCommit) this.rollback(iterator.transactionId)
-            }
         }
     }
 }
