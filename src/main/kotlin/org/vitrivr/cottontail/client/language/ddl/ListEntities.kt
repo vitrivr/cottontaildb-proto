@@ -8,14 +8,16 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A message to list all entities in a schema.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.1.1
  */
-class ListEntities(name: String): LanguageFeature() {
+class ListEntities(schemaName: String? = null): LanguageFeature() {
 
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
     val builder = CottontailGrpc.ListEntityMessage.newBuilder()
     init {
-        this.builder.schema = name.parseSchema()
+        if (schemaName != null) {
+            this.builder.schema = schemaName.parseSchema()
+        }
     }
 
     /**
