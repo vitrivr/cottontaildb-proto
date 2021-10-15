@@ -69,6 +69,27 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
         val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).kill(tx)
     }
+    /**
+     * Systems command to list all transaction executed by Cottontail DB.
+     */
+    fun transactions() = this.context.run {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = TXNGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.listTransactions(Empty.newBuilder().build()), inner)
+        }
+    }
+
+    /**
+     * Systems command to list all locks currently held by Cottontail DB.
+     */
+    fun locks() = this.context.run {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub =TXNGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.listLocks(Empty.newBuilder().build()), inner)
+        }
+    }
 
     /**
      * Executes [CottontailGrpc.Query] through this [SimpleClient]
