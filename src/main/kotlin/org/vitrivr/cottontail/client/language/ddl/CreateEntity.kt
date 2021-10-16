@@ -2,6 +2,7 @@ package org.vitrivr.cottontail.client.language.ddl
 
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.basics.Type
+import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -50,7 +51,7 @@ class CreateEntity(name: String): LanguageFeature() {
      */
     fun column(name: String, type: Type, length: Int = 0, nullable: Boolean = false): CreateEntity {
         val addBuilder = builder.definitionBuilder.addColumnsBuilder()
-        addBuilder.name = name
+        addBuilder.name = name.parseColumn()
         addBuilder.type = type.grpc
         addBuilder.length = length
         addBuilder.nullable = nullable
