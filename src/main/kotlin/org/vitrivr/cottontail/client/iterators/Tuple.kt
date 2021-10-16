@@ -7,9 +7,9 @@ import java.util.*
  * A [Tuple] as returned by the [TupleIterator].
  *
  * @author Ralph Gasser
- * @version 1.1.1
+ * @version 1.2.0
  */
-abstract class Tuple(tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
+abstract class Tuple(val tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
     /** Internal list of values. */
     private val values: Array<Any?> = Array(tuple.dataCount) { it ->
         val data = tuple.dataList[it]

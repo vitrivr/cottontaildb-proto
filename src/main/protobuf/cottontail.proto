@@ -364,7 +364,7 @@ message RebuildIndexMessage {
 
 /** Definition of a column in Cottontail DB. */
 message ColumnDefinition {
-    string name = 1;
+    ColumnName name = 1;
     Type type = 2;
     uint32 length = 3;
     bool primary = 4;
@@ -450,16 +450,16 @@ message Query {
     Projection projection = 2;
     Where where = 3;
     Order order = 4;
-    uint64 limit = 5;       /* Size of the result-set (default: unlimited). */
-    uint64 skip = 6;        /* Number of records to skip. */
+    uint64 limit = 5;                 /* Size of the result-set (default: unlimited). */
+    uint64 skip = 6;                  /* Number of records to skip. */
     repeated ExecutionHint hints = 7; /* Hints to the query planner. */
 }
 
 /* A query response message. */
 message QueryResponseMessage {
-    Metadata metadata = 1;
-    repeated ColumnName columns = 2; /* Columns returned by this QueryResponseMessage. */
-    repeated Tuple tuples = 3; /* List of tuples returned (data in order of columns). */
+    Metadata metadata = 1;                      /* Metadata associated with this QueryResponseMessage. */
+    repeated ColumnDefinition columns = 2;      /* Columns returned by this QueryResponseMessage. */
+    repeated Tuple tuples = 3;                  /* List of tuples returned (data in order of columns). */
     message Tuple {
         repeated Literal data = 1;
     }

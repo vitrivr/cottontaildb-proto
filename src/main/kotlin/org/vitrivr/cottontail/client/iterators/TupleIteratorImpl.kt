@@ -1,6 +1,7 @@
 package org.vitrivr.cottontail.client.iterators
 
 import io.grpc.Context
+import org.vitrivr.cottontail.client.language.basics.Type
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
@@ -34,21 +35,26 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
     /** The ID of the Cottontail DB query this [TupleIterator] is associated with. */
     override val queryId: String
 
-    /** Returns the columns contained in the [Tuple]s returned by this [TupleIterator]. */
-    override val columns: List<String>
+    /** The column names returned by this [TupleIterator]. */
+    override val columnNames: List<String>
         get() = this._columns.keys.toList()
+
+    /** The column [Type]s returned by this [TupleIterator]. */
+    override val columnTypes: List<Type> = LinkedList()
 
     /**
      *  [List] of column names returned by this [TupleIterator] in order of occurrence. Contains simple names.
      *
      *  Since simple names may collide, list may be incomplete for given query.
      */
-    override val simple: List<String>
+    override val simpleNames: List<String>
         get() = this._simple.keys.toList()
 
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
-        get() = this.columns.size
+        get() = this.columnNames.size
+
+
 
     init {
         /* Start loading first results. */
@@ -59,9 +65,10 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         this.queryId = next.metadata.queryId
         next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
         next.columnsList.forEachIndexed { i,c ->
-            this._columns[c.fqn()] = i
-            if (!this._simple.contains(c.name)) {
-                this._simple[c.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
+            this._columns[c.name.fqn()] = i
+            (this.columnTypes as LinkedList).add(Type.of(c.type))
+            if (!this._simple.contains(c.name.name)) {
+                this._simple[c.name.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
             }
         }
 

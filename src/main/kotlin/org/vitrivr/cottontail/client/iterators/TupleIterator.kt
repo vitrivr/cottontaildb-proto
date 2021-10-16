@@ -1,5 +1,7 @@
 package org.vitrivr.cottontail.client.iterators
 
+import org.vitrivr.cottontail.client.language.basics.Type
+
 /**
  * An [Iterator] for [Tuple]s as returned by the [org.vitrivr.cottontail.client.SimpleClient]
  *
@@ -17,12 +19,15 @@ interface TupleIterator : Iterator<Tuple>, AutoCloseable {
     val numberOfColumns: Int
 
     /** [List] of column names returned by this [TupleIterator] in order of occurrence. Contains fully qualified names. */
-    val columns: List<String>
+    val columnNames: List<String>
+
+    /** [List] of column names returned by this [TupleIterator] in order of occurrence. Contains fully qualified names. */
+    val columnTypes: List<Type>
 
     /**
-     * [List] of column names returned by this [TupleIterator] in order of occurrence. Contains simple names.
+     * [List] of simple column names returned by this [TupleIterator] in order of occurrence.
      *
      * Since simple names may collide, list may be incomplete for given query.
      */
-    val simple: List<String>
+    val simpleNames: List<String>
 }
