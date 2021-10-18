@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.iterators
 
+import org.vitrivr.cottontail.client.language.basics.Type
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 
@@ -43,6 +44,11 @@ abstract class Tuple(val tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
 
 
     abstract fun indexForName(name: String): Int
+
+    abstract fun type(name: String): Type
+    abstract fun type(index: Int): Type
+
+    fun size() = this.values.size
 
     operator fun get(name: String) = this.values[indexForName(name)]
     operator fun get(index: Int): Any? = this.values[index]

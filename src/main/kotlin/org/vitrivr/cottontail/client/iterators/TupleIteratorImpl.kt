@@ -114,6 +114,8 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
         override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
+        override fun type(index: Int): Type = this@TupleIteratorImpl.columnTypes[index]
+        override fun type(name: String): Type = this@TupleIteratorImpl.columnTypes[indexForName(name)]
         override fun asBoolean(name: String) = asBoolean(indexForName(name))
         override fun asInt(name: String) = asInt(indexForName(name))
         override fun asLong(name: String) = asLong(indexForName(name))
