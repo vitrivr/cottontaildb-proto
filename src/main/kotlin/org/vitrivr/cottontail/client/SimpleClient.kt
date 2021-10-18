@@ -71,8 +71,10 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     }
     /**
      * Systems command to list all transaction executed by Cottontail DB.
+     *
+     * @return [TupleIterator]
      */
-    fun transactions() = this.context.run {
+    fun transactions(): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = TXNGrpc.newBlockingStub(this.channel)
@@ -82,8 +84,10 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
 
     /**
      * Systems command to list all locks currently held by Cottontail DB.
+     *
+     * @return [TupleIterator]
      */
-    fun locks() = this.context.run {
+    fun locks(): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub =TXNGrpc.newBlockingStub(this.channel)
@@ -95,7 +99,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * Executes [CottontailGrpc.Query] through this [SimpleClient]
      *
      * @param message [CottontailGrpc.Query] to execute.
-     * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
+     * @return An [TupleIterator] of the results.
      */
     fun query(message: CottontailGrpc.QueryMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
