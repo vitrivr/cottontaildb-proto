@@ -10,10 +10,10 @@ import java.util.*
  * @author Ralph Gasser
  * @version 1.2.0
  */
-abstract class Tuple(val tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
+abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
     /** Internal list of values. */
-    private val values: Array<Any?> = Array(tuple.dataCount) { it ->
-        val data = tuple.dataList[it]
+    private val values: Array<Any?> = Array(raw.dataCount) { it ->
+        val data = raw.dataList[it]
         when (data.dataCase) {
             CottontailGrpc.Literal.DataCase.BOOLEANDATA -> data.booleanData
             CottontailGrpc.Literal.DataCase.INTDATA -> data.intData
