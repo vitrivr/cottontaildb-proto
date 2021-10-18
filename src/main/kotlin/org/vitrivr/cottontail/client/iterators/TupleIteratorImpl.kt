@@ -118,6 +118,8 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         override fun type(index: Int): Type = this@TupleIteratorImpl.columnTypes[index]
         override fun type(name: String): Type = this@TupleIteratorImpl.columnTypes[indexForName(name)]
         override fun asBoolean(name: String) = asBoolean(indexForName(name))
+        override fun asByte(name: String) = asByte(indexForName(name))
+        override fun asShort(name: String) = asShort(indexForName(name))
         override fun asInt(name: String) = asInt(indexForName(name))
         override fun asLong(name: String) = asLong(indexForName(name))
         override fun asFloat(name: String) = asFloat(indexForName(name))

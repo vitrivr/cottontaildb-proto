@@ -59,6 +59,18 @@ abstract class Tuple(val tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
     }
     abstract fun asBoolean(name: String): Boolean?
 
+    fun asByte(index: Int): Byte? {
+        val value = this.values[index]
+        return if (value is Byte) { value } else { null }
+    }
+    abstract fun asByte(name: String): Byte?
+
+    fun asShort(index: Int): Short? {
+        val value = this.values[index]
+        return if (value is Short) { value } else { null }
+    }
+    abstract fun asShort(name: String): Short?
+
     fun asInt(index: Int): Int? {
         val value = this.values[index]
         return if (value is Int) { value } else { null }
