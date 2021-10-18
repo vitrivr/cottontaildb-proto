@@ -42,7 +42,7 @@ abstract class Tuple(val tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
         }
     }
 
-
+    abstract fun nameForIndex(index: Int): String
     abstract fun indexForName(name: String): Int
 
     abstract fun type(name: String): Type
