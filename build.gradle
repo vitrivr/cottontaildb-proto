@@ -127,7 +127,7 @@ protobuf {
 dependencies {
     /////// gRPC & Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: version_protobuf
-    implementation group: 'io.grpc', name: 'grpc-netty-shaded', version: version_grpc
+    implementation group: 'io.grpc', name: 'grpc-netty', version: version_grpc
     implementation group: 'io.grpc', name: 'grpc-protobuf', version: version_grpc
     implementation group: 'io.grpc', name: 'grpc-stub', version: version_grpc
     implementation group: 'io.grpc', name: 'grpc-kotlin-stub', version: version_grpc_kotlin
