@@ -6,7 +6,7 @@ import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
- * A INSERT query in the Cottontail DB query language.
+ * An INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
  * @version 1.2.0
@@ -27,7 +27,7 @@ class Insert(entity: String? = null): LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): Insert {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId= txId
         return this
     }
 
@@ -37,7 +37,7 @@ class Insert(entity: String? = null): LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): Insert {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 

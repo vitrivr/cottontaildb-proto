@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.iterators
 
+import org.vitrivr.cottontail.client.language.basics.Type
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 
@@ -7,12 +8,12 @@ import java.util.*
  * A [Tuple] as returned by the [TupleIterator].
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
-abstract class Tuple(tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
+abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
     /** Internal list of values. */
-    private val values: Array<Any?> = Array(tuple.dataCount) { it ->
-        val data = tuple.dataList[it]
+    private val values: Array<Any?> = Array(raw.dataCount) { it ->
+        val data = raw.dataList[it]
         when (data.dataCase) {
             CottontailGrpc.Literal.DataCase.BOOLEANDATA -> data.booleanData
             CottontailGrpc.Literal.DataCase.INTDATA -> data.intData
@@ -41,14 +42,34 @@ abstract class Tuple(tuple: CottontailGrpc.QueryResponseMessage.Tuple) {
         }
     }
 
+    abstract fun nameForIndex(index: Int): String
+    abstract fun indexForName(name: String): Int
+
+    abstract fun type(name: String): Type
+    abstract fun type(index: Int): Type
+
+    fun size() = this.values.size
+
+    operator fun get(name: String) = this.values[indexForName(name)]
     operator fun get(index: Int): Any? = this.values[index]
-    abstract operator fun get(name: String): Any?
 
     fun asBoolean(index: Int): Boolean? {
         val value = this.values[index]
         return if (value is Boolean) { value } else { null }
     }
     abstract fun asBoolean(name: String): Boolean?
+
+    fun asByte(index: Int): Byte? {
+        val value = this.values[index]
+        return if (value is Byte) { value } else { null }
+    }
+    abstract fun asByte(name: String): Byte?
+
+    fun asShort(index: Int): Short? {
+        val value = this.values[index]
+        return if (value is Short) { value } else { null }
+    }
+    abstract fun asShort(name: String): Short?
 
     fun asInt(index: Int): Int? {
         val value = this.values[index]

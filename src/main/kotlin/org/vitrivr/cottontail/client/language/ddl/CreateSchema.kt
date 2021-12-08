@@ -24,7 +24,7 @@ class CreateSchema(name: String): LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): CreateSchema {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -34,7 +34,7 @@ class CreateSchema(name: String): LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): CreateSchema {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 }

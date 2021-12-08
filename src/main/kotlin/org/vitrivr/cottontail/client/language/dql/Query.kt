@@ -29,7 +29,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): Query {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -39,66 +39,52 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): Query {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 
     /**
-     * Adds a SELECT projection to this [Query].
+     * Adds a SELECT projection to this [Query]. Call this method repeatedly to add multiple projections.
+
+     * Calling this method on a [Query] with a projection other than SELECT, will reset the previous projection.
      *
-     * @param fields The names of the columns to return.
+     * @param column The name of the column to select.
+     * @param alias The column alias. This is optional.
      * @return [Query]
      */
-    fun select(vararg fields: String): Query {
-        this.builder.queryBuilder.clearProjection()
+    fun select(column: String, alias: String? = null): Query {
         val builder = this.builder.queryBuilder.projectionBuilder
-        builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
-        for (field in fields) {
-            builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.parseColumn()))
+        if (builder.op != CottontailGrpc.Projection.ProjectionOperation.SELECT) {
+            builder.clearElements()
+            builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
+        }
+        val element = builder.addElementsBuilder()
+        element.column = column.parseColumn()
+        if (alias != null) {
+            element.alias = alias.parseColumn()
         }
         return this
     }
 
     /**
-     * Adds a SELECT projection to this [Query].
+     * Adds a SELECT DISTINCT projection to this [Query]. Call this method repeatedly to add multiple projections.
      *
-     * @param fields The names of the columns to return and their alias (null, if no alias is set).
-     * @param clear If set, the existing projection will be cleared.
+     * Calling this method on a [Query] with a projection other than SELECT DISTINCT, will reset the previous projection.
+     *
+     * @param column The name of the column to select.
+     * @param alias The column alias. This is optional.
      * @return [Query]
      */
-    fun select(vararg fields: Pair<String,String?>, clear: Boolean = false): Query {
+    fun distinct(column: String, alias: String? = null): Query {
         val builder = this.builder.queryBuilder.projectionBuilder
-        builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
-        if (clear) builder.clearElements()
-        for (field in fields) {
-            val c = CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.first.parseColumn())
-            if (field.second != null) {
-                c.alias = field.second!!.parseColumn()
-            }
-            builder.addElements(c)
+        if (builder.op != CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT) {
+            builder.clearElements()
+            builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT
         }
-        return this
-    }
-
-    /**
-     * Adds a SELECT projection to this [Query].
-     *
-     * Calling this method resets the PROJECTION part of the query.
-     *
-     * @param fields The names of the columns to return.
-     * @param clear If set, the existing projection will be cleared.
-     * @return [Query]
-     */
-    fun distinct(vararg fields: Pair<String,String?>, clear: Boolean = false): Query {
-        val builder = this.builder.queryBuilder.projectionBuilder
-        builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT
-        if (clear) builder.clearElements()
-        for (field in fields) {
-            val c = CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn(field.first.parseColumn())
-            if (field.second != null) {
-                c.alias = field.second!!.parseColumn()
-            }
-            builder.addElements(c)
+        val element = builder.addElementsBuilder()
+        element.column = column.parseColumn()
+        if (alias != null) {
+            element.alias = alias.parseColumn()
         }
         return this
     }
@@ -111,9 +97,11 @@ class Query(entity: String? = null): LanguageFeature() {
      * @return [Query]
      */
     fun count(): Query {
-        this.builder.queryBuilder.clearProjection()
         val builder = this.builder.queryBuilder.projectionBuilder
-        builder.op = CottontailGrpc.Projection.ProjectionOperation.COUNT
+        if (builder.op != CottontailGrpc.Projection.ProjectionOperation.COUNT) {
+            builder.clearElements()
+            builder.op = CottontailGrpc.Projection.ProjectionOperation.COUNT
+        }
         builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
         return this
     }
@@ -126,9 +114,11 @@ class Query(entity: String? = null): LanguageFeature() {
      * @return [Query]
      */
     fun exists(): Query {
-        this.builder.queryBuilder.clearProjection()
         val builder = this.builder.queryBuilder.projectionBuilder
-        builder.op = CottontailGrpc.Projection.ProjectionOperation.EXISTS
+        if (builder.op != CottontailGrpc.Projection.ProjectionOperation.EXISTS) {
+            builder.clearElements()
+            builder.op = CottontailGrpc.Projection.ProjectionOperation.EXISTS
+        }
         builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
         return this
     }
@@ -276,18 +266,15 @@ class Query(entity: String? = null): LanguageFeature() {
     /**
      * Adds a ORDER BY-clause to this [Query] and returns it
      *
-     * @param clauses ORDER BY clauses in the form of <column> <order>
-     * @param clear If set, the existing ORDER BY-clause will be cleared.
+     * @param column The column to order by
+     * @param direction The sort [Direction]
      * @return This [Query]
      */
-    fun order(vararg clauses: Pair<String,String>, clear: Boolean = false): Query {
+    fun order(column: String, direction: Direction): Query {
         val builder = this.builder.queryBuilder.orderBuilder
-        if (clear) builder.clearComponents()
-        for (c in clauses) {
-            val cBuilder = builder.addComponentsBuilder()
-            cBuilder.column = c.first.parseColumn()
-            cBuilder.direction = CottontailGrpc.Order.Direction.valueOf(c.second.uppercase())
-        }
+        val cBuilder = builder.addComponentsBuilder()
+        cBuilder.column = column.parseColumn()
+        cBuilder.direction = direction.toGrpc()
         return this
     }
 

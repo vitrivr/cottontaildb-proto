@@ -9,7 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A CREATE INDEX query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 class CreateIndex(name: String, type: CottontailGrpc.IndexType): LanguageFeature() {
 
@@ -26,7 +26,7 @@ class CreateIndex(name: String, type: CottontailGrpc.IndexType): LanguageFeature
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): CreateIndex {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -36,7 +36,7 @@ class CreateIndex(name: String, type: CottontailGrpc.IndexType): LanguageFeature
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): CreateIndex {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 

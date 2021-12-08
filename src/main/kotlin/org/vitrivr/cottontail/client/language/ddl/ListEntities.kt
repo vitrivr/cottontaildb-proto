@@ -8,14 +8,16 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A message to list all entities in a schema.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.1
  */
-class ListEntities(name: String): LanguageFeature() {
+class ListEntities(schemaName: String? = null): LanguageFeature() {
 
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
     val builder = CottontailGrpc.ListEntityMessage.newBuilder()
     init {
-        this.builder.schema = name.parseSchema()
+        if (schemaName != null) {
+            this.builder.schema = schemaName.parseSchema()
+        }
     }
 
     /**
@@ -24,7 +26,7 @@ class ListEntities(name: String): LanguageFeature() {
      * @param txId The new transaction ID.
      */
     override fun txId(txId: Long): ListEntities {
-        this.builder.txIdBuilder.value = txId
+        this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
@@ -34,7 +36,7 @@ class ListEntities(name: String): LanguageFeature() {
      * @param queryId The new query ID.
      */
     override fun queryId(queryId: String): ListEntities {
-        this.builder.txIdBuilder.queryId = queryId
+        this.builder.metadataBuilder.queryId = queryId
         return this
     }
 }
