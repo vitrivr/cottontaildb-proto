@@ -213,11 +213,12 @@ message Literal {
     }
 }
 
-/** An expression can either be a Literal or a column value (arithmetics not supported yet). */
+/** An expression can either be a Literal, a column value or a function invocation. */
 message Expression {
     oneof exp {
         Literal literal = 1;
         ColumnName column = 2;
+        Function function = 3;
     }
 }
 
