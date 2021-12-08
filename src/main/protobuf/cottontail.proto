@@ -84,13 +84,16 @@ service DQL {
  */
 service TXN {
     /** Starts a new transaction. */
-    rpc Begin (google.protobuf.Empty) returns (TransactionId);
+    rpc Begin (google.protobuf.Empty) returns (Metadata);
 
-    /** Performs a commit on a transaction. */
-    rpc Commit (TransactionId) returns (google.protobuf.Empty);
+    /** Performs a commit on a transaction. This method blocks if a query is currently executed. */
+    rpc Commit (Metadata) returns (google.protobuf.Empty);
 
-    /** Performs a rollback on a transaction and aborts it. */
-    rpc Rollback (TransactionId) returns (google.protobuf.Empty);
+    /** Performs a rollback on a transaction and aborts it. This method blocks if a query is currently executed. */
+    rpc Rollback (Metadata) returns (google.protobuf.Empty);
+
+    /** Kills and performs a rollback on an ongoing transaction. This method can even be used when a query is being executed.*/
+    rpc Kill (Metadata) returns (google.protobuf.Empty);
 
     /** Lists all active transactions. */
     rpc ListTransactions (google.protobuf.Empty) returns (stream QueryResponseMessage);
@@ -99,24 +102,29 @@ service TXN {
     rpc ListLocks (google.protobuf.Empty) returns (stream QueryResponseMessage);
 }
 
-/** Identifier for a single schema.  */
+/** Identifier for a schema.  */
 message SchemaName {
     string name = 1;
 }
 
-/** Identifier for a single entity. */
+/** Identifier for a function. */
+message FunctionName {
+    string name = 1;
+}
+
+/** Identifier for an entity. */
 message EntityName {
     SchemaName schema = 1;
     string name = 2;
 }
 
-/** Identifier for a single index. */
+/** Identifier for an index. */
 message IndexName {
     EntityName entity = 1;
     string name = 2;
 }
 
-/** Identifier for a single column. */
+/** Identifier for a column. */
 message ColumnName {
     EntityName entity = 1;
     string name = 2;
@@ -135,28 +143,21 @@ enum IndexType {
     NONBUCKETING_SUPERBIT_LSH = 8;
 }
 
-/** A transaction ID in Cottontail DB. */
-message TransactionId {
-    int64 value = 1;
+/** Query metadata used in Cottontail DB. */
+message Metadata {
+    int64 transactionId = 1;
     string queryId = 2;
 }
 
-/** Describes a basic transaction in Cottontail DB. */
-message Transaction {
-    TransactionId tid = 1;
-    Status status = 2;
-    int64 created = 3;
-    int64 completed = 4;
-    enum Status {
-        CREATED = 0;
-        RUNNING = 1;
-        COMPLETED = 2;
-        ERROR = 3;
-    }
+/* The storage engine employed by a Cottontail DB column. */
+enum Engine {
+    HARE = 0;
+    MAPDB = 1;
 }
 
 /* The basic data types supported by Cottontail DB columns. */
 enum Type {
+    /* Scalar types. */
     BOOLEAN = 0;
     BYTE = 1;
     SHORT = 2;
@@ -166,22 +167,20 @@ enum Type {
     DOUBLE = 6;
     DATE = 7;
     STRING = 8;
-    DOUBLE_VEC = 9;
-    FLOAT_VEC = 10;
-    LONG_VEC = 11;
-    INT_VEC = 12;
-    BOOL_VEC = 13;
-    COMPLEX32 = 14;
-    COMPLEX64 = 15;
+
+    /* Complex types. */
+    COMPLEX32 = 9;
+    COMPLEX64 = 10;
+
+    /* Vector types. */
+    DOUBLE_VEC = 11;
+    FLOAT_VEC = 12;
+    LONG_VEC = 13;
+    INT_VEC = 14;
+    BOOL_VEC = 15;
     COMPLEX32_VEC = 16;
     COMPLEX64_VEC = 17;
     BLOB = 18;
-}
-
-/* The storage engine employed by a Cottontail DB column. */
-enum Engine {
-    HARE = 0;
-    MAPDB = 1;
 }
 
 /** Literal data, i.e. field that actually contains information. */
@@ -197,8 +196,27 @@ message Literal {
         Complex32 complex32Data = 8;
         Complex64 complex64Data = 9;
         Vector vectorData = 10;
-        Null nullData = 11;
     }
+}
+
+/** An expression can either be a Literal, a column value or a function invocation. */
+message Expression {
+    oneof exp {
+        Literal literal = 1;
+        ColumnName column = 2;
+        Function function = 3;
+    }
+}
+
+/** A function; special type of logic usually executed on expressions used for nearest neighbor search (NNS) and other.*/
+message Function {
+    FunctionName name = 1;
+    repeated Expression arguments = 2;
+}
+
+/** A list of expressions. */
+message Expressions {
+    repeated Expression expression = 1;
 }
 
 /** Vector data (as opposed to scalar data). */
@@ -275,79 +293,79 @@ message Complex64Vector {
 
 /** Message to create a new schema. */
 message CreateSchemaMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to drop schema. */
 message DropSchemaMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to list schemata. */
 message ListSchemaMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
 }
 
 /** Message to create an entity. */
 message CreateEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityDefinition definition = 2;
 }
 
 /** Message to drop an entity. */
 message DropEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to drop an entity. */
 message TruncateEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to drop an entity. */
 message OptimizeEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to list entities. */
 message EntityDetailsMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to list entities. */
 message ListEntityMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to create an index. */
 message CreateIndexMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     IndexDefinition definition = 2;
     bool rebuild = 3;
 }
 
 /** Message to drop an index. */
 message DropIndexMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     IndexName index = 2;
 }
 
 /** Message to rebuild an index. */
 message RebuildIndexMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     IndexName index = 2;
 }
 
 /** Definition of a column in Cottontail DB. */
 message ColumnDefinition {
-    string name = 1;
+    ColumnName name = 1;
     Type type = 2;
     uint32 length = 3;
     bool primary = 4;
@@ -371,7 +389,7 @@ message IndexDefinition {
 
 /** Message for inserting data into an entity. */
 message InsertMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     repeated InsertElement elements = 3;
     message InsertElement {
@@ -383,7 +401,7 @@ message InsertMessage {
 
 /** Message for batch-inserting data into an entity. */
 message BatchInsertMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     repeated ColumnName columns = 3;
     repeated Insert inserts = 4;
@@ -394,19 +412,19 @@ message BatchInsertMessage {
 
 /** Message for updating data in an entity. */
 message UpdateMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     Where where = 3;
     repeated UpdateElement updates = 4;
     message UpdateElement {
         ColumnName column = 1;
-        Literal value = 2;
+        Expression value = 2;
     }
 }
 
 /** Message for deleting data from an entity. */
 message DeleteMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     From from = 2;
     Where where = 3;
 }
@@ -417,13 +435,13 @@ message DeleteMessage {
 
 /* A single query that should be executed. */
 message QueryMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     Query query = 2;
 }
 
 /* A batched query that should be executed. */
 message BatchedQueryMessage {
-    TransactionId txId = 1;
+    Metadata metadata = 1;
     repeated Query query = 2;
 }
 
@@ -432,17 +450,17 @@ message Query {
     From from = 1;
     Projection projection = 2;
     Where where = 3;
-    Knn knn = 4;
-    Order order = 5;
-    uint64 limit = 6; /* Size of the result-set (default: unlimited). */
-    uint64 skip = 7; /* Number of records to skip. */
+    Order order = 4;
+    uint64 limit = 5;                 /* Size of the result-set (default: unlimited). */
+    uint64 skip = 6;                  /* Number of records to skip. */
+    repeated ExecutionHint hints = 7; /* Hints to the query planner. */
 }
 
 /* A query response message. */
 message QueryResponseMessage {
-    TransactionId tid = 1;
-    repeated ColumnName columns = 2; /* Columns returned by this QueryResponseMessage. */
-    repeated Tuple tuples = 3; /* List of tuples returned (data in order of columns). */
+    Metadata metadata = 1;                      /* Metadata associated with this QueryResponseMessage. */
+    repeated ColumnDefinition columns = 2;      /* Columns returned by this QueryResponseMessage. */
+    repeated Tuple tuples = 3;                  /* List of tuples returned (data in order of columns). */
     message Tuple {
         repeated Literal data = 1;
     }
@@ -467,14 +485,14 @@ message Scan {
 /* Describes a random SAMPLE of an Entity. Can be used to specify the "FROM" part of a query. */
 message Sample {
     EntityName entity = 1;
-    int64 size = 2;
-    int64 seed = 3;
+    int64 seed = 2;
+    float probability = 3;
 }
 
 /* The projection part of a query (select + attributes / count / exists). */
 message Projection {
     ProjectionOperation op = 1;
-    repeated ProjectionElement columns = 2;
+    repeated ProjectionElement elements = 2;
     enum ProjectionOperation {
         SELECT = 0;
         SELECT_DISTINCT = 1;
@@ -487,89 +505,20 @@ message Projection {
         MEAN = 8;
     }
     message ProjectionElement {
-        ColumnName column = 1;
-        ColumnName alias = 2;
+        ColumnName alias = 1;
+        oneof proj {
+            ColumnName column = 2;
+            Function function = 3;
+        }
     }
 }
 
-/**
- * The kNN part of a QueryMessage.
- */
-message Knn {
-    ColumnName attribute = 1;
-    uint32 k = 2;
-    Distance distance = 3;
-    KnnHint hint = 4;
-    Vector query = 5;
-    Vector weight = 6;
-    enum Distance {
-        L1 = 0;
-        L2 = 1;
-        L2SQUARED = 2;
-        LP = 3;
-        CHISQUARED = 4;
-        HAMMING = 5;
-        COSINE = 6;
-        INNERPRODUCT = 7;
-        HAVERSINE = 10;
-    }
-}
-
-/** A hint to the query planner for NNS-clauses. */
-message KnnHint {
-    oneof hint {
-        NoIndexKnnHint noIndexHint = 1;
-        AllowInexactKnnHint allowInexactIndexHint = 2;
-        IndexTypeKnnHint typeIndexHint = 3;
-        IndexNameKnnHint nameIndexHint = 4;
-        ParallelKnnHint parallelIndexHint = 5;
-    }
-
-    message NoIndexKnnHint {}
-    message AllowInexactKnnHint {
-        bool allow = 1;
-    }
-    message IndexTypeKnnHint {
-        IndexType type = 1;
-    }
-    message IndexNameKnnHint {
-        string name = 1;
-        map<string,string> parameters = 2;
-    }
-    message ParallelKnnHint {
-        uint32 min = 1;
-        uint32 max = 2;
-    }
-}
 
 /** The boolean predicate ('WHERE') part of a QueryMessage. */
 message Where {
     oneof predicate {
         AtomicBooleanPredicate atomic = 1;
         CompoundBooleanPredicate compound = 2;
-    }
-    WhereHint hint = 3;
-}
-
-/** A hint to the query planner for boolean predicate ('WHERE')-clauses. */
-message WhereHint {
-    oneof hint {
-        NoIndexWhereHint noIndexHint = 1;
-        IndexTypeWhereHint typeIndexHint = 2;
-        IndexNameWhereHint nameIndexHint = 3;
-        ParallelWhereHint parallelIndexHint = 4;
-    }
-    message NoIndexWhereHint {}
-    message IndexTypeWhereHint {
-        IndexType type = 1;
-    }
-    message IndexNameWhereHint {
-        string name = 1;
-        map<string,string> parameters = 2;
-    }
-    message ParallelWhereHint {
-        uint32 min = 1;
-        uint32 max = 2;
     }
 }
 
@@ -586,7 +535,6 @@ enum ComparisonOperator {
     BETWEEN = 6;
     ISNULL = 7;
     LIKE = 8;
-    MATCH = 9;
 }
 
 /**
@@ -608,15 +556,9 @@ message AtomicBooleanPredicate {
 /** An atomic boolean predicate operand. */
 message AtomicBooleanOperand {
     oneof operand {
-        ColumnName column = 1;
-        Literals literals = 2;
+        Expressions expressions = 1;
         Query query = 3;
     }
-}
-
-/** A list of literals. */
-message Literals {
-    repeated Literal literal = 1;
 }
 
 /**
@@ -646,5 +588,28 @@ message Order {
     enum Direction {
         ASCENDING = 0;
         DESCENDING = 1;
+    }
+}
+
+/** A hint to the query planner. */
+message ExecutionHint {
+    oneof hint {
+        NoIndexHint noIndexHint = 1;
+        AllowInaccuracyHint allowInexactIndexHint = 2;
+        IndexNameHint nameIndexHint = 3;
+        ParallelHint parallelIndexHint = 4;
+    }
+
+    message NoIndexHint {}
+    message AllowInaccuracyHint {
+        float threshold = 1;
+    }
+    message IndexNameHint {
+        string name = 1;
+        map<string,string> parameters = 2;
+    }
+    message ParallelHint {
+        uint32 min = 1;
+        uint32 max = 2;
     }
 }

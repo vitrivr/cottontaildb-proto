@@ -5,14 +5,14 @@ import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
- * A DROP ENTITY query in the Cottontail DB query language.
+ * A TRUNCATE ENTITY query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
  * @version 1.1.0
  */
-class DropEntity(name: String): LanguageFeature() {
+class TruncateEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
-    val builder = CottontailGrpc.DropEntityMessage.newBuilder()
+    val builder = CottontailGrpc.TruncateEntityMessage.newBuilder()
 
     init {
         builder.entity = name.parseEntity()
@@ -23,7 +23,7 @@ class DropEntity(name: String): LanguageFeature() {
      *
      * @param txId The new transaction ID.
      */
-    override fun txId(txId: Long): DropEntity {
+    override fun txId(txId: Long): TruncateEntity {
         this.builder.metadataBuilder.transactionId = txId
         return this
     }
@@ -33,7 +33,7 @@ class DropEntity(name: String): LanguageFeature() {
      *
      * @param queryId The new query ID.
      */
-    override fun queryId(queryId: String): DropEntity {
+    override fun queryId(queryId: String): TruncateEntity {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }

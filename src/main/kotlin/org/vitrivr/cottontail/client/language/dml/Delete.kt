@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.dml
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -7,9 +8,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A DELETE query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.2.0
  */
-class Delete(entity: String? = null) {
+class Delete(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
     val builder = CottontailGrpc.DeleteMessage.newBuilder()
 
@@ -17,6 +18,26 @@ class Delete(entity: String? = null) {
         if (entity != null) {
             this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         }
+    }
+
+    /**
+     * Sets the transaction ID for this [Delete].
+     *
+     * @param txId The new transaction ID.
+     */
+    override fun txId(txId: Long): Delete {
+        this.builder.metadataBuilder.transactionId = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [Delete].
+     *
+     * @param queryId The new query ID.
+     */
+    override fun queryId(queryId: String): Delete {
+        this.builder.metadataBuilder.queryId = queryId
+        return this
     }
 
     /**

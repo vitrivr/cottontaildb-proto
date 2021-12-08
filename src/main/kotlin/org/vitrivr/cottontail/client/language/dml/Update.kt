@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.dml
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -7,9 +8,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An UPDATE query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.2.0
  */
-class Update(entity: String? = null) {
+class Update(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
     val builder = CottontailGrpc.UpdateMessage.newBuilder()
 
@@ -17,6 +18,26 @@ class Update(entity: String? = null) {
         if (entity != null) {
             this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         }
+    }
+
+    /**
+     * Sets the transaction ID for this [Update].
+     *
+     * @param txId The new transaction ID.
+     */
+    override fun txId(txId: Long): Update {
+        this.builder.metadataBuilder.transactionId = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [Update].
+     *
+     * @param queryId The new query ID.
+     */
+    override fun queryId(queryId: String): Update {
+        this.builder.metadataBuilder.queryId = queryId
+        return this
     }
 
     /**
@@ -61,32 +82,9 @@ class Update(entity: String? = null) {
             this.builder.addUpdates(
                 CottontailGrpc.UpdateMessage.UpdateElement.newBuilder()
                 .setColumn(assignment.first.parseColumn())
-                .setValue(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
+                .setValue(CottontailGrpc.Expression.newBuilder().setLiteral(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().build()))
             )
         }
         return this
-    }
-
-    /**
-     * Converts an [Any] to a [CottontailGrpc.Literal]
-     *
-     * @return [CottontailGrpc.Literal]
-     */
-    private fun Any.convert(): CottontailGrpc.Literal = when(this) {
-        is Array<*> -> (this as Array<Number>).toLiteral()
-        is BooleanArray -> this.toLiteral()
-        is IntArray -> this.toLiteral()
-        is LongArray -> this.toLiteral()
-        is FloatArray -> this.toLiteral()
-        is DoubleArray -> this.toLiteral()
-        is Boolean -> this.toLiteral()
-        is Byte -> this.toLiteral()
-        is Short -> this.toLiteral()
-        is Int -> this.toLiteral()
-        is Long -> this.toLiteral()
-        is Float -> this.toLiteral()
-        is Double -> this.toLiteral()
-        is String -> this.toLiteral()
-        else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to literal is not supported.")
     }
 }

@@ -2,24 +2,6 @@ package org.vitrivr.cottontail.client.language.extensions
 
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
-
-/**
- * Tries to convert [Any] to a [CottontailGrpc.Vector].
- *
- * Only works for compatible types, otherwise throws an [IllegalStateException]
- *
- * @return [CottontailGrpc.Vector]
- */
-fun Any.toVector(): CottontailGrpc.Vector = when (this) {
-    is BooleanArray -> this.toVector()
-    is IntArray -> this.toVector()
-    is LongArray -> this.toVector()
-    is FloatArray -> this.toVector()
-    is DoubleArray -> this.toVector()
-    is Array<*> -> (this as Array<Number>).toVector()
-    else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to vector element is not supported.")
-}
-
 /**
  * Converts an [Array] of [Number]s to a [CottontailGrpc.Vector].
  *

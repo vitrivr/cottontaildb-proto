@@ -1,10 +1,12 @@
-package org.vitrivr.cottontail.client.stub
+package org.vitrivr.cottontail.client
 
 import com.google.protobuf.Empty
+import io.grpc.Context
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
-import org.vitrivr.cottontail.client.TupleIterator
+import org.vitrivr.cottontail.client.iterators.TupleIterator
+import org.vitrivr.cottontail.client.iterators.TupleIteratorImpl
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.ddl.*
 import org.vitrivr.cottontail.client.language.dml.BatchInsert
 import org.vitrivr.cottontail.client.language.dml.Delete
@@ -12,50 +14,40 @@ import org.vitrivr.cottontail.client.language.dml.Insert
 import org.vitrivr.cottontail.client.language.dql.Query
 import org.vitrivr.cottontail.client.language.dml.Update
 import org.vitrivr.cottontail.grpc.*
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * A simple Cottontail DB client for querying and data management.
+ * A simple Cottontail DB client for querying, data management and data definition. Can work with [LanguageFeature]s
+ * and classical [CottontailGrpc] messages.
+ *
+ * As opposed to the pure gRPC implementation, the [SimpleClient] offers some advanced functionality such
+ * as a more convenient [TupleIterator] and cancelable queries.
+ *
+ * The [SimpleClient] wraps a [ManagedChannel]. It remains to the caller, to setup and close that [ManagedChannel].
  *
  * @author Ralph Gasser
- * @version 1.3.0
+ * @version 2.1.0
  */
-class SimpleClient(private val channel: ManagedChannel) {
+class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
 
-    /** Endpoint used for executing a query through Cottontail DB. */
-    private val dql by lazy { DQLGrpc.newBlockingStub(this.channel)  }
-
-    /** Endpoint used for managing data Cottontail DB. */
-    private val dml by lazy { DMLGrpc.newBlockingStub(this.channel)  }
-
-    /** Endpoint used for managing data Cottontail DB. */
-    private val ddl by lazy { DDLGrpc.newBlockingStub(this.channel)  }
-
-    /** Endpoint used for transaction management through Cottontail DB. */
-    private val tx by lazy { TXNGrpc.newBlockingStub(this.channel)  }
-
-    /**
-     * Constructor to create a Cottontail DB client with a new [ManagedChannel].
-     *
-     * @param host Host IP address of the [SimpleClient]
-     * @param port The port of the [SimpleClient]
-     */
-    constructor(host: String, port: Int): this(ManagedChannelBuilder.forAddress(host, port).usePlaintext().build())
+    /** [Context.CancellableContext] that can be used to cancel all queries that are currently being executed by this [SimpleClient]. */
+    private val context = Context.current().withCancellation()
 
     /**
      * Begins a new transaction through this [SimpleClient].
      *
      * @return The ID of the newly begun transaction.
      */
-    fun begin(): Long = this.tx.begin(Empty.getDefaultInstance()).value
+    fun begin(): Long = TXNGrpc.newBlockingStub(this.channel).begin(Empty.getDefaultInstance()).transactionId
 
     /**
      * Commits a transaction through this [SimpleClient].
      *
      * @param txId The transaction ID to commit.
      */
-    fun commit(txId: Long) {
-        val tx = CottontailGrpc.TransactionId.newBuilder().setValue(txId).build()
-        this.tx.commit(tx)
+    fun commit(txId: Long) = this.context.run {
+        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
+        TXNGrpc.newBlockingStub(this.channel).commit(tx)
     }
 
     /**
@@ -63,329 +55,425 @@ class SimpleClient(private val channel: ManagedChannel) {
      *
      * @param txId The transaction ID to rollback.
      */
-    fun rollback(txId: Long) {
-        val tx = CottontailGrpc.TransactionId.newBuilder().setValue(txId).build()
-        this.tx.rollback(tx)
+    fun rollback(txId: Long) = this.context.run {
+        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
+        TXNGrpc.newBlockingStub(this.channel).rollback(tx)
+    }
+
+    /**
+     * Kills and rolls back a transaction through this [SimpleClient].
+     *
+     * @param txId The transaction ID to kill and rollback.
+     */
+    fun kill(txId: Long) = this.context.run {
+        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
+        TXNGrpc.newBlockingStub(this.channel).kill(tx)
+    }
+    /**
+     * Systems command to list all transaction executed by Cottontail DB.
+     *
+     * @return [TupleIterator]
+     */
+    fun transactions(): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = TXNGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.listTransactions(Empty.newBuilder().build()), inner)
+        }
+    }
+
+    /**
+     * Systems command to list all locks currently held by Cottontail DB.
+     *
+     * @return [TupleIterator]
+     */
+    fun locks(): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub =TXNGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.listLocks(Empty.newBuilder().build()), inner)
+        }
     }
 
     /**
      * Executes [CottontailGrpc.Query] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.Query] to execute.
-     * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
+     * @param message [CottontailGrpc.Query] to execute.
+     * @return An [TupleIterator] of the results.
      */
-    fun query(query: CottontailGrpc.QueryMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.dql.query(query)
+    fun query(message: CottontailGrpc.QueryMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DQLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.query(message), inner)
+        }
+    }
 
     /**
      * Executes [Query] through this [SimpleClient]
      *
      * @param q [Query] to execute.
-     * @param txId Optional transaction ID to execute the query in. Can be null!
      * @return [TupleIterator] of the result.
      */
-    fun query(q: Query, txId: Long? = null): TupleIterator {
-        val message = CottontailGrpc.QueryMessage.newBuilder().setQuery(q.builder)
-        if (txId != null) {
-            message.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
+    fun query(q: Query): TupleIterator = this.query(q.builder.build())
+
+    /**
+     * Executes [CottontailGrpc.BatchedQueryMessage] through this [SimpleClient]
+     *
+     * @param message [CottontailGrpc.Query] to execute.
+     * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
+     */
+    fun batchedQuery(message: CottontailGrpc.BatchedQueryMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DQLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.batchQuery(message), inner)
         }
-        return TupleIterator(this.query(message.build()))
     }
 
     /**
      * Explains [CottontailGrpc.Query] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.Query] to executed.
+     * @param message [CottontailGrpc.Query] to executed.
      * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
      */
-    fun explain(query: CottontailGrpc.QueryMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.dql.explain(query)
+    fun explain(message: CottontailGrpc.QueryMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DQLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.explain(message), inner)
+        }
+    }
 
     /**
      * Executes [Query] through this [SimpleClient]
      *
      * @param q [Query] to execute.
-     * @param txId Optional transaction ID to execute the query in. Can be null!
      * @return [TupleIterator] of the result.
      */
-    fun explain(q: Query, txId: Long? = null): TupleIterator {
-        val message = CottontailGrpc.QueryMessage.newBuilder().setQuery(q.builder)
-        if (txId != null) {
-            message.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.explain(message.build()))
-    }
+    fun explain(q: Query): TupleIterator = this.explain(q.builder.build())
 
     /**
      * Executes this [CottontailGrpc.InsertMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.InsertMessage] to execute.
+     * @param message [CottontailGrpc.InsertMessage] to execute.
+     * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: CottontailGrpc.InsertMessage): CottontailGrpc.QueryResponseMessage = this.dml.insert(query)
+    fun insert(message: CottontailGrpc.InsertMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DMLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.insert(message), inner)
+        }
+    }
 
     /**
      * Executes this [Insert] through this [SimpleClient]
      *
-     * @param query [Insert] to execute.
+     * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: Insert, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
+    fun insert(query: Insert): TupleIterator = this.insert(query.builder.build())
+
+    /**
+     * Executes this [CottontailGrpc.BatchInsertMessage] through this [SimpleClient]
+     *
+     * @param message [CottontailGrpc.BatchInsertMessage] to execute.
+     * @return [TupleIterator] containing the query response.
+     */
+    fun insert(message: CottontailGrpc.BatchInsertMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DMLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.insertBatch(message), inner)
         }
-        return TupleIterator(this.insert(query.builder.build()))
     }
 
     /**
      * Executes this [BatchInsert] through this [SimpleClient]
      *
      * @param query [BatchInsert] to execute.
+     * @return [TupleIterator] containing the query response.
      */
-    fun insert(query: BatchInsert, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.insert(query.builder.build()))
-    }
-
-    /**
-     * Executes this [CottontailGrpc.BatchInsertMessage] through this [SimpleClient]
-     *
-     * @param query [CottontailGrpc.BatchInsertMessage] to execute.
-     */
-    fun insert(query: CottontailGrpc.BatchInsertMessage): CottontailGrpc.QueryResponseMessage = this.dml.insertBatch(query)
+    fun insert(query: BatchInsert): TupleIterator = this.insert(query.builder.build())
 
     /**
      * Executes this [CottontailGrpc.UpdateMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.UpdateMessage] to execute.
+     * @param message [CottontailGrpc.UpdateMessage] to execute.
+     * @return [TupleIterator] containing the query response.
      */
-    fun update(query: CottontailGrpc.UpdateMessage): CottontailGrpc.QueryResponseMessage = this.dml.update(query)
+    fun update(message: CottontailGrpc.UpdateMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DMLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.update(message), inner)
+        }
+    }
 
     /**
      * Executes this [Update] through this [SimpleClient]
      *
      * @param query [Update] to execute.
+     * @return [TupleIterator] containing the query response.
      */
-    fun update(query: Update, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.update(query.builder.build()))
-    }
+    fun update(query: Update): TupleIterator = this.update(query.builder.build())
+
 
     /**
      * Explains [CottontailGrpc.DeleteMessage] through this [SimpleClient]
      *
-     * @param query [CottontailGrpc.DeleteMessage] to execute.
+     * @param message [CottontailGrpc.DeleteMessage] to execute.
+     * @return [TupleIterator] containing the query response.
      */
-    fun delete(query: CottontailGrpc.DeleteMessage): CottontailGrpc.QueryResponseMessage = this.dml.delete(query)
+    fun delete(message: CottontailGrpc.DeleteMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DMLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.delete(message), inner)
+        }
+    }
 
     /**
      * Executes this [Delete] through this [SimpleClient]
      *
      * @param query [Delete] to execute.
+     * @return [TupleIterator] containing the query response.
      */
-    fun delete(query: Delete, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            query.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.delete(query.builder.build()))
-    }
+    fun delete(query: Delete): TupleIterator = this.delete(query.builder.build())
 
     /**
      * Creates a new schema through this [SimpleClient].
      *
      * @param message [CottontailGrpc.CreateSchemaMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateSchemaMessage): CottontailGrpc.QueryResponseMessage = this.ddl.createSchema(message)
+    fun create(message: CottontailGrpc.CreateSchemaMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.createSchema(message), inner)
+        }
+    }
 
     /**
      * Creates a new schema through this [SimpleClient].
      *
      * @param message [CreateSchema] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun create(message: CreateSchema, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.create(message.builder.build()))
-    }
+    fun create(message: CreateSchema): TupleIterator = this.create(message.builder.build())
 
     /**
      * Creates a new entity through this [SimpleClient].
      *
      * @param message [CottontailGrpc.CreateEntityMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateEntityMessage): CottontailGrpc.QueryResponseMessage = this.ddl.createEntity(message)
+    fun create(message: CottontailGrpc.CreateEntityMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.createEntity(message), inner)
+        }
+    }
 
     /**
      * Creates a new entity through this [SimpleClient].
      *
      * @param message [CreateEntity] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun create(message: CreateEntity, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.create(message.builder.build()))
-    }
+    fun create(message: CreateEntity): TupleIterator = this.create(message.builder.build())
 
     /**
      * Creates a new index through this [SimpleClient].
      *
      * @param message [CottontailGrpc.CreateIndexMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun create(message: CottontailGrpc.CreateIndexMessage): CottontailGrpc.QueryResponseMessage = this.ddl.createIndex(message)
+    fun create(message: CottontailGrpc.CreateIndexMessage): TupleIterator = this.context.call {
+        val stub = DDLGrpc.newBlockingStub(this.channel)
+        val inner = Context.current().withCancellation()
+        inner.call {
+            TupleIteratorImpl(stub.createIndex(message), inner)
+        }
+    }
 
     /**
      * Creates a new index through this [SimpleClient].
      *
      * @param message [CreateIndex] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun create(message: CreateIndex, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.create(message.builder.build()))
-    }
+    fun create(message: CreateIndex): TupleIterator = this.create(message.builder.build())
 
     /**
      * Drops a schema through this [SimpleClient].
      *
      * @param message [CottontailGrpc.DropSchemaMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropSchemaMessage): CottontailGrpc.QueryResponseMessage = this.ddl.dropSchema(message)
+    fun drop(message: CottontailGrpc.DropSchemaMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.dropSchema(message), inner)
+        }
+    }
 
     /**
      * Drops a schema through this [SimpleClient].
      *
      * @param message [CreateIndex] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun drop(message: DropSchema, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.drop(message.builder.build()))
-    }
+    fun drop(message: DropSchema): TupleIterator = this.drop(message.builder.build())
 
     /**
      * Drops an entity through this [SimpleClient].
      *
      * @param message [CottontailGrpc.DropEntityMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropEntityMessage): CottontailGrpc.QueryResponseMessage = this.ddl.dropEntity(message)
+    fun drop(message: CottontailGrpc.DropEntityMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.dropEntity(message), inner)
+        }
+    }
 
     /**
      * Drops an entity through this [SimpleClient].
      *
      * @param message [DropEntity] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun drop(message: DropEntity, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.drop(message.builder.build()))
-    }
+    fun drop(message: DropEntity): TupleIterator = this.drop(message.builder.build())
 
     /**
      * Drops an index through this [SimpleClient].
      *
      * @param message [CottontailGrpc.DropIndexMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun drop(message: CottontailGrpc.DropIndexMessage): CottontailGrpc.QueryResponseMessage = this.ddl.dropIndex(message)
+    fun drop(message: CottontailGrpc.DropIndexMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.dropIndex(message), inner)
+        }
+    }
 
     /**
      * Drops an index through this [SimpleClient].
      *
      * @param message [DropIndex] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun drop(message: DropIndex, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.drop(message.builder.build()))
-    }
+    fun drop(message: DropIndex): TupleIterator = this.drop(message.builder.build())
 
     /**
      * Lists all schemas through this [SimpleClient].
      *
      * @param message [CottontailGrpc.ListSchemaMessage] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun list(message: CottontailGrpc.ListSchemaMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.ddl.listSchemas(message)
+    fun list(message: CottontailGrpc.ListSchemaMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.listSchemas(message), inner)
+        }
+    }
 
     /**
      * Lists all schemas through this [SimpleClient].
      *
      * @param message [ListSchemas] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun list(message: ListSchemas, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.list(message.builder.build()))
-    }
+    fun list(message: ListSchemas): TupleIterator = this.list(message.builder.build())
 
     /**
      * Lists all entities in a schema through this [SimpleClient].
      *
      * @param message [CottontailGrpc.ListEntityMessage] to execute.
-     * @return [Iterator] of [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun list(message: CottontailGrpc.ListEntityMessage): Iterator<CottontailGrpc.QueryResponseMessage> = this.ddl.listEntities(message)
+    fun list(message: CottontailGrpc.ListEntityMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.listEntities(message), inner)
+        }
+    }
 
     /**
      * Lists all entities in a schema through this [SimpleClient].
      *
      * @param message [ListEntities] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun list(message: ListEntities, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.list(message.builder.build()))
-    }
+    fun list(message: ListEntities): TupleIterator = this.list(message.builder.build())
 
     /**
      * Lists detailed information about an entity through this [SimpleClient].
      *
      * @param message [CottontailGrpc.EntityDetailsMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun about(message: CottontailGrpc.EntityDetailsMessage): CottontailGrpc.QueryResponseMessage = this.ddl.entityDetails(message)
+    fun about(message: CottontailGrpc.EntityDetailsMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.entityDetails(message), inner)
+        }
+    }
 
     /**
      * Lists detailed information about an entity through this [SimpleClient].
      *
      * @param message [AboutEntity] to execute.
-     * @return [TupleIterator]
+     * @return [TupleIterator] containing the response.
      */
-    fun about(message: AboutEntity, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
+    fun about(message: AboutEntity): TupleIterator = this.about(message.builder.build())
+
+    /**
+     * Truncates the given entity through this [SimpleClient].
+     *
+     * @param message [TruncateEntity] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun truncate(message: TruncateEntity): TupleIterator = this.truncate(message.builder.build())
+
+    /**
+     * Truncates the given entity through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun truncate(message: CottontailGrpc.TruncateEntityMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.truncateEntity(message), inner)
         }
-        return TupleIterator(this.about(message.builder.build()))
     }
 
     /**
      * Optimizes an entity through this [SimpleClient].
      *
      * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
-     * @return [CottontailGrpc.QueryResponseMessage]
+     * @return [TupleIterator] containing the response.
      */
-    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): CottontailGrpc.QueryResponseMessage = this.ddl.optimizeEntity(message)
+    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.optimizeEntity(message), inner)
+        }
+    }
 
     /**
      * Optimizes an entity through this [SimpleClient].
@@ -393,12 +481,7 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @param message [OptimizeEntity] to execute.
      * @return [TupleIterator]
      */
-    fun optimize(message: OptimizeEntity, txId: Long? = null): TupleIterator {
-        if (txId != null) {
-            message.builder.setTxId(CottontailGrpc.TransactionId.newBuilder().setValue(txId))
-        }
-        return TupleIterator(this.optimize(message.builder.build()))
-    }
+    fun optimize(message: OptimizeEntity): TupleIterator = this.optimize(message.builder.build())
 
     /**
      * Pings this Cottontail DB instance. The method returns true on success and false otherwise.
@@ -406,9 +489,18 @@ class SimpleClient(private val channel: ManagedChannel) {
      * @return true on success, false otherwise.
      */
     fun ping(): Boolean = try {
-        this.dql.ping(Empty.getDefaultInstance())
+        DQLGrpc.newBlockingStub(this.channel).ping(Empty.getDefaultInstance())
         true
     } catch (e: StatusRuntimeException) {
         false
+    }
+
+    /**
+     * Closes this [SimpleClient].
+     */
+    override fun close() {
+        if (!this.context.isCancelled) {
+            this.context.cancel(CancellationException("Cottontail DB client was closed by the user."))
+        }
     }
 }

@@ -78,7 +78,9 @@ class Literal(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.
         .setLeft(this.left)
         .setOp(this.operator)
         .setNot(this.not)
-        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setLiterals(CottontailGrpc.Literals.newBuilder().addAllLiteral(this.values)))
+        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setExpressions(
+            CottontailGrpc.Expressions.newBuilder().addAllExpression(this.values.map { v -> CottontailGrpc.Expression.newBuilder().setLiteral(v).build() }))
+        )
 }
 
 /**
@@ -93,14 +95,18 @@ class Reference(val left: CottontailGrpc.ColumnName, val operator: CottontailGrp
         .setLeft(this.left)
         .setOp(this.operator)
         .setNot(this.not)
-        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setColumn(this.right))
+        .setRight(
+            CottontailGrpc.AtomicBooleanOperand.newBuilder().setExpressions(CottontailGrpc.Expressions.newBuilder().addExpression(
+                CottontailGrpc.Expression.newBuilder().setColumn(this.right))
+            )
+        )
 }
 
 /**
  * A [SubSelect] [Atomic] [Predicate]
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrpc.ComparisonOperator, val right: Query, val not: Boolean = false): Atomic() {
     constructor(column: String, operator: String, query: Query) : this(column.parseColumn(), operator.parseOperator(), query)
@@ -108,7 +114,7 @@ class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrp
         .setLeft(this.left)
         .setOp(this.operator)
         .setNot(this.not)
-        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setQuery(this.right.builder))
+        .setRight(CottontailGrpc.AtomicBooleanOperand.newBuilder().setQuery(this.right.builder.queryBuilder))
 }
 
 /**
@@ -116,8 +122,12 @@ class SubSelect(val left: CottontailGrpc.ColumnName, val operator: CottontailGrp
  *
  * @return [CottontailGrpc.Literal]
  */
+@Suppress("UNCHECKED_CAST")
 private fun Any.convert(): CottontailGrpc.Literal = when(this) {
-    is Array<*> -> (this as Array<Number>).toLiteral()
+    is Array<*> -> {
+        require(this[0] is Number) { "Only arrays of numbers can be converted to vector literals." }
+        (this as Array<Number>).toLiteral()
+    }
     is BooleanArray -> this.toLiteral()
     is IntArray -> this.toLiteral()
     is LongArray -> this.toLiteral()

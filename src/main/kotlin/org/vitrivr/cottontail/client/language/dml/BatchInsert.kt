@@ -1,17 +1,17 @@
 package org.vitrivr.cottontail.client.language.dml
 
+import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
-import org.vitrivr.cottontail.client.language.extensions.toLiteral
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
  * A BATCH INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.2.0
  */
-class BatchInsert(entity: String? = null) {
+class BatchInsert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
     val builder = CottontailGrpc.BatchInsertMessage.newBuilder()
 
@@ -19,6 +19,26 @@ class BatchInsert(entity: String? = null) {
         if (entity != null) {
             this.builder.setFrom(CottontailGrpc.From.newBuilder().setScan(CottontailGrpc.Scan.newBuilder().setEntity(entity.parseEntity())))
         }
+    }
+
+    /**
+     * Sets the transaction ID for this [BatchInsert].
+     *
+     * @param txId The new transaction ID.
+     */
+    override fun txId(txId: Long): BatchInsert {
+        this.builder.metadataBuilder.transactionId = txId
+        return this
+    }
+
+    /**
+     * Sets the query ID for this [BatchInsert].
+     *
+     * @param queryId The new query ID.
+     */
+    override fun queryId(queryId: String): BatchInsert {
+        this.builder.metadataBuilder.queryId = queryId
+        return this
     }
 
     /**
@@ -56,7 +76,7 @@ class BatchInsert(entity: String? = null) {
     fun append(vararg values: Any?): BatchInsert {
         val insert = CottontailGrpc.BatchInsertMessage.Insert.newBuilder()
         for (v in values) {
-            insert.addValues(v?.convert() ?: CottontailGrpc.Literal.newBuilder().setNullData(CottontailGrpc.Null.newBuilder()).build())
+            insert.addValues(v?.convert() ?: CottontailGrpc.Literal.newBuilder().build())
         }
         this.builder.addInserts(insert)
         return this
@@ -68,27 +88,4 @@ class BatchInsert(entity: String? = null) {
      * @return The size in bytes of this [BatchInsert].
      */
     fun size() = this.builder.build().serializedSize
-
-    /**
-     * Converts an [Any] to a [CottontailGrpc.Literal]
-     *
-     * @return [CottontailGrpc.Literal]
-     */
-    private fun Any.convert(): CottontailGrpc.Literal = when(this) {
-        is Array<*> -> (this as Array<Number>).toLiteral()
-        is BooleanArray -> this.toLiteral()
-        is IntArray -> this.toLiteral()
-        is LongArray -> this.toLiteral()
-        is FloatArray -> this.toLiteral()
-        is DoubleArray -> this.toLiteral()
-        is Boolean -> this.toLiteral()
-        is Byte -> this.toLiteral()
-        is Short -> this.toLiteral()
-        is Int -> this.toLiteral()
-        is Long -> this.toLiteral()
-        is Float -> this.toLiteral()
-        is Double -> this.toLiteral()
-        is String -> this.toLiteral()
-        else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to literal is not supported.")
-    }
 }
