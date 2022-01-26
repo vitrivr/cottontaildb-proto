@@ -506,10 +506,7 @@ message Projection {
     }
     message ProjectionElement {
         ColumnName alias = 1;
-        oneof proj {
-            ColumnName column = 2;
-            Function function = 3;
-        }
+        Expression expression = 2;
     }
 }
 
@@ -557,7 +554,7 @@ message AtomicBooleanPredicate {
 message AtomicBooleanOperand {
     oneof operand {
         Expressions expressions = 1;
-        Query query = 3;
+        Query query = 2;
     }
 }
 
