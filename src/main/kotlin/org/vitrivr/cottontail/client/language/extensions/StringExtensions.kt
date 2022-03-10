@@ -64,6 +64,13 @@ fun String.parseColumn(): CottontailGrpc.ColumnName {
 }
 
 /**
+ * Parses a [String] into an [CottontailGrpc.FunctionName]
+ *
+ * @return [CottontailGrpc.FunctionName]
+ */
+fun String.parseFunction(): CottontailGrpc.FunctionName = CottontailGrpc.FunctionName.newBuilder().setName(this).build()
+
+/**
  * Parses a [String] into an [CottontailGrpc.AtomicBooleanPredicate.Builder]
  *
  * @return [CottontailGrpc.ColumnName]

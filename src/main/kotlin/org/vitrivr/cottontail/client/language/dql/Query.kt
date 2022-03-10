@@ -1,8 +1,6 @@
 package org.vitrivr.cottontail.client.language.dql
 
-import org.vitrivr.cottontail.client.language.basics.Direction
-import org.vitrivr.cottontail.client.language.basics.Distances
-import org.vitrivr.cottontail.client.language.basics.LanguageFeature
+import org.vitrivr.cottontail.client.language.basics.*
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -15,7 +13,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 @Suppress("UNCHECKED_CAST")
 class Query(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.Query.Builder]. */
-    val builder = CottontailGrpc.QueryMessage.newBuilder()
+    val builder: CottontailGrpc.QueryMessage.Builder = CottontailGrpc.QueryMessage.newBuilder()
 
     init {
         if (entity != null) {
@@ -44,22 +42,31 @@ class Query(entity: String? = null): LanguageFeature() {
     }
 
     /**
-     * Adds a SELECT projection to this [Query]. Call this method repeatedly to add multiple projections.
-
-     * Calling this method on a [Query] with a projection other than SELECT, will reset the previous projection.
+     * Adds a SELECT projection for a column to this [Query]. Call this method repeatedly to add multiple projections.
      *
      * @param column The name of the column to select.
      * @param alias The column alias. This is optional.
      * @return [Query]
      */
-    fun select(column: String, alias: String? = null): Query {
+    fun select(column: String, alias: String? = null): Query = select(Expression.Column(column), alias)
+
+    /**
+     * Adds a SELECT projection to this [Query]. Call this method repeatedly to add multiple projections.
+     *
+     * Calling this method on a [Query] with a projection other than SELECT, will reset the previous projection.
+     *
+     * @param expression The [Expression] to execute.
+     * @param alias The column alias. This is optional.
+     * @return [Query]
+     */
+    fun select(expression: Expression, alias: String? = null): Query {
         val builder = this.builder.queryBuilder.projectionBuilder
         if (builder.op != CottontailGrpc.Projection.ProjectionOperation.SELECT) {
             builder.clearElements()
             builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT
         }
         val element = builder.addElementsBuilder()
-        element.column = column.parseColumn()
+        element.expression = expression.toGrpc()
         if (alias != null) {
             element.alias = alias.parseColumn()
         }
@@ -75,14 +82,25 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param alias The column alias. This is optional.
      * @return [Query]
      */
-    fun distinct(column: String, alias: String? = null): Query {
+    fun distinct(column: String, alias: String? = null): Query = distinct(Expression.Column(column), alias)
+
+    /**
+     * Adds a SELECT DISTINCT projection to this [Query]. Call this method repeatedly to add multiple projections.
+     *
+     * Calling this method on a [Query] with a projection other than SELECT DISTINCT, will reset the previous projection.
+     *
+     * @param expression The [Expression] to execute.
+     * @param alias The column alias. This is optional.
+     * @return [Query]
+     */
+    fun distinct(expression: Expression, alias: String? = null): Query {
         val builder = this.builder.queryBuilder.projectionBuilder
         if (builder.op != CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT) {
             builder.clearElements()
             builder.op = CottontailGrpc.Projection.ProjectionOperation.SELECT_DISTINCT
         }
         val element = builder.addElementsBuilder()
-        element.column = column.parseColumn()
+        element.expression = expression.toGrpc()
         if (alias != null) {
             element.alias = alias.parseColumn()
         }
@@ -102,7 +120,7 @@ class Query(entity: String? = null): LanguageFeature() {
             builder.clearElements()
             builder.op = CottontailGrpc.Projection.ProjectionOperation.COUNT
         }
-        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
+        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setExpression(CottontailGrpc.Expression.newBuilder().setColumn("*".parseColumn())))
         return this
     }
 
@@ -119,7 +137,7 @@ class Query(entity: String? = null): LanguageFeature() {
             builder.clearElements()
             builder.op = CottontailGrpc.Projection.ProjectionOperation.EXISTS
         }
-        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setColumn("*".parseColumn()))
+        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setExpression(CottontailGrpc.Expression.newBuilder().setColumn("*".parseColumn())))
         return this
     }
 
@@ -171,9 +189,8 @@ class Query(entity: String? = null): LanguageFeature() {
     fun where(predicate: Predicate): Query {
         val builder = this.builder.queryBuilder.whereBuilder
         when (predicate) {
-            is Atomic -> builder.setAtomic(predicate.toPredicate())
-            is And -> builder.setCompound(predicate.toPredicate())
-            is Or -> builder.setCompound(predicate.toPredicate())
+            is Predicate.Atomic -> builder.setAtomic(predicate.toGrpc())
+            is Predicate.Compound -> builder.setCompound(predicate.toGrpc())
         }
         return this
     }
@@ -213,7 +230,7 @@ class Query(entity: String? = null): LanguageFeature() {
     /**
      * Transforms this [Query] to a Neighbor Search (NS) query and returns it.
      *
-     * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
+     * Calling this method has side effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
      * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
      * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
      *
@@ -232,7 +249,9 @@ class Query(entity: String? = null): LanguageFeature() {
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.convertAnyToVector())))
 
         /* Update projection: Add distance column + alias. */
-        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(distanceColumn).setFunction(distanceFunction))
+        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder()
+            .setAlias(distanceColumn)
+            .setExpression(CottontailGrpc.Expression.newBuilder().setFunction(distanceFunction)))
 
         /* Update LIMIT clause. */
         return this
@@ -241,7 +260,7 @@ class Query(entity: String? = null): LanguageFeature() {
     /**
      * Transforms this [Query] to a Farthest Neighbor Search (FNS) query and returns it.
      *
-     * Calling this method has side-effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
+     * Calling this method has side effects on various aspects of the [Query] (i.e., PROJECTION, ORDER and LIMIT).
      * Most importantly, this function is not idempotent, i.e., calling it multiple times changes the structure of the
      * query, e.g., by adding multiple distance functions. Use [clear] to be on the safe side.
      *
@@ -258,7 +277,9 @@ class Query(entity: String? = null): LanguageFeature() {
             .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setStringData(query)))
 
         /* Update projection: Add distance column + alias. */
-        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setAlias(scoreColumn).setFunction(fulltextFunction))
+        this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder()
+            .setAlias(scoreColumn)
+            .setExpression(CottontailGrpc.Expression.newBuilder().setFunction(fulltextFunction)))
 
         return this
     }
