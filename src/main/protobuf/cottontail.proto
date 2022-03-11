@@ -147,12 +147,6 @@ message Metadata {
     repeated Hint hint = 3; /* Hints to the query planner. */
 }
 
-/* The storage engine employed by a Cottontail DB column. */
-enum Engine {
-    HARE = 0;
-    MAPDB = 1;
-}
-
 /* The basic data types supported by Cottontail DB columns. */
 enum Type {
     /* Scalar types. */
@@ -374,7 +368,6 @@ message ColumnDefinition {
     uint32 length = 3;
     bool primary = 4;
     bool nullable = 5;
-    Engine engine = 6;
 }
 
 /** Definition of an entity in Cottontail DB. */
