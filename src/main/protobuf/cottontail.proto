@@ -439,7 +439,6 @@ message Query {
     Order order = 4;
     uint64 limit = 5;        /* Size of the result-set (default: unlimited). */
     uint64 skip = 6;         /* Number of records to skip. */
-    repeated Hint hints = 7; /* Hints to the query planner. */
 }
 
 /* A query response message. */
