@@ -188,14 +188,9 @@ message Literal {
         Complex32 complex32Data = 8;
         Complex64 complex64Data = 9;
         Vector vectorData = 10;
-        Reference referenceData = 11;
     }
 }
 
-/** A reference to a literal value. Used mainly batched queries. */
-message Reference {
-    string name = 1;
-}
 
 /** An expression can either be a literal, a column reference or a function invocation. */
 message Expression {
