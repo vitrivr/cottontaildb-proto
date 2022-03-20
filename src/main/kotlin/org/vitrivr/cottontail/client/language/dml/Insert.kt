@@ -3,6 +3,7 @@ package org.vitrivr.cottontail.client.language.dml
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
+import org.vitrivr.cottontail.client.language.extensions.toGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -66,7 +67,7 @@ class Insert(entity: String? = null): LanguageFeature() {
         this.builder.addElements(
             CottontailGrpc.InsertMessage.InsertElement.newBuilder()
                 .setColumn(column.parseColumn())
-                .setValue(value?.convert() ?: CottontailGrpc.Literal.newBuilder().build()))
+                .setValue(value?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build()))
         return this
     }
 

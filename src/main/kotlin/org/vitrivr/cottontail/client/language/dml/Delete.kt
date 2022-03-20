@@ -1,7 +1,7 @@
 package org.vitrivr.cottontail.client.language.dml
 
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
-import org.vitrivr.cottontail.client.language.basics.Predicate
+import org.vitrivr.cottontail.client.language.basics.predicate.*
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -63,9 +63,8 @@ class Delete(entity: String? = null): LanguageFeature() {
         this.builder.clearWhere()
         val builder = this.builder.whereBuilder
         when(predicate) {
-            is Predicate.Atomic -> builder.setAtomic(predicate.toGrpc())
-            is Predicate.And -> builder.setCompound(predicate.toGrpc())
-            is Predicate.Or -> builder.setCompound(predicate.toGrpc())
+            is Atomic -> builder.setAtomic(predicate.toGrpc())
+            is Compound -> builder.setCompound(predicate.toGrpc())
         }
         return this
     }

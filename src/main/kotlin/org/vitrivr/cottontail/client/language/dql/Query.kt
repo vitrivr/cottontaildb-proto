@@ -1,6 +1,9 @@
 package org.vitrivr.cottontail.client.language.dql
 
 import org.vitrivr.cottontail.client.language.basics.*
+import org.vitrivr.cottontail.client.language.basics.predicate.Atomic
+import org.vitrivr.cottontail.client.language.basics.predicate.Compound
+import org.vitrivr.cottontail.client.language.basics.predicate.Predicate
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -186,11 +189,11 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param predicate The [Predicate] that specifies the conditions that need to be met.
      * @return This [Query]
      */
-    fun where(predicate: Predicate): Query {
+    infix fun where(predicate: Predicate): Query {
         val builder = this.builder.queryBuilder.whereBuilder
         when (predicate) {
-            is Predicate.Atomic -> builder.setAtomic(predicate.toGrpc())
-            is Predicate.Compound -> builder.setCompound(predicate.toGrpc())
+            is Atomic -> builder.setAtomic(predicate.toGrpc())
+            is Compound -> builder.setCompound(predicate.toGrpc())
         }
         return this
     }
