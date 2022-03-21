@@ -129,15 +129,12 @@ message ColumnName {
 
 /** Type of index. */
 enum IndexType {
-    HASH = 0;
-    HASH_UQ = 1;
-    BTREE = 2;
-    LUCENE = 3;
-    VAF = 4;
-    PQ = 5;
-    LSH = 6;
-    SUPERBIT_LSH = 7;
-    NONBUCKETING_SUPERBIT_LSH = 8;
+    BTREE = 0;
+    BTREE_UQ = 1;
+    LUCENE = 2;
+    VAF = 3;
+    PQ = 4;
+    LSH = 5;
 }
 
 /** Query metadata used in Cottontail DB. */
