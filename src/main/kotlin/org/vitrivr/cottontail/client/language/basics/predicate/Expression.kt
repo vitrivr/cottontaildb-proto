@@ -29,7 +29,7 @@ class Expression(val left: String, val operator: String, val expressions: List<E
                 require(it != null) { "Cannot convert null value to literal expression." }
                 Expression.Literal(it)
             }
-            else -> listOf( Expression.Literal(this))
+            else -> listOf(Expression.Literal(value))
         }
     }
 
