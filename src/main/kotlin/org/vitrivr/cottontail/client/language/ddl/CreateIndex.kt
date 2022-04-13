@@ -54,6 +54,18 @@ class CreateIndex(entity: String, column: String, type: CottontailGrpc.IndexType
     }
 
     /**
+     * Sets the index name for this [CreateIndex].
+     *
+     * @param index The name of the index to be created
+     * @return this [CreateIndex]
+     */
+    fun name(index: String): CreateIndex {
+        require(!index.contains('.')) { "Index name must not contain any dots." }
+        this.builder.indexName = index
+        return this
+    }
+
+    /**
      * Adds a index creation parameter to this [CreateIndex].
      *
      * @param key The name of the parameter
