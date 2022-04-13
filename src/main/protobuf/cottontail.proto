@@ -72,9 +72,6 @@ service DQL {
     /** Executes a query through Cottontail DB. */
     rpc Query (QueryMessage) returns (stream QueryResponseMessage);
 
-    /** Executes a batched query through Cottontail DB (not supported yet). */
-    rpc BatchQuery (BatchedQueryMessage) returns (stream QueryResponseMessage);
-
     /** Pings the endpoint */
     rpc Ping (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
@@ -147,6 +144,7 @@ enum IndexType {
 message Metadata {
     int64 transactionId = 1;
     string queryId = 2;
+    repeated Hint hint = 3; /* Hints to the query planner. */
 }
 
 /* The storage engine employed by a Cottontail DB column. */
@@ -183,7 +181,7 @@ enum Type {
     BLOB = 18;
 }
 
-/** Literal data, i.e. field that actually contains information. */
+/** Literal data, i.e., field that actually contains information. */
 message Literal {
     oneof data {
         bool booleanData = 1;
@@ -196,10 +194,16 @@ message Literal {
         Complex32 complex32Data = 8;
         Complex64 complex64Data = 9;
         Vector vectorData = 10;
+        Reference referenceData = 11;
     }
 }
 
-/** An expression can either be a Literal, a column value or a function invocation. */
+/** A reference to a literal value. Used mainly batched queries. */
+message Reference {
+    string name = 1;
+}
+
+/** An expression can either be a literal, a column reference or a function invocation. */
 message Expression {
     oneof exp {
         Literal literal = 1;
@@ -434,21 +438,15 @@ message QueryMessage {
     Query query = 2;
 }
 
-/* A batched query that should be executed. */
-message BatchedQueryMessage {
-    Metadata metadata = 1;
-    repeated Query query = 2;
-}
-
 /* A simple query. */
 message Query {
     From from = 1;
     Projection projection = 2;
     Where where = 3;
     Order order = 4;
-    uint64 limit = 5;                 /* Size of the result-set (default: unlimited). */
-    uint64 skip = 6;                  /* Number of records to skip. */
-    repeated ExecutionHint hints = 7; /* Hints to the query planner. */
+    uint64 limit = 5;        /* Size of the result-set (default: unlimited). */
+    uint64 skip = 6;         /* Number of records to skip. */
+    repeated Hint hints = 7; /* Hints to the query planner. */
 }
 
 /* A query response message. */
@@ -501,10 +499,7 @@ message Projection {
     }
     message ProjectionElement {
         ColumnName alias = 1;
-        oneof proj {
-            ColumnName column = 2;
-            Function function = 3;
-        }
+        Expression expression = 2;
     }
 }
 
@@ -552,7 +547,7 @@ message AtomicBooleanPredicate {
 message AtomicBooleanOperand {
     oneof operand {
         Expressions expressions = 1;
-        Query query = 3;
+        Query query = 2;
     }
 }
 
@@ -586,25 +581,27 @@ message Order {
     }
 }
 
-/** A hint to the query planner. */
-message ExecutionHint {
+/**
+ * A hint to the Cottontail DB query planner as to how a query should be executed.
+ */
+message Hint {
     oneof hint {
         NoIndexHint noIndexHint = 1;
-        AllowInaccuracyHint allowInexactIndexHint = 2;
-        IndexNameHint nameIndexHint = 3;
-        ParallelHint parallelIndexHint = 4;
+        NoParallelHint parallelIndexHint = 2;
+        PolicyHint policyHint = 3;
+        IndexHint nameIndexHint = 4;
     }
 
+    message NoParallelHint{}
     message NoIndexHint {}
-    message AllowInaccuracyHint {
-        float threshold = 1;
-    }
-    message IndexNameHint {
+    message IndexHint {
         string name = 1;
         map<string,string> parameters = 2;
     }
-    message ParallelHint {
-        uint32 min = 1;
-        uint32 max = 2;
+    message PolicyHint {
+        float weightIo = 1;
+        float weightCpu = 2;
+        float weightMemory = 3;
+        float weightAccuracy = 4;
     }
 }

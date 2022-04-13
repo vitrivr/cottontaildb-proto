@@ -118,20 +118,6 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     fun query(q: Query): TupleIterator = this.query(q.builder.build())
 
     /**
-     * Executes [CottontailGrpc.BatchedQueryMessage] through this [SimpleClient]
-     *
-     * @param message [CottontailGrpc.Query] to execute.
-     * @return An [Iterator] iof [CottontailGrpc.QueryResponseMessage]
-     */
-    fun batchedQuery(message: CottontailGrpc.BatchedQueryMessage): TupleIterator = this.context.call {
-        val inner = Context.current().withCancellation()
-        inner.call {
-            val stub = DQLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.batchQuery(message), inner)
-        }
-    }
-
-    /**
      * Explains [CottontailGrpc.Query] through this [SimpleClient]
      *
      * @param message [CottontailGrpc.Query] to executed.
