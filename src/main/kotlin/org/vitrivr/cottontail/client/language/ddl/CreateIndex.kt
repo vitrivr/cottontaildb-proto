@@ -2,22 +2,22 @@ package org.vitrivr.cottontail.client.language.ddl
 
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
-import org.vitrivr.cottontail.client.language.extensions.parseIndex
+import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
  * A CREATE INDEX query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
-class CreateIndex(name: String, type: CottontailGrpc.IndexType): LanguageFeature() {
+class CreateIndex(entity: String, column: String, type: CottontailGrpc.IndexType): LanguageFeature() {
 
     val builder = CottontailGrpc.CreateIndexMessage.newBuilder()
-
     init {
-        this.builder.definitionBuilder.name = name.parseIndex()
-        this.builder.definitionBuilder.type = type
+        this.builder.entity = entity.parseEntity()
+        this.builder.addColumns(column.parseColumn())
+        this.builder.type = type
     }
 
     /**
@@ -47,7 +47,7 @@ class CreateIndex(name: String, type: CottontailGrpc.IndexType): LanguageFeature
      * @return this [CreateIndex]
      */
     fun column(column: String): CreateIndex {
-        this.builder.definitionBuilder.addColumns(column.parseColumn())
+        this.builder.addColumns(column.parseColumn())
         return this
     }
 
@@ -59,7 +59,7 @@ class CreateIndex(name: String, type: CottontailGrpc.IndexType): LanguageFeature
      * @return this [CreateIndex]
      */
     fun param(key: String, value: Any): CreateIndex {
-        this.builder.definitionBuilder.putParams(key, value.toString())
+        this.builder.putParams(key, value.toString())
         return this
     }
 

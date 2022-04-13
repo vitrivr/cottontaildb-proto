@@ -347,8 +347,11 @@ message ListEntityMessage {
 /** Message to create an index. */
 message CreateIndexMessage {
     Metadata metadata = 1;
-    IndexDefinition definition = 2;
-    bool rebuild = 3;
+    EntityName entity = 2;
+    IndexType type = 3;
+    repeated ColumnName columns = 4;
+    map<string,string> params = 5;
+    bool rebuild = 6;
 }
 
 /** Message to drop an index. */
@@ -377,14 +380,6 @@ message ColumnDefinition {
 message EntityDefinition {
     EntityName entity = 1;
     repeated ColumnDefinition columns = 2;
-}
-
-/** Message for creating an index. */
-message IndexDefinition {
-    IndexName name = 1;
-    IndexType type = 2;
-    repeated ColumnName columns = 3;
-    map<string,string> params = 4;
 }
 
 /** Message for inserting data into an entity. */
