@@ -339,8 +339,9 @@ message CreateIndexMessage {
     Metadata metadata = 1;
     EntityName entity = 2;
     IndexType type = 3;
-    repeated string columns = 4;
-    map<string,string> params = 5;
+    string indexName = 4;
+    repeated string columns = 5;
+    map<string,string> params = 6;
     bool rebuild = 7;
 }
 
