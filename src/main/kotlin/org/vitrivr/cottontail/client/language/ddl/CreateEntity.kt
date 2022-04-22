@@ -55,7 +55,6 @@ class CreateEntity(name: String): LanguageFeature() {
         addBuilder.type = type.grpc
         addBuilder.length = length
         addBuilder.nullable = nullable
-        addBuilder.engine = CottontailGrpc.Engine.MAPDB
         return this
     }
 

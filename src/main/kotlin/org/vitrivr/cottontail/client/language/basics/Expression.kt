@@ -2,7 +2,7 @@ package org.vitrivr.cottontail.client.language.basics
 
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseFunction
-import org.vitrivr.cottontail.client.language.extensions.toLiteral
+import org.vitrivr.cottontail.client.language.extensions.toGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -30,28 +30,11 @@ sealed interface Expression {
      */
     @JvmInline
     value class Literal(val value: Any): Expression {
-        @Suppress("CAST_NEVER_SUCCEEDS")
-        override fun toGrpc(): CottontailGrpc.Expression = CottontailGrpc.Expression.newBuilder().setLiteral(
-            when(this.value) {
-                is Array<*> -> {
-                    require(this.value[0] is Number) { "Only arrays of numbers can be converted to vector literals." }
-                    (this as Array<Number>).toLiteral()
-                }
-                is BooleanArray -> this.value.toLiteral()
-                is IntArray -> this.value.toLiteral()
-                is LongArray -> this.value.toLiteral()
-                is FloatArray -> this.value.toLiteral()
-                is DoubleArray -> this.value.toLiteral()
-                is Boolean -> this.value.toLiteral()
-                is Byte -> this.value.toLiteral()
-                is Short -> this.value.toLiteral()
-                is Int -> this.value.toLiteral()
-                is Long -> this.value.toLiteral()
-                is Float -> this.value.toLiteral()
-                is Double -> this.value.toLiteral()
-                is String -> this.value.toLiteral()
-                else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to literal is not supported.")
-            }).build()
+        override fun toGrpc(): CottontailGrpc.Expression {
+            val expression = CottontailGrpc.Expression.newBuilder()
+            expression.literal = this.value.toGrpc()
+            return expression.build()
+        }
     }
 
     /**

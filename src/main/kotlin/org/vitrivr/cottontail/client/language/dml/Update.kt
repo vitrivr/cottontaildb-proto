@@ -1,6 +1,7 @@
 package org.vitrivr.cottontail.client.language.dml
 
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
+import org.vitrivr.cottontail.client.language.basics.predicate.*
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -63,9 +64,8 @@ class Update(entity: String? = null): LanguageFeature() {
         this.builder.clearWhere()
         val builder = this.builder.whereBuilder
         when (predicate) {
-            is Atomic -> builder.setAtomic(predicate.toPredicate())
-            is And -> builder.setCompound(predicate.toPredicate())
-            is Or -> builder.setCompound(predicate.toPredicate())
+            is Atomic -> builder.setAtomic(predicate.toGrpc())
+            is Compound -> builder.setCompound(predicate.toGrpc())
         }
         return this
     }
@@ -82,7 +82,7 @@ class Update(entity: String? = null): LanguageFeature() {
             this.builder.addUpdates(
                 CottontailGrpc.UpdateMessage.UpdateElement.newBuilder()
                 .setColumn(assignment.first.parseColumn())
-                .setValue(CottontailGrpc.Expression.newBuilder().setLiteral(assignment.second?.convert() ?: CottontailGrpc.Literal.newBuilder().build()))
+                .setValue(CottontailGrpc.Expression.newBuilder().setLiteral(assignment.second?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build()))
             )
         }
         return this

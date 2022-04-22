@@ -129,15 +129,12 @@ message ColumnName {
 
 /** Type of index. */
 enum IndexType {
-    HASH = 0;
-    HASH_UQ = 1;
-    BTREE = 2;
-    LUCENE = 3;
-    VAF = 4;
-    PQ = 5;
-    LSH = 6;
-    SUPERBIT_LSH = 7;
-    NONBUCKETING_SUPERBIT_LSH = 8;
+    BTREE = 0;
+    BTREE_UQ = 1;
+    LUCENE = 2;
+    VAF = 3;
+    PQ = 4;
+    LSH = 5;
 }
 
 /** Query metadata used in Cottontail DB. */
@@ -145,12 +142,6 @@ message Metadata {
     int64 transactionId = 1;
     string queryId = 2;
     repeated Hint hint = 3; /* Hints to the query planner. */
-}
-
-/* The storage engine employed by a Cottontail DB column. */
-enum Engine {
-    HARE = 0;
-    MAPDB = 1;
 }
 
 /* The basic data types supported by Cottontail DB columns. */
@@ -194,14 +185,9 @@ message Literal {
         Complex32 complex32Data = 8;
         Complex64 complex64Data = 9;
         Vector vectorData = 10;
-        Reference referenceData = 11;
     }
 }
 
-/** A reference to a literal value. Used mainly batched queries. */
-message Reference {
-    string name = 1;
-}
 
 /** An expression can either be a literal, a column reference or a function invocation. */
 message Expression {
@@ -351,8 +337,12 @@ message ListEntityMessage {
 /** Message to create an index. */
 message CreateIndexMessage {
     Metadata metadata = 1;
-    IndexDefinition definition = 2;
-    bool rebuild = 3;
+    EntityName entity = 2;
+    IndexType type = 3;
+    string indexName = 4;
+    repeated string columns = 5;
+    map<string,string> params = 6;
+    bool rebuild = 7;
 }
 
 /** Message to drop an index. */
@@ -374,21 +364,12 @@ message ColumnDefinition {
     uint32 length = 3;
     bool primary = 4;
     bool nullable = 5;
-    Engine engine = 6;
 }
 
 /** Definition of an entity in Cottontail DB. */
 message EntityDefinition {
     EntityName entity = 1;
     repeated ColumnDefinition columns = 2;
-}
-
-/** Message for creating an index. */
-message IndexDefinition {
-    IndexName name = 1;
-    IndexType type = 2;
-    repeated ColumnName columns = 3;
-    map<string,string> params = 4;
 }
 
 /** Message for inserting data into an entity. */
@@ -451,7 +432,6 @@ message Query {
     Order order = 4;
     uint64 limit = 5;        /* Size of the result-set (default: unlimited). */
     uint64 skip = 6;         /* Number of records to skip. */
-    repeated Hint hints = 7; /* Hints to the query planner. */
 }
 
 /* A query response message. */
