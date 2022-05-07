@@ -344,23 +344,42 @@ class Query(entity: String? = null): LanguageFeature() {
      *
      * @param index The name of the index to use.
      */
-    fun withIndex(index: String) {
-        index.parseIndex()
-        this.builder.metadataBuilder.addHintBuilder().nameIndexHint = IndexHint.newBuilder().setName(index).build()
+    fun withIndex(index: String): Query {
+        val parsed = index.parseIndex() /* Sanity check. */
+        this.builder.metadataBuilder.addHintBuilder().setNameIndexHint(IndexHint.newBuilder().setName(index))
+        return this
     }
 
     /**
-     * Sets a hint to the query planner that no index should be used.
+     * Clears the [NoIndexHint] from the [Query].
      */
-    fun withoutIndex() {
+    fun allowIndex(): Query {
+        this.builder.metadataBuilder.addHintBuilder().clearNoIndexHint()
+        return this
+    }
+
+    /**
+     * Sets a [NoIndexHint], which tells the query planner that no index should be used.
+     */
+    fun disallowIndex(): Query {
         this.builder.metadataBuilder.addHintBuilder().noIndexHint = NoIndexHint.getDefaultInstance()
+        return this
     }
 
     /**
-     * Sets a hint to the query planner that no inter-query parallelism should be employed.
+     * Clears the [NoParallelHint] from the [Query].
      */
-    fun withoutParallelism() {
+    fun allowParallelism(): Query {
+        this.builder.metadataBuilder.addHintBuilder().clearParallelIndexHint()
+        return this
+    }
+
+    /**
+     * Sets a [NoParallelHint], which tells the query planner that no inter-query parallelism should be employed.
+     */
+    fun disallowParallelism(): Query {
         this.builder.metadataBuilder.addHintBuilder().parallelIndexHint = NoParallelHint.getDefaultInstance()
+        return this
     }
 
     /**
