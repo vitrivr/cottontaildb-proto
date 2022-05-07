@@ -8,6 +8,7 @@ import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.IndexHint
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoIndexHint
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoIndexHintOrBuilder
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoParallelHint
 
 /**
@@ -346,7 +347,9 @@ class Query(entity: String? = null): LanguageFeature() {
      */
     fun withIndex(index: String): Query {
         val parsed = index.parseIndex() /* Sanity check. */
-        this.builder.metadataBuilder.addHintBuilder().setNameIndexHint(IndexHint.newBuilder().setName(index))
+        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNoIndexHint() }
+        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNameIndexHint() }
+        this.builder.metadataBuilder.addHintBuilder().setNameIndexHint(IndexHint.newBuilder().setName(parsed.name))
         return this
     }
 
@@ -354,7 +357,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * Clears the [NoIndexHint] from the [Query].
      */
     fun allowIndex(): Query {
-        this.builder.metadataBuilder.addHintBuilder().clearNoIndexHint()
+        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNoIndexHint() }
         return this
     }
 
@@ -362,6 +365,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * Sets a [NoIndexHint], which tells the query planner that no index should be used.
      */
     fun disallowIndex(): Query {
+        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNameIndexHint() }
         this.builder.metadataBuilder.addHintBuilder().noIndexHint = NoIndexHint.getDefaultInstance()
         return this
     }
@@ -370,7 +374,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * Clears the [NoParallelHint] from the [Query].
      */
     fun allowParallelism(): Query {
-        this.builder.metadataBuilder.addHintBuilder().clearParallelIndexHint()
+        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasParallelIndexHint() }
         return this
     }
 
