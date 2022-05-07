@@ -345,19 +345,9 @@ class Query(entity: String? = null): LanguageFeature() {
      *
      * @param index The name of the index to use.
      */
-    fun withIndex(index: String): Query {
+    fun useIndex(index: String): Query {
         val parsed = index.parseIndex() /* Sanity check. */
-        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNoIndexHint() }
-        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNameIndexHint() }
         this.builder.metadataBuilder.addHintBuilder().setNameIndexHint(IndexHint.newBuilder().setName(parsed.name))
-        return this
-    }
-
-    /**
-     * Clears the [NoIndexHint] from the [Query].
-     */
-    fun allowIndex(): Query {
-        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNoIndexHint() }
         return this
     }
 
@@ -365,16 +355,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * Sets a [NoIndexHint], which tells the query planner that no index should be used.
      */
     fun disallowIndex(): Query {
-        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasNameIndexHint() }
         this.builder.metadataBuilder.addHintBuilder().noIndexHint = NoIndexHint.getDefaultInstance()
-        return this
-    }
-
-    /**
-     * Clears the [NoParallelHint] from the [Query].
-     */
-    fun allowParallelism(): Query {
-        this.builder.metadataBuilder.hintBuilderList.removeIf { it.hasParallelIndexHint() }
         return this
     }
 
