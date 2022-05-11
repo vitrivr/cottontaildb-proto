@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.dml
 
+import org.vitrivr.cottontail.client.language.basics.Constants
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
@@ -74,13 +75,18 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
      * @param values The value to append to the [BatchInsert]
      * @return This [BatchInsert]
      */
-    fun append(vararg values: Any?): BatchInsert {
+    fun append(vararg values: Any?): Boolean {
         val insert = CottontailGrpc.BatchInsertMessage.Insert.newBuilder()
         for (v in values) {
             insert.addValues(v?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build())
         }
-        this.builder.addInserts(insert)
-        return this
+        val built = insert.build()
+        return if (this.serializedSize() + built.serializedSize < Constants.MAX_PAGE_SIZE_BYTES) {
+            this.builder.addInserts(built)
+            true
+        } else {
+            false
+        }
     }
 
     /**
@@ -88,5 +94,5 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
      *
      * @return The size in bytes of this [BatchInsert].
      */
-    fun size() = this.builder.build().serializedSize
+    fun serializedSize() = this.builder.build().serializedSize
 }
