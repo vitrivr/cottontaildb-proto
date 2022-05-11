@@ -8,11 +8,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An OPTIMIZE ENTITY query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class OptimizeEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.OptimizeEntityMessage.Builder]. */
-    val builder = CottontailGrpc.OptimizeEntityMessage.newBuilder()
+    internal val builder = CottontailGrpc.OptimizeEntityMessage.newBuilder()
 
     init {
         builder.entity = name.parseEntity()
@@ -37,4 +37,11 @@ class OptimizeEntity(name: String): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [OptimizeEntity]
+     *
+     * @return The size in bytes of this [OptimizeEntity].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

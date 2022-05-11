@@ -9,11 +9,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A DELETE query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 class Delete(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
-    val builder = CottontailGrpc.DeleteMessage.newBuilder()
+    internal val builder = CottontailGrpc.DeleteMessage.newBuilder()
 
     init {
         if (entity != null) {
@@ -40,6 +40,13 @@ class Delete(entity: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [Delete]
+     *
+     * @return The size in bytes of this [Delete].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 
     /**
      * Adds a FROM-clause to this [Delete].

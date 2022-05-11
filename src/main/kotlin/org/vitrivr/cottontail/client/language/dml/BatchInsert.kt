@@ -15,7 +15,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 class BatchInsert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
-    val builder = CottontailGrpc.BatchInsertMessage.newBuilder()
+    internal val builder = CottontailGrpc.BatchInsertMessage.newBuilder()
 
     init {
         if (entity != null) {
@@ -42,6 +42,13 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [BatchInsert]
+     *
+     * @return The size in bytes of this [BatchInsert].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 
     /**
      * Adds a FROM-clause to this [BatchInsert].
@@ -81,7 +88,7 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
             insert.addValues(v?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build())
         }
         val built = insert.build()
-        return if (this.size() + built.serializedSize < Constants.MAX_PAGE_SIZE_BYTES) {
+        return if (this.serializedSize() + built.serializedSize < Constants.MAX_PAGE_SIZE_BYTES) {
             this.builder.addInserts(built)
             true
         } else {
@@ -97,9 +104,9 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
     }
 
     /**
-     * Calculates and returns the message size in bytes of this [BatchInsert]
+     * Returns the number of insert values in this [BatchInsert] message.
      *
-     * @return The size in bytes of this [BatchInsert].
+     * @return The number of insert values in this [BatchInsert] message.
      */
-    fun size() = this.builder.build().serializedSize
+    fun count() = this.builder.insertsCount
 }

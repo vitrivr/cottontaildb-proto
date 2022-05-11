@@ -8,12 +8,13 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A message to list all entities in a schema.
  *
  * @author Ralph Gasser
- * @version 1.1.1
+ * @version 1.2.0
  */
 class ListEntities(schemaName: String? = null): LanguageFeature() {
 
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
-    val builder = CottontailGrpc.ListEntityMessage.newBuilder()
+    internal val builder = CottontailGrpc.ListEntityMessage.newBuilder()
+
     init {
         if (schemaName != null) {
             this.builder.schema = schemaName.parseSchema()
@@ -39,4 +40,11 @@ class ListEntities(schemaName: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [ListEntities]
+     *
+     * @return The size in bytes of this [ListEntities].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

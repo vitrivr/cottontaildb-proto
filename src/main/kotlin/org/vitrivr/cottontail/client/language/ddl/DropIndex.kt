@@ -8,10 +8,10 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A DROP INDEX query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class DropIndex(name: String): LanguageFeature() {
-    val builder = CottontailGrpc.DropIndexMessage.newBuilder()
+    internal val builder = CottontailGrpc.DropIndexMessage.newBuilder()
 
     init {
         this.builder.index = name.parseIndex()
@@ -36,4 +36,11 @@ class DropIndex(name: String): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [DropIndex]
+     *
+     * @return The size in bytes of this [DropIndex].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

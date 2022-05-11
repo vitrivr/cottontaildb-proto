@@ -8,11 +8,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A DROP SCHEMA query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class DropSchema(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.DropSchemaMessage.Builder]. */
-    val builder = CottontailGrpc.DropSchemaMessage.newBuilder()
+    internal val builder = CottontailGrpc.DropSchemaMessage.newBuilder()
 
     init {
         this.builder.schema = name.parseSchema()
@@ -37,4 +37,11 @@ class DropSchema(name: String): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [DropSchema]
+     *
+     * @return The size in bytes of this [DropSchema].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

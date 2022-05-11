@@ -4,6 +4,7 @@ import org.vitrivr.cottontail.client.language.basics.*
 import org.vitrivr.cottontail.client.language.basics.predicate.Atomic
 import org.vitrivr.cottontail.client.language.basics.predicate.Compound
 import org.vitrivr.cottontail.client.language.basics.predicate.Predicate
+import org.vitrivr.cottontail.client.language.dml.Update
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.IndexHint
@@ -46,6 +47,13 @@ class Query(entity: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [Query]
+     *
+     * @return The size in bytes of this [Query].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 
     /**
      * Adds a SELECT projection for a column to this [Query]. Call this method repeatedly to add multiple projections.

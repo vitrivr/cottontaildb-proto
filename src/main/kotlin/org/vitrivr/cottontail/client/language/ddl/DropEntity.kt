@@ -8,11 +8,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A DROP ENTITY query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class DropEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
-    val builder = CottontailGrpc.DropEntityMessage.newBuilder()
+    internal val builder = CottontailGrpc.DropEntityMessage.newBuilder()
 
     init {
         builder.entity = name.parseEntity()
@@ -37,4 +37,11 @@ class DropEntity(name: String): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [DropEntity]
+     *
+     * @return The size in bytes of this [DropEntity].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

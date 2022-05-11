@@ -29,6 +29,7 @@ java {
 
 publishing {
     publications {
+
         mavenJava(MavenPublication) {
             groupId = 'org.vitrivr'
             artifactId = 'cottontaildb-proto'

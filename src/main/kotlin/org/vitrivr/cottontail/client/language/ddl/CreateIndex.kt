@@ -12,7 +12,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 class CreateIndex(entity: String, column: String, type: CottontailGrpc.IndexType): LanguageFeature() {
 
-    val builder = CottontailGrpc.CreateIndexMessage.newBuilder()
+    internal val builder = CottontailGrpc.CreateIndexMessage.newBuilder()
 
     init {
         require(!column.contains('.')) { "Column name must not contain any dots." }
@@ -42,6 +42,13 @@ class CreateIndex(entity: String, column: String, type: CottontailGrpc.IndexType
     }
 
     /**
+     * Returns the serialized message size in bytes of this [CreateIndex]
+     *
+     * @return The size in bytes of this [CreateIndex].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
+
+    /**
      * Adds a column to this [CreateIndex].
      *
      * @param column The name of the column
@@ -66,7 +73,7 @@ class CreateIndex(entity: String, column: String, type: CottontailGrpc.IndexType
     }
 
     /**
-     * Adds a index creation parameter to this [CreateIndex].
+     * Adds an index creation parameter to this [CreateIndex].
      *
      * @param key The name of the parameter
      * @param value The value of the parameter

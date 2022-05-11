@@ -8,11 +8,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A message to retrieves information about an entity.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class AboutEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
-    val builder = CottontailGrpc.EntityDetailsMessage.newBuilder()
+    internal val builder = CottontailGrpc.EntityDetailsMessage.newBuilder()
 
     init {
         this.builder.entity = name.parseEntity()
@@ -37,4 +37,11 @@ class AboutEntity(name: String): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [AboutEntity]
+     *
+     * @return The size in bytes of this [AboutEntity].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }
