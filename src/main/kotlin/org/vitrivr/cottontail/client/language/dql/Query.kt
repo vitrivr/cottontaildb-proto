@@ -8,14 +8,13 @@ import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.IndexHint
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoIndexHint
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoIndexHintOrBuilder
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoParallelHint
 
 /**
  * A query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 @Suppress("UNCHECKED_CAST")
 class Query(entity: String? = null): LanguageFeature() {

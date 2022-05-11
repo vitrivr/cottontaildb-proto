@@ -11,7 +11,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A BATCH INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 class BatchInsert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
@@ -81,7 +81,7 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
             insert.addValues(v?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build())
         }
         val built = insert.build()
-        return if (this.serializedSize() + built.serializedSize < Constants.MAX_PAGE_SIZE_BYTES) {
+        return if (this.size() + built.serializedSize < Constants.MAX_PAGE_SIZE_BYTES) {
             this.builder.addInserts(built)
             true
         } else {
@@ -90,9 +90,16 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
     }
 
     /**
-     * Calculates and returns the size of this [BatchInsert]
+     * Clears all appended data from this [BatchInsert] object. Making it possible to re-use the same object to perform multiple INSERTs.
+     */
+    fun clear() {
+        this.builder.clearInserts()
+    }
+
+    /**
+     * Calculates and returns the message size in bytes of this [BatchInsert]
      *
      * @return The size in bytes of this [BatchInsert].
      */
-    fun serializedSize() = this.builder.build().serializedSize
+    fun size() = this.builder.build().serializedSize
 }
