@@ -1,13 +1,10 @@
 package org.vitrivr.cottontail.client.language.basics
 
-import org.vitrivr.cottontail.client.language.extensions.toGrpc
-import org.vitrivr.cottontail.grpc.CottontailGrpc
-
 /**
  * A [LanguageFeature] provided by the Cottontail DB simple API.
  *
  * @author Ralph Gasser
- * @version 1.0.0
+ * @version 1.1.0
  */
 abstract class LanguageFeature {
     /**
@@ -23,4 +20,12 @@ abstract class LanguageFeature {
      * @param queryId The new query ID.
      */
     abstract fun queryId(queryId: String): LanguageFeature
+
+
+    /**
+     * Returns the serialized message size of this [LanguageFeature].
+     *
+     * @return Serialized message size in bytes.
+     */
+    abstract fun serializedSize(): Int
 }

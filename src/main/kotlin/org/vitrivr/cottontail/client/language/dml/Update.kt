@@ -13,7 +13,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 class Update(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
-    val builder = CottontailGrpc.UpdateMessage.newBuilder()
+    internal val builder = CottontailGrpc.UpdateMessage.newBuilder()
 
     init {
         if (entity != null) {
@@ -40,6 +40,13 @@ class Update(entity: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [Update]
+     *
+     * @return The size in bytes of this [Update].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 
     /**
      * Adds a FROM-clause to this [Update].

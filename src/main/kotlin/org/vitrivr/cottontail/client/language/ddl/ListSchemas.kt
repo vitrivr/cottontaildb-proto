@@ -7,11 +7,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A message to list all schemas.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class ListSchemas: LanguageFeature() {
     /** Internal [CottontailGrpc.ListSchemaMessage.Builder]. */
-    val builder = CottontailGrpc.ListSchemaMessage.newBuilder()
+    internal val builder = CottontailGrpc.ListSchemaMessage.newBuilder()
 
     /**
      * Sets the transaction ID for this [ListSchemas].
@@ -32,4 +32,11 @@ class ListSchemas: LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [ListSchemas]
+     *
+     * @return The size in bytes of this [ListSchemas].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

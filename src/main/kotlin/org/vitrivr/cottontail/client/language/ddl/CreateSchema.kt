@@ -8,11 +8,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A CREATE SCHEMA query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class CreateSchema(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.CreateSchemaMessage.Builder]. */
-    val builder = CottontailGrpc.CreateSchemaMessage.newBuilder()
+    internal val builder = CottontailGrpc.CreateSchemaMessage.newBuilder()
 
     init {
         this.builder.schema = name.parseSchema()
@@ -37,4 +37,11 @@ class CreateSchema(name: String): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [CreateSchema]
+     *
+     * @return The size in bytes of this [CreateSchema].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

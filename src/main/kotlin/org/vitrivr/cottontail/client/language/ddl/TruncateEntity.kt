@@ -8,11 +8,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A TRUNCATE ENTITY query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.2.0
  */
 class TruncateEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
-    val builder = CottontailGrpc.TruncateEntityMessage.newBuilder()
+    internal val builder = CottontailGrpc.TruncateEntityMessage.newBuilder()
 
     init {
         builder.entity = name.parseEntity()
@@ -37,4 +37,11 @@ class TruncateEntity(name: String): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [TruncateEntity]
+     *
+     * @return The size in bytes of this [TruncateEntity].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 }

@@ -10,11 +10,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 class Insert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.InsertMessage.Builder]. */
-    val builder = CottontailGrpc.InsertMessage.newBuilder()
+    internal val builder = CottontailGrpc.InsertMessage.newBuilder()
 
     init {
         if (entity != null) {
@@ -41,6 +41,13 @@ class Insert(entity: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [Insert]
+     *
+     * @return The size in bytes of this [Insert].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 
     /**
      * Adds a FROM-clause to this [Insert].

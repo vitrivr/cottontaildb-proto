@@ -4,14 +4,18 @@ import org.vitrivr.cottontail.client.language.basics.*
 import org.vitrivr.cottontail.client.language.basics.predicate.Atomic
 import org.vitrivr.cottontail.client.language.basics.predicate.Compound
 import org.vitrivr.cottontail.client.language.basics.predicate.Predicate
+import org.vitrivr.cottontail.client.language.dml.Update
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.IndexHint
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoIndexHint
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoParallelHint
 
 /**
  * A query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 @Suppress("UNCHECKED_CAST")
 class Query(entity: String? = null): LanguageFeature() {
@@ -43,6 +47,13 @@ class Query(entity: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [Query]
+     *
+     * @return The size in bytes of this [Query].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 
     /**
      * Adds a SELECT projection for a column to this [Query]. Call this method repeatedly to add multiple projections.
@@ -163,11 +174,13 @@ class Query(entity: String? = null): LanguageFeature() {
      * Calling this method resets the FROM part of the query.
      *
      * @param entity The entity to SAMPLE.
+     * @param probability The probability between 0.0f and 1.0f that a tuple will be selected.
      * @param seed The random number generator seed for SAMPLE
      * @return This [Query]
      */
-    fun sample(entity: String, seed: Long = System.currentTimeMillis()): Query {
-        this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setSample(CottontailGrpc.Sample.newBuilder().setEntity(entity.parseEntity()).setSeed(seed)))
+    fun sample(entity: String, probability: Float, seed: Long = System.currentTimeMillis()): Query {
+        require(probability in 0.0f..1.0f) { "Probability value must be between 0.0 and 1.0f but is $probability." }
+        this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setSample(CottontailGrpc.Sample.newBuilder().setEntity(entity.parseEntity()).setSeed(seed).setProbability(probability)))
         return this
     }
 
@@ -331,6 +344,33 @@ class Query(entity: String? = null): LanguageFeature() {
      */
     fun clear(): Query {
         this.builder.queryBuilder.clear()
+        return this
+    }
+
+    /**
+     * Sets a hint to the query planner that an index with a specific name should be used if possible.
+     *
+     * @param index The name of the index to use.
+     */
+    fun useIndex(index: String): Query {
+        val parsed = index.parseIndex() /* Sanity check. */
+        this.builder.metadataBuilder.addHintBuilder().setNameIndexHint(IndexHint.newBuilder().setName(parsed.name))
+        return this
+    }
+
+    /**
+     * Sets a [NoIndexHint], which tells the query planner that no index should be used.
+     */
+    fun disallowIndex(): Query {
+        this.builder.metadataBuilder.addHintBuilder().noIndexHint = NoIndexHint.getDefaultInstance()
+        return this
+    }
+
+    /**
+     * Sets a [NoParallelHint], which tells the query planner that no inter-query parallelism should be employed.
+     */
+    fun disallowParallelism(): Query {
+        this.builder.metadataBuilder.addHintBuilder().parallelIndexHint = NoParallelHint.getDefaultInstance()
         return this
     }
 

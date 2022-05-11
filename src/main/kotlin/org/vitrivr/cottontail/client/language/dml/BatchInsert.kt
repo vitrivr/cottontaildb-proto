@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.dml
 
+import org.vitrivr.cottontail.client.language.basics.Constants
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
@@ -10,11 +11,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A BATCH INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 class BatchInsert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
-    val builder = CottontailGrpc.BatchInsertMessage.newBuilder()
+    internal val builder = CottontailGrpc.BatchInsertMessage.newBuilder()
 
     init {
         if (entity != null) {
@@ -41,6 +42,13 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
+
+    /**
+     * Returns the serialized message size in bytes of this [BatchInsert]
+     *
+     * @return The size in bytes of this [BatchInsert].
+     */
+    override fun serializedSize() = this.builder.build().serializedSize
 
     /**
      * Adds a FROM-clause to this [BatchInsert].
@@ -74,19 +82,31 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
      * @param values The value to append to the [BatchInsert]
      * @return This [BatchInsert]
      */
-    fun append(vararg values: Any?): BatchInsert {
+    fun append(vararg values: Any?): Boolean {
         val insert = CottontailGrpc.BatchInsertMessage.Insert.newBuilder()
         for (v in values) {
             insert.addValues(v?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build())
         }
-        this.builder.addInserts(insert)
-        return this
+        val built = insert.build()
+        return if (this.serializedSize() + built.serializedSize < Constants.MAX_PAGE_SIZE_BYTES) {
+            this.builder.addInserts(built)
+            true
+        } else {
+            false
+        }
     }
 
     /**
-     * Calculates and returns the size of this [BatchInsert]
-     *
-     * @return The size in bytes of this [BatchInsert].
+     * Clears all appended data from this [BatchInsert] object. Making it possible to re-use the same object to perform multiple INSERTs.
      */
-    fun size() = this.builder.build().serializedSize
+    fun clear() {
+        this.builder.clearInserts()
+    }
+
+    /**
+     * Returns the number of insert values in this [BatchInsert] message.
+     *
+     * @return The number of insert values in this [BatchInsert] message.
+     */
+    fun count() = this.builder.insertsCount
 }
