@@ -4,12 +4,9 @@ import org.vitrivr.cottontail.client.language.basics.*
 import org.vitrivr.cottontail.client.language.basics.predicate.Atomic
 import org.vitrivr.cottontail.client.language.basics.predicate.Compound
 import org.vitrivr.cottontail.client.language.basics.predicate.Predicate
-import org.vitrivr.cottontail.client.language.dml.Update
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.IndexHint
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoIndexHint
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Hint.NoParallelHint
+import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexType
 
 /**
  * A query in the Cottontail DB query language.
@@ -348,29 +345,39 @@ class Query(entity: String? = null): LanguageFeature() {
     }
 
     /**
-     * Sets a hint to the query planner that an index with a specific name should be used if possible.
+     * Sets a hint to the query planner that instructs it to use a specific index.
      *
      * @param index The name of the index to use.
      */
     fun useIndex(index: String): Query {
         val parsed = index.parseIndex() /* Sanity check. */
-        this.builder.metadataBuilder.addHintBuilder().setNameIndexHint(IndexHint.newBuilder().setName(parsed.name))
+        this.builder.metadataBuilder.indexHintBuilder.name = parsed.name
         return this
     }
 
     /**
-     * Sets a [NoIndexHint], which tells the query planner that no index should be used.
+     * Sets a hint to the query planner that instructs it to use a specific index type.
+     *
+     * @param index The name of the index to use.
      */
-    fun disallowIndex(): Query {
-        this.builder.metadataBuilder.addHintBuilder().noIndexHint = NoIndexHint.getDefaultInstance()
+    fun useIndexType(type: String): Query {
+        val parsed = IndexType.valueOf(type.uppercase())
+        this.builder.metadataBuilder.indexHintBuilder.type = parsed
         return this
     }
 
     /**
-     * Sets a [NoParallelHint], which tells the query planner that no inter-query parallelism should be employed.
+     * Sets a hint to the query planner that disallows any form of intra-query parallelism
      */
-    fun disallowParallelism(): Query {
-        this.builder.metadataBuilder.addHintBuilder().parallelIndexHint = NoParallelHint.getDefaultInstance()
+    fun disallowParallelism(): Query = limitParallelism(1)
+
+    /**
+     * Sets a hint to the query planner that limits the amount of allowed intra-query parallelism.
+     *
+     * @param max The maximum amount of parallelism to allow for.
+     */
+    fun limitParallelism(max: Int): Query {
+        this.builder.metadataBuilder.parallelHintBuilder.max = max
         return this
     }
 
