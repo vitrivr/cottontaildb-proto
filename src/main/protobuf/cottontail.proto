@@ -156,7 +156,7 @@ message Metadata {
     message IndexHint {
         string name = 1;
         IndexType type = 2;
-        map<string,string> parameters = 3;
+        bool disallow = 3;
     }
 
     /** A query hint regarding the cost policy that should be employed. */

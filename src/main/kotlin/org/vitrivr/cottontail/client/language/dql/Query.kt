@@ -345,6 +345,14 @@ class Query(entity: String? = null): LanguageFeature() {
     }
 
     /**
+     * Sets a hint to the query planner that instructs it not use any indexes.
+     */
+    fun disallowIndex(): Query {
+        this.builder.metadataBuilder.indexHintBuilder.disallow = true
+        return this
+    }
+
+    /**
      * Sets a hint to the query planner that instructs it to use a specific index.
      *
      * @param index The name of the index to use.
