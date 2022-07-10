@@ -141,7 +141,31 @@ enum IndexType {
 message Metadata {
     int64 transactionId = 1;
     string queryId = 2;
-    repeated Hint hint = 3; /* Hints to the query planner. */
+
+    /** Hints to the query planner. */
+    ParallelismHint parallelHint = 10;
+    IndexHint indexHint = 11;
+    PolicyHint policyHint = 12;
+
+    /** A query hint regarding parallelism. */
+    message ParallelismHint {
+        int32 max = 1;
+    }
+
+    /** A query hint regarding the index that should be employed. */
+    message IndexHint {
+        string name = 1;
+        IndexType type = 2;
+        map<string,string> parameters = 3;
+    }
+
+    /** A query hint regarding the cost policy that should be employed. */
+    message PolicyHint {
+        float weightIo = 1;
+        float weightCpu = 2;
+        float weightMemory = 3;
+        float weightAccuracy = 4;
+    }
 }
 
 /* The basic data types supported by Cottontail DB columns. */
@@ -563,30 +587,5 @@ message Order {
     enum Direction {
         ASCENDING = 0;
         DESCENDING = 1;
-    }
-}
-
-/**
- * A hint to the Cottontail DB query planner as to how a query should be executed.
- */
-message Hint {
-    oneof hint {
-        NoIndexHint noIndexHint = 1;
-        NoParallelHint parallelIndexHint = 2;
-        PolicyHint policyHint = 3;
-        IndexHint nameIndexHint = 4;
-    }
-
-    message NoParallelHint{}
-    message NoIndexHint {}
-    message IndexHint {
-        string name = 1;
-        map<string,string> parameters = 2;
-    }
-    message PolicyHint {
-        float weightIo = 1;
-        float weightCpu = 2;
-        float weightMemory = 3;
-        float weightAccuracy = 4;
     }
 }
