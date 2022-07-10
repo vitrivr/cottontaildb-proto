@@ -366,7 +366,6 @@ message CreateIndexMessage {
     string indexName = 4;
     repeated string columns = 5;
     map<string,string> params = 6;
-    bool rebuild = 7;
 }
 
 /** Message to drop an index. */

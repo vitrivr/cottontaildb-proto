@@ -8,7 +8,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A CREATE INDEX query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.3.0
  */
 class CreateIndex(entity: String, column: String, type: CottontailGrpc.IndexType): LanguageFeature() {
 
@@ -81,17 +81,6 @@ class CreateIndex(entity: String, column: String, type: CottontailGrpc.IndexType
      */
     fun param(key: String, value: Any): CreateIndex {
         this.builder.putParams(key, value.toString())
-        return this
-    }
-
-
-    /**
-     * Sets the rebuild flag of this [CreateIndex].
-     *
-     * @return this [CreateIndex]
-     */
-    fun rebuild(): CreateIndex {
-        this.builder.rebuild = true
         return this
     }
 }
