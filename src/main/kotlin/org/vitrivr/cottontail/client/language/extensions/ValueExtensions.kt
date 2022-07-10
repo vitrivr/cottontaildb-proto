@@ -24,6 +24,7 @@ internal fun Any.toGrpc(): CottontailGrpc.Literal = when(this) {
     is Float -> this.toGrpc()
     is Double -> this.toGrpc()
     is String -> this.toGrpc()
+    is CottontailGrpc.Literal -> this
     else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to literal is not supported.")
 }
 
