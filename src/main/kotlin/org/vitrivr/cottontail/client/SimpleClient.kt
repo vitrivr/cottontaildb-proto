@@ -448,26 +448,48 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     }
 
     /**
-     * Optimizes an entity through this [SimpleClient].
+     * Analyzes an entity through this [SimpleClient].
      *
-     * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
+     * @param message [CottontailGrpc.AnalyzeEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator = this.context.call {
+    fun analyze(message: CottontailGrpc.AnalyzeEntityMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.optimizeEntity(message), inner)
+            TupleIteratorImpl(stub.analyzeEntity(message), inner)
         }
     }
 
     /**
-     * Optimizes an entity through this [SimpleClient].
+     * Rebuilds an index through this [SimpleClient].
      *
-     * @param message [OptimizeEntity] to execute.
+     * @param message [CottontailGrpc.AnalyzeEntityMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun rebuild(message: CottontailGrpc.RebuildIndexMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.rebuildIndex(message), inner)
+        }
+    }
+
+    /**
+     * Rebuilds an index through this [SimpleClient].
+     *
+     * @param message [RebuildIndex] to execute.
      * @return [TupleIterator]
      */
-    fun optimize(message: OptimizeEntity): TupleIterator = this.optimize(message.builder.build())
+    fun rebuild(message: RebuildIndex): TupleIterator = this.rebuild(message.builder.build())
+
+    /**
+     * Analyzes an entity through this [SimpleClient].
+     *
+     * @param message [AnalyzeEntity] to execute.
+     * @return [TupleIterator]
+     */
+    fun analyze(message: AnalyzeEntity): TupleIterator = this.analyze(message.builder.build())
 
     /**
      * Pings this Cottontail DB instance. The method returns true on success and false otherwise.

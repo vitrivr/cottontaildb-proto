@@ -8,40 +8,40 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An OPTIMIZE ENTITY query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 2.0.0
  */
-class OptimizeEntity(name: String): LanguageFeature() {
-    /** Internal [CottontailGrpc.OptimizeEntityMessage.Builder]. */
-    internal val builder = CottontailGrpc.OptimizeEntityMessage.newBuilder()
+class AnalyzeEntity(name: String): LanguageFeature() {
+    /** Internal [CottontailGrpc.AnalyzeEntityMessage.Builder]. */
+    internal val builder = CottontailGrpc.AnalyzeEntityMessage.newBuilder()
 
     init {
         builder.entity = name.parseEntity()
     }
 
     /**
-     * Sets the transaction ID for this [OptimizeEntity].
+     * Sets the transaction ID for this [AnalyzeEntity].
      *
      * @param txId The new transaction ID.
      */
-    override fun txId(txId: Long): OptimizeEntity {
+    override fun txId(txId: Long): AnalyzeEntity {
         this.builder.metadataBuilder.transactionId = txId
         return this
     }
 
     /**
-     * Sets the query ID for this [OptimizeEntity].
+     * Sets the query ID for this [AnalyzeEntity].
      *
      * @param queryId The new query ID.
      */
-    override fun queryId(queryId: String): OptimizeEntity {
+    override fun queryId(queryId: String): AnalyzeEntity {
         this.builder.metadataBuilder.queryId = queryId
         return this
     }
 
     /**
-     * Returns the serialized message size in bytes of this [OptimizeEntity]
+     * Returns the serialized message size in bytes of this [AnalyzeEntity]
      *
-     * @return The size in bytes of this [OptimizeEntity].
+     * @return The size in bytes of this [AnalyzeEntity].
      */
     override fun serializedSize() = this.builder.build().serializedSize
 }

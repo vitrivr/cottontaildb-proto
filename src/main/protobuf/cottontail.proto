@@ -33,7 +33,7 @@ service DDL {
     rpc TruncateEntity (TruncateEntityMessage) returns (QueryResponseMessage);
 
     /* Optimizing and truncating entities. */
-    rpc OptimizeEntity (OptimizeEntityMessage) returns (QueryResponseMessage);
+    rpc AnalyzeEntity (AnalyzeEntityMessage) returns (QueryResponseMessage);
 
     /** Creates a new index. */
     rpc CreateIndex (CreateIndexMessage) returns (QueryResponseMessage);
@@ -341,7 +341,7 @@ message TruncateEntityMessage {
 }
 
 /** Message to drop an entity. */
-message OptimizeEntityMessage {
+message AnalyzeEntityMessage {
     Metadata metadata = 1;
     EntityName entity = 2;
 }
