@@ -5,13 +5,13 @@ import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
- * A message to retrieves information about an entity.
+ * A message to query information about an entity.
  *
  * @author Ralph Gasser
  * @version 1.2.0
  */
 class AboutEntity(name: String): LanguageFeature() {
-    /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
+    /** Internal [CottontailGrpc.EntityDetailsMessage.Builder]. */
     internal val builder = CottontailGrpc.EntityDetailsMessage.newBuilder()
 
     init {

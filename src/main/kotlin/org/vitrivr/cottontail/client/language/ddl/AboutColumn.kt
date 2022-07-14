@@ -5,17 +5,17 @@ import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
- * A message to retrieves information about a column.
+ * A message to query information about a column.
  *
  * @author Ralph Gasser
  * @version 1.0.0
  */
 class AboutColumn(name: String): LanguageFeature() {
-    /** Internal [CottontailGrpc.ListEntityMessage.Builder]. */
+    /** Internal [CottontailGrpc.ColumnDetailsMessage.Builder]. */
     internal val builder = CottontailGrpc.ColumnDetailsMessage.newBuilder()
 
     init {
-        this.builder.entity = name.parseColumn()
+        this.builder.column = name.parseColumn()
     }
 
     /**

@@ -24,7 +24,10 @@ service DDL {
     rpc EntityDetails (EntityDetailsMessage) returns (QueryResponseMessage);
 
     /* Returns details about the given column. */
-    rpc ColumnDetails (EntityDetailsMessage) returns (QueryResponseMessage);
+    rpc ColumnDetails (ColumnDetailsMessage) returns (QueryResponseMessage);
+
+    /* Returns details about the given index. */
+    rpc IndexDetails (IndexDetailsMessage) returns (QueryResponseMessage);
 
     /** Creates a new entity. */
     rpc CreateEntity (CreateEntityMessage) returns (QueryResponseMessage);
@@ -351,17 +354,24 @@ message AnalyzeEntityMessage {
     EntityName entity = 2;
 }
 
-/** Message to invoke entity details. */
+/** Message to query entity details. */
 message EntityDetailsMessage {
     Metadata metadata = 1;
     EntityName entity = 2;
 }
 
-/** Message to invoke column details. */
+/** Message to query column details. */
 message ColumnDetailsMessage {
     Metadata metadata = 1;
-    ColumnName entity = 2;
+    ColumnName column = 2;
 }
+
+/** Message to query index details. */
+message IndexDetailsMessage {
+    Metadata metadata = 1;
+    IndexName index = 2;
+}
+
 
 /** Message to list entities. */
 message ListEntityMessage {

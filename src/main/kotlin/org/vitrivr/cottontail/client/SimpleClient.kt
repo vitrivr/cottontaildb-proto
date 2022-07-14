@@ -426,6 +426,50 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     fun about(message: AboutEntity): TupleIterator = this.about(message.builder.build())
 
     /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.ColumnDetailsMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun about(message: CottontailGrpc.ColumnDetailsMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.columnDetails(message), inner)
+        }
+    }
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [AboutColumn] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun about(message: AboutColumn): TupleIterator = this.about(message.builder.build())
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.IndexDetailsMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun about(message: CottontailGrpc.IndexDetailsMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.indexDetails(message), inner)
+        }
+    }
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [AboutIndex] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun about(message: AboutIndex): TupleIterator = this.about(message.builder.build())
+
+    /**
      * Truncates the given entity through this [SimpleClient].
      *
      * @param message [TruncateEntity] to execute.
