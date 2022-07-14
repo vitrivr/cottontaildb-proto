@@ -23,6 +23,9 @@ service DDL {
     /* Returns details about the given entity. */
     rpc EntityDetails (EntityDetailsMessage) returns (QueryResponseMessage);
 
+    /* Returns details about the given column. */
+    rpc ColumnDetails (EntityDetailsMessage) returns (QueryResponseMessage);
+
     /** Creates a new entity. */
     rpc CreateEntity (CreateEntityMessage) returns (QueryResponseMessage);
 
@@ -348,10 +351,16 @@ message AnalyzeEntityMessage {
     EntityName entity = 2;
 }
 
-/** Message to list entities. */
+/** Message to invoke entity details. */
 message EntityDetailsMessage {
     Metadata metadata = 1;
     EntityName entity = 2;
+}
+
+/** Message to invoke column details. */
+message ColumnDetailsMessage {
+    Metadata metadata = 1;
+    ColumnName entity = 2;
 }
 
 /** Message to list entities. */
