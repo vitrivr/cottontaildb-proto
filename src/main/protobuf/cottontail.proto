@@ -154,9 +154,11 @@ message Metadata {
 
     /** A query hint regarding the index that should be employed. */
     message IndexHint {
-        string name = 1;
-        IndexType type = 2;
-        bool disallow = 3;
+        oneof setting {
+            string name = 1;
+            IndexType type = 2;
+            bool disallow = 3;
+        }
     }
 
     /** A query hint regarding the cost policy that should be employed. */
