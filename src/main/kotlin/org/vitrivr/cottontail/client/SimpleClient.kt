@@ -26,7 +26,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * The [SimpleClient] wraps a [ManagedChannel]. It remains to the caller, to setup and close that [ManagedChannel].
  *
  * @author Ralph Gasser
- * @version 2.1.0
+ * @version 2.2.0
  */
 class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
 
@@ -431,21 +431,21 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param message [CottontailGrpc.ColumnDetailsMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun about(message: CottontailGrpc.ColumnDetailsMessage): TupleIterator = this.context.call {
+    fun statistics(message: CottontailGrpc.EntityDetailsMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.columnDetails(message), inner)
+            TupleIteratorImpl(stub.entityStatistics(message), inner)
         }
     }
 
     /**
      * Lists detailed information about an entity through this [SimpleClient].
      *
-     * @param message [AboutColumn] to execute.
+     * @param message [EntityStatistics] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun about(message: AboutColumn): TupleIterator = this.about(message.builder.build())
+    fun about(message: EntityStatistics): TupleIterator = this.statistics(message.builder.build())
 
     /**
      * Lists detailed information about an entity through this [SimpleClient].

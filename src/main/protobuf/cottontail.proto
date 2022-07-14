@@ -24,7 +24,7 @@ service DDL {
     rpc EntityDetails (EntityDetailsMessage) returns (QueryResponseMessage);
 
     /* Returns details about the given column. */
-    rpc ColumnDetails (ColumnDetailsMessage) returns (QueryResponseMessage);
+    rpc EntityStatistics (EntityDetailsMessage) returns (QueryResponseMessage);
 
     /* Returns details about the given index. */
     rpc IndexDetails (IndexDetailsMessage) returns (QueryResponseMessage);
@@ -358,12 +358,6 @@ message AnalyzeEntityMessage {
 message EntityDetailsMessage {
     Metadata metadata = 1;
     EntityName entity = 2;
-}
-
-/** Message to query column details. */
-message ColumnDetailsMessage {
-    Metadata metadata = 1;
-    ColumnName column = 2;
 }
 
 /** Message to query index details. */
