@@ -140,7 +140,8 @@ enum IndexType {
     LUCENE = 2;
     VAF = 3;
     PQ = 4;
-    LSH = 5;
+    IVFPQ = 5;
+    LSH = 6;
 }
 
 /** Query metadata used in Cottontail DB. */
