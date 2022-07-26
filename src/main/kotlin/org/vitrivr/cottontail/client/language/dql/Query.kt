@@ -136,6 +136,57 @@ class Query(entity: String? = null): LanguageFeature() {
     }
 
     /**
+     * Adds a SELECT MEAN() projection to this [Query].
+     *
+     * Calling this method resets the PROJECTION part of the query.
+     *
+     * @return [Query]
+     */
+    fun mean(column: String): Query {
+        val builder = this.builder.queryBuilder.projectionBuilder
+        if (builder.op != CottontailGrpc.Projection.ProjectionOperation.MEAN) {
+            builder.clearElements()
+            builder.op = CottontailGrpc.Projection.ProjectionOperation.MEAN
+        }
+        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setExpression(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn())))
+        return this
+    }
+
+    /**
+     * Adds a SELECT MIN() projection to this [Query].
+     *
+     * Calling this method resets the PROJECTION part of the query.
+     *
+     * @return [Query]
+     */
+    fun min(column: String): Query {
+        val builder = this.builder.queryBuilder.projectionBuilder
+        if (builder.op != CottontailGrpc.Projection.ProjectionOperation.MIN) {
+            builder.clearElements()
+            builder.op = CottontailGrpc.Projection.ProjectionOperation.MIN
+        }
+        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setExpression(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn())))
+        return this
+    }
+
+    /**
+     * Adds a SELECT MAX() projection to this [Query].
+     *
+     * Calling this method resets the PROJECTION part of the query.
+     *
+     * @return [Query]
+     */
+    fun max(column: String): Query {
+        val builder = this.builder.queryBuilder.projectionBuilder
+        if (builder.op != CottontailGrpc.Projection.ProjectionOperation.MAX) {
+            builder.clearElements()
+            builder.op = CottontailGrpc.Projection.ProjectionOperation.MAX
+        }
+        builder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder().setExpression(CottontailGrpc.Expression.newBuilder().setColumn(column.parseColumn())))
+        return this
+    }
+
+    /**
      * Adds a SELECT EXISTS projection to this [Query].
      *
      * Calling this method resets the PROJECTION part of the query.
