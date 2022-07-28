@@ -385,6 +385,8 @@ class Query(entity: String? = null): LanguageFeature() {
 
     /**
      * Sets a hint to the query planner that instructs it not use any indexes.
+     *
+     * @return This [Query]
      */
     fun disallowIndex(): Query {
         this.builder.metadataBuilder.indexHintBuilder.disallow = true
@@ -395,6 +397,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * Sets a hint to the query planner that instructs it to use a specific index.
      *
      * @param index The name of the index to use.
+     * @return This [Query]
      */
     fun useIndex(index: String): Query {
         val parsed = index.parseIndex() /* Sanity check. */
@@ -406,6 +409,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * Sets a hint to the query planner that instructs it to use a specific index type.
      *
      * @param index The name of the index to use.
+     * @return This [Query]
      */
     fun useIndexType(type: String): Query {
         val parsed = IndexType.valueOf(type.uppercase())
@@ -414,7 +418,27 @@ class Query(entity: String? = null): LanguageFeature() {
     }
 
     /**
+     * Uses a specific cost policy for this [Query].
+     *
+     * @param wio The relative importance of IO costs.
+     * @param wcpu The relative importance of CPU costs.
+     * @param wmem The relative importance of Memory costs.
+     * @param wg The relative importance of Quality costs.
+     * @return This [Query]
+     */
+    fun usePolicy(wio: Float = 1.0f, wcpu: Float = 1.0f, wmem: Float = 1.0f, wg: Float = 1.0f): Query {
+        require(wio in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
+        require(wcpu in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
+        require(wmem in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
+        require(wg in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
+        this.builder.metadataBuilder.policyHintBuilder.setWeightIo(wcpu).setWeightCpu(wmem).setWeightMemory(wg).setWeightAccuracy(wg)
+        return this
+    }
+
+    /**
      * Sets a hint to the query planner that disallows any form of intra-query parallelism
+     *
+    * @return This [Query]
      */
     fun disallowParallelism(): Query = limitParallelism(1)
 
@@ -422,6 +446,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * Sets a hint to the query planner that limits the amount of allowed intra-query parallelism.
      *
      * @param max The maximum amount of parallelism to allow for.
+     * @return This [Query]
      */
     fun limitParallelism(max: Int): Query {
         this.builder.metadataBuilder.parallelHintBuilder.max = max
