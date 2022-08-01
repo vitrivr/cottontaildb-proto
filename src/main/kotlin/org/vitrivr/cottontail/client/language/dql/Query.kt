@@ -423,15 +423,15 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param wio The relative importance of IO costs.
      * @param wcpu The relative importance of CPU costs.
      * @param wmem The relative importance of Memory costs.
-     * @param wg The relative importance of Quality costs.
+     * @param wq The relative importance of Quality costs.
      * @return This [Query]
      */
-    fun usePolicy(wio: Float = 1.0f, wcpu: Float = 1.0f, wmem: Float = 1.0f, wg: Float = 1.0f): Query {
+    fun usePolicy(wio: Float = 1.0f, wcpu: Float = 1.0f, wmem: Float = 1.0f, wq: Float = 1.0f): Query {
         require(wio in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
         require(wcpu in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
         require(wmem in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
-        require(wg in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
-        this.builder.metadataBuilder.policyHintBuilder.setWeightIo(wcpu).setWeightCpu(wmem).setWeightMemory(wg).setWeightAccuracy(wg)
+        require(wq in 0.0f..1.0f) { "Cost policy weights must be in the range [0.0, 1.0]." }
+        this.builder.metadataBuilder.policyHintBuilder.setWeightIo(wio).setWeightCpu(wcpu).setWeightMemory(wmem).setWeightAccuracy(wq)
         return this
     }
 
