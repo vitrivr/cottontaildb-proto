@@ -165,7 +165,7 @@ message RequestMetadata {
     ParallelismHint parallelHint = 10;
     IndexHint indexHint = 11;
     PolicyHint policyHint = 12;
-    NoOptimiseHint optimiseHint = 13;
+    bool noOptimiseHint = 13;
 
     /** A query hint regarding parallelism. */
     message ParallelismHint {
@@ -188,9 +188,6 @@ message RequestMetadata {
         float weightMemory = 3;
         float weightAccuracy = 4;
     }
-
-    /** A query hint indicating, that optimisation should be bypassed. */
-    message NoOptimiseHint { }
 }
 
 /* The basic data types supported by Cottontail DB columns. */

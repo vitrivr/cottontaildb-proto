@@ -436,6 +436,16 @@ class Query(entity: String? = null): LanguageFeature() {
     }
 
     /**
+     * Sets the 'no optimisation' hint in the [Query].
+     *
+     * @return This [Query]
+     */
+    fun disallowOptimisation(): Query {
+        this.builder.metadataBuilder.noOptimiseHint = true
+        return this
+    }
+
+    /**
      * Sets a hint to the query planner that disallows any form of intra-query parallelism
      *
     * @return This [Query]
