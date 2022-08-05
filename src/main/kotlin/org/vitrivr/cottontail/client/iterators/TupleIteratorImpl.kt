@@ -35,6 +35,12 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
     /** The ID of the Cottontail DB query this [TupleIterator] is associated with. */
     override val queryId: String
 
+    /** The time it took in milliseconds to plan the query. */
+    override val planDuration: Long
+
+    /** The time it took in milliseconds to execute the query. */
+    override val queryDuration: Long
+
     /** The column names returned by this [TupleIterator]. */
     override val columnNames: List<String>
         get() = this._columns.keys.toList()
@@ -63,6 +69,9 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         /* Assign metadata, columns and data. */
         this.transactionId = next.metadata.transactionId
         this.queryId = next.metadata.queryId
+        this.planDuration = next.metadata.planDuration
+        this.queryDuration = next.metadata.queryDuration
+
         next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
         next.columnsList.forEachIndexed { i,c ->
             this._columns[c.name.fqn()] = i

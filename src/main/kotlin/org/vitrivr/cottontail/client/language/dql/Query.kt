@@ -449,7 +449,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * @return This [Query]
      */
     fun limitParallelism(max: Int): Query {
-        this.builder.metadataBuilder.parallelHintBuilder.max = max
+        this.builder.metadataBuilder.parallelHintBuilder.limit = max
         return this
     }
 
