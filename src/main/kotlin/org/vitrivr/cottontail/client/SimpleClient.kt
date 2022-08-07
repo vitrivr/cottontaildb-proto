@@ -36,9 +36,16 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Begins a new transaction through this [SimpleClient].
      *
+     * @param readonly Flag indicating whether a read-only or a read/write transaction should be started.
      * @return The ID of the newly begun transaction.
      */
-    fun begin(): Long = TXNGrpc.newBlockingStub(this.channel).begin(Empty.getDefaultInstance()).transactionId
+    fun begin(readonly: Boolean = false): Long = TXNGrpc.newBlockingStub(this.channel).begin(
+        if (readonly){
+            CottontailGrpc.BeginTransaction.newBuilder().setMode(CottontailGrpc.TransactionMode.READONLY).build()
+        } else {
+            CottontailGrpc.BeginTransaction.newBuilder().setMode(CottontailGrpc.TransactionMode.READ_WRITE).build()
+        }
+    ).transactionId
 
     /**
      * Commits a transaction through this [SimpleClient].

@@ -87,7 +87,7 @@ service DQL {
  */
 service TXN {
     /** Starts a new transaction. */
-    rpc Begin (google.protobuf.Empty) returns (RequestMetadata);
+    rpc Begin (BeginTransaction) returns (RequestMetadata);
 
     /** Performs a commit on a transaction. This method blocks if a query is currently executed. */
     rpc Commit (RequestMetadata) returns (google.protobuf.Empty);
@@ -144,16 +144,15 @@ enum IndexType {
     LSH = 6;
 }
 
+/** The mode of the transaction. */
+enum TransactionMode {
+    READ_WRITE = 0;
+    READONLY = 1;
+}
 
-/** Metadata associated with a query response. */
-message ResponseMetadata {
-    int64 transactionId = 1;
-    string queryId = 2;
-
-    int64 planDuration = 3;  /* Time it took to plan the query. */
-    float planScore = 4;
-
-    int64 queryDuration = 5; /* Time it took to execute the query. */
+/** Message to begin a transaction with. */
+message BeginTransaction {
+    TransactionMode mode = 1;
 }
 
 /** Query metadata used in Cottontail DB. */
@@ -188,6 +187,19 @@ message RequestMetadata {
         float weightMemory = 3;
         float weightAccuracy = 4;
     }
+}
+
+/** Metadata associated with a query response. */
+message ResponseMetadata {
+    /* Transaction information. */
+    int64 transactionId = 1;
+    TransactionMode transactionMode = 2;
+
+    /* Query information. */
+    string queryId = 3;
+    int64 planDuration = 4;  /* Time it took to plan the query. */
+    float planScore = 5;     /* Score assigned to selected query plan. */
+    int64 queryDuration = 6; /* Time it took to execute the query. */
 }
 
 /* The basic data types supported by Cottontail DB columns. */
