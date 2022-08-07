@@ -87,7 +87,7 @@ service DQL {
  */
 service TXN {
     /** Starts a new transaction. */
-    rpc Begin (BeginTransaction) returns (RequestMetadata);
+    rpc Begin (BeginTransaction) returns (ResponseMetadata);
 
     /** Performs a commit on a transaction. This method blocks if a query is currently executed. */
     rpc Commit (RequestMetadata) returns (google.protobuf.Empty);
