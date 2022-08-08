@@ -378,6 +378,7 @@ message TruncateEntityMessage {
 message AnalyzeEntityMessage {
     RequestMetadata metadata = 1;
     EntityName entity = 2;
+    bool async = 3;
 }
 
 /** Message to query entity details. */
@@ -419,6 +420,7 @@ message DropIndexMessage {
 message RebuildIndexMessage {
     RequestMetadata metadata = 1;
     IndexName index = 2;
+    bool async = 3;
 }
 
 /** Definition of a column in Cottontail DB. */

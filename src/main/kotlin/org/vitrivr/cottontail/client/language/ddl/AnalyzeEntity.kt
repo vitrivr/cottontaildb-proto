@@ -5,10 +5,10 @@ import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
- * An OPTIMIZE ENTITY query in the Cottontail DB query language.
+ * An ANALYZE ENTITY query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 2.0.0
+ * @version 2.1.0
  */
 class AnalyzeEntity(name: String): LanguageFeature() {
     /** Internal [CottontailGrpc.AnalyzeEntityMessage.Builder]. */
@@ -35,6 +35,16 @@ class AnalyzeEntity(name: String): LanguageFeature() {
      */
     override fun queryId(queryId: String): AnalyzeEntity {
         this.builder.metadataBuilder.queryId = queryId
+        return this
+    }
+
+    /**
+     * Sets the asynchronous flag for this [AnalyzeEntity].
+     *
+     * @return This [AnalyzeEntity]
+     */
+    fun async(): AnalyzeEntity {
+        this.builder.async = true
         return this
     }
 
