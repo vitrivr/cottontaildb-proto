@@ -89,6 +89,7 @@ enum class Type(val grpc: CottontailGrpc.Type) {
         BOOLEAN_VECTOR -> (value as BooleanArray?)?.let { this.vectorToString(it.toList(), maxLength) }
         COMPLEX32_VECTOR -> (value as Array<Pair<*,*>>?)?.let { complexToString(it.toList(), maxLength) }
         COMPLEX64_VECTOR -> (value as Array<Pair<*,*>>?)?.let { complexToString(it.toList(), maxLength) }
+        BYTESTRING -> "~~BINARY~~"
         else -> "~~N/A~~"
     } ?: "~~NULL~~"
 
@@ -115,4 +116,5 @@ enum class Type(val grpc: CottontailGrpc.Type) {
     } else {
         "[${vector.joinToString(", ") { "${it.first} + i${it.second}" }}]"
     }
+
 }

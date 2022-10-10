@@ -140,5 +140,6 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         override fun asDoubleVector(name: String) = asDoubleVector(indexForName(name))
         override fun asDate(name: String) = asDate(indexForName(name))
         override fun asString(name: String) = asString(indexForName(name))
+        override fun asByteString(name: String): ByteArray? = asByteString(indexForName(name))
     }
 }
