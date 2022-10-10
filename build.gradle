@@ -107,7 +107,7 @@ protobuf {
             artifact = "io.grpc:protoc-gen-grpc-java:$version_grpc"
         }
         grpckt {
-            artifact = "io.grpc:protoc-gen-grpc-kotlin:$version_grpc_kotlin:jdk7@jar"
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:$version_grpc_kotlin:jdk8@jar"
         }
     }
     protoc {
