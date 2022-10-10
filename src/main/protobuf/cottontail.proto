@@ -193,7 +193,9 @@ enum Type {
     BOOL_VEC = 15;
     COMPLEX32_VEC = 16;
     COMPLEX64_VEC = 17;
-    BLOB = 18;
+
+    /* Binary */
+    BYTESTRING = 18;
 }
 
 /** Literal data, i.e., field that actually contains information. */
@@ -209,6 +211,7 @@ message Literal {
         Complex32 complex32Data = 8;
         Complex64 complex64Data = 9;
         Vector vectorData = 10;
+        bytes byteStringData = 11;
     }
 }
 
