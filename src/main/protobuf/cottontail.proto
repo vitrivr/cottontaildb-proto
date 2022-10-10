@@ -227,7 +227,7 @@ enum Type {
     BOOL_VEC = 15;
     COMPLEX32_VEC = 16;
     COMPLEX64_VEC = 17;
-    BLOB = 18;
+    BYTESTRING = 18;
 }
 
 /** Literal data, i.e., field that actually contains information. */
