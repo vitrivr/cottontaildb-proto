@@ -29,7 +29,7 @@ enum class Type(val grpc: CottontailGrpc.Type) {
     BOOLEAN_VECTOR(CottontailGrpc.Type.BOOL_VEC),
     COMPLEX32_VECTOR(CottontailGrpc.Type.COMPLEX32_VEC),
     COMPLEX64_VECTOR(CottontailGrpc.Type.COMPLEX64_VEC),
-    BLOB(CottontailGrpc.Type.BLOB),
+    BYTESTRING(CottontailGrpc.Type.BYTESTRING),
     UNDEFINED(CottontailGrpc.Type.UNRECOGNIZED);
 
     companion object {
@@ -58,7 +58,7 @@ enum class Type(val grpc: CottontailGrpc.Type) {
             CottontailGrpc.Type.BOOL_VEC -> BOOLEAN_VECTOR
             CottontailGrpc.Type.COMPLEX32_VEC -> COMPLEX32_VECTOR
             CottontailGrpc.Type.COMPLEX64_VEC -> COMPLEX64_VECTOR
-            CottontailGrpc.Type.BLOB -> BLOB
+            CottontailGrpc.Type.BYTESTRING -> BYTESTRING
             CottontailGrpc.Type.UNRECOGNIZED -> UNDEFINED
         }
     }
@@ -89,6 +89,7 @@ enum class Type(val grpc: CottontailGrpc.Type) {
         BOOLEAN_VECTOR -> (value as BooleanArray?)?.let { this.vectorToString(it.toList(), maxLength) }
         COMPLEX32_VECTOR -> (value as Array<Pair<*,*>>?)?.let { complexToString(it.toList(), maxLength) }
         COMPLEX64_VECTOR -> (value as Array<Pair<*,*>>?)?.let { complexToString(it.toList(), maxLength) }
+        BYTESTRING -> "~~BINARY~~"
         else -> "~~N/A~~"
     } ?: "~~NULL~~"
 
@@ -115,4 +116,5 @@ enum class Type(val grpc: CottontailGrpc.Type) {
     } else {
         "[${vector.joinToString(", ") { "${it.first} + i${it.second}" }}]"
     }
+
 }

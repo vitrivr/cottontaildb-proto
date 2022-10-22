@@ -37,6 +37,7 @@ abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
                     else  -> UnsupportedOperationException("Vector data of type ${vector.vectorDataCase} is not supported by TupleIterator.")
                 }
             }
+            CottontailGrpc.Literal.DataCase.BYTESTRINGDATA -> data.byteStringData.toByteArray()
             CottontailGrpc.Literal.DataCase.DATA_NOT_SET -> null
             else -> UnsupportedOperationException("Data of type ${data.dataCase} is not supported by TupleIterator.")
         }
@@ -136,6 +137,12 @@ abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
         return if (value is Date) { value } else { null }
     }
     abstract fun asDate(name: String): Date?
+
+    fun asByteString(index: Int): ByteArray? {
+        val value = this.values[index]
+        return if (value is ByteArray) { value } else { null }
+    }
+    abstract fun asByteString(name: String): ByteArray?
 
     override fun toString(): String = this.values.joinToString(", ") { it?.toString() ?: "<null>" }
 }
