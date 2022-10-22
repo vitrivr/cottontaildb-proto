@@ -54,14 +54,19 @@ class CreateEntity(name: String): LanguageFeature() {
      * @param type The [Type] of the column.
      * @param length The length of the column (>= 1 for vector columns)
      * @param nullable Flag indicating whether column should be nullable.
+     * @param autoIncrement Flag indicating whether column should be auto incremented. Only works for [Type.INTEGER] or [Type.LONG]
      * @return this [CreateEntity]
      */
-    fun column(name: String, type: Type, length: Int = 0, nullable: Boolean = false): CreateEntity {
+    fun column(name: String, type: Type, length: Int = 0, nullable: Boolean = false, autoIncrement: Boolean = false): CreateEntity {
         val addBuilder = builder.definitionBuilder.addColumnsBuilder()
         addBuilder.name = name.parseColumn()
         addBuilder.type = type.grpc
         addBuilder.length = length
         addBuilder.nullable = nullable
+        if (autoIncrement) {
+            require(type == Type.INTEGER || type == Type.LONG) { "Auto-increment option is only supported by INTEGER and LONG columns."}
+            addBuilder.autoIncrement = true
+        }
         return this
     }
 
