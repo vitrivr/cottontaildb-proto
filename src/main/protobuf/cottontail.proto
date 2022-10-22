@@ -388,6 +388,7 @@ message ColumnDefinition {
     uint32 length = 3;
     bool primary = 4;
     bool nullable = 5;
+    bool autoIncrement = 6;
 }
 
 /** Definition of an entity in Cottontail DB. */
