@@ -23,6 +23,12 @@ service DDL {
     /* Returns details about the given entity. */
     rpc EntityDetails (EntityDetailsMessage) returns (QueryResponseMessage);
 
+    /* Returns details about the given column. */
+    rpc EntityStatistics (EntityDetailsMessage) returns (QueryResponseMessage);
+
+    /* Returns details about the given index. */
+    rpc IndexDetails (IndexDetailsMessage) returns (QueryResponseMessage);
+
     /** Creates a new entity. */
     rpc CreateEntity (CreateEntityMessage) returns (QueryResponseMessage);
 
@@ -33,7 +39,7 @@ service DDL {
     rpc TruncateEntity (TruncateEntityMessage) returns (QueryResponseMessage);
 
     /* Optimizing and truncating entities. */
-    rpc OptimizeEntity (OptimizeEntityMessage) returns (QueryResponseMessage);
+    rpc AnalyzeEntity (AnalyzeEntityMessage) returns (QueryResponseMessage);
 
     /** Creates a new index. */
     rpc CreateIndex (CreateIndexMessage) returns (QueryResponseMessage);
@@ -81,16 +87,16 @@ service DQL {
  */
 service TXN {
     /** Starts a new transaction. */
-    rpc Begin (google.protobuf.Empty) returns (Metadata);
+    rpc Begin (BeginTransaction) returns (ResponseMetadata);
 
     /** Performs a commit on a transaction. This method blocks if a query is currently executed. */
-    rpc Commit (Metadata) returns (google.protobuf.Empty);
+    rpc Commit (RequestMetadata) returns (google.protobuf.Empty);
 
     /** Performs a rollback on a transaction and aborts it. This method blocks if a query is currently executed. */
-    rpc Rollback (Metadata) returns (google.protobuf.Empty);
+    rpc Rollback (RequestMetadata) returns (google.protobuf.Empty);
 
     /** Kills and performs a rollback on an ongoing transaction. This method can even be used when a query is being executed.*/
-    rpc Kill (Metadata) returns (google.protobuf.Empty);
+    rpc Kill (RequestMetadata) returns (google.protobuf.Empty);
 
     /** Lists all active transactions. */
     rpc ListTransactions (google.protobuf.Empty) returns (stream QueryResponseMessage);
@@ -134,11 +140,23 @@ enum IndexType {
     LUCENE = 2;
     VAF = 3;
     PQ = 4;
-    LSH = 5;
+    IVFPQ = 5;
+    LSH = 6;
+}
+
+/** The mode of the transaction. */
+enum TransactionMode {
+    READ_WRITE = 0;
+    READONLY = 1;
+}
+
+/** Message to begin a transaction with. */
+message BeginTransaction {
+    TransactionMode mode = 1;
 }
 
 /** Query metadata used in Cottontail DB. */
-message Metadata {
+message RequestMetadata {
     int64 transactionId = 1;
     string queryId = 2;
 
@@ -146,17 +164,20 @@ message Metadata {
     ParallelismHint parallelHint = 10;
     IndexHint indexHint = 11;
     PolicyHint policyHint = 12;
+    bool noOptimiseHint = 13;
 
     /** A query hint regarding parallelism. */
     message ParallelismHint {
-        int32 max = 1;
+        int32 limit = 1;
     }
 
     /** A query hint regarding the index that should be employed. */
     message IndexHint {
-        string name = 1;
-        IndexType type = 2;
-        map<string,string> parameters = 3;
+        oneof setting {
+            string name = 1;
+            IndexType type = 2;
+            bool disallow = 3;
+        }
     }
 
     /** A query hint regarding the cost policy that should be employed. */
@@ -166,6 +187,19 @@ message Metadata {
         float weightMemory = 3;
         float weightAccuracy = 4;
     }
+}
+
+/** Metadata associated with a query response. */
+message ResponseMetadata {
+    /* Transaction information. */
+    int64 transactionId = 1;
+    TransactionMode transactionMode = 2;
+
+    /* Query information. */
+    string queryId = 3;
+    int64 planDuration = 4;  /* Time it took to plan the query. */
+    float planScore = 5;     /* Score assigned to selected query plan. */
+    int64 queryDuration = 6; /* Time it took to execute the query. */
 }
 
 /* The basic data types supported by Cottontail DB columns. */
@@ -193,7 +227,6 @@ enum Type {
     BOOL_VEC = 15;
     COMPLEX32_VEC = 16;
     COMPLEX64_VEC = 17;
-
     /* Binary */
     BYTESTRING = 18;
 }
@@ -310,78 +343,86 @@ message Complex64Vector {
 
 /** Message to create a new schema. */
 message CreateSchemaMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to drop schema. */
 message DropSchemaMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to list schemata. */
 message ListSchemaMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
 }
 
 /** Message to create an entity. */
 message CreateEntityMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     EntityDefinition definition = 2;
 }
 
 /** Message to drop an entity. */
 message DropEntityMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to drop an entity. */
 message TruncateEntityMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     EntityName entity = 2;
 }
 
 /** Message to drop an entity. */
-message OptimizeEntityMessage {
-    Metadata metadata = 1;
+message AnalyzeEntityMessage {
+    RequestMetadata metadata = 1;
+    EntityName entity = 2;
+    bool async = 3;
+}
+
+/** Message to query entity details. */
+message EntityDetailsMessage {
+    RequestMetadata metadata = 1;
     EntityName entity = 2;
 }
 
-/** Message to list entities. */
-message EntityDetailsMessage {
-    Metadata metadata = 1;
-    EntityName entity = 2;
+/** Message to query index details. */
+message IndexDetailsMessage {
+    RequestMetadata metadata = 1;
+    IndexName index = 2;
 }
+
 
 /** Message to list entities. */
 message ListEntityMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     SchemaName schema = 2;
 }
 
 /** Message to create an index. */
 message CreateIndexMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     EntityName entity = 2;
     IndexType type = 3;
     string indexName = 4;
     repeated string columns = 5;
     map<string,string> params = 6;
-    bool rebuild = 7;
 }
 
 /** Message to drop an index. */
 message DropIndexMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     IndexName index = 2;
 }
 
 /** Message to rebuild an index. */
 message RebuildIndexMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     IndexName index = 2;
+    bool async = 3;
 }
 
 /** Definition of a column in Cottontail DB. */
@@ -402,7 +443,7 @@ message EntityDefinition {
 
 /** Message for inserting data into an entity. */
 message InsertMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     From from = 2;
     repeated InsertElement elements = 3;
     message InsertElement {
@@ -414,7 +455,7 @@ message InsertMessage {
 
 /** Message for batch-inserting data into an entity. */
 message BatchInsertMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     From from = 2;
     repeated ColumnName columns = 3;
     repeated Insert inserts = 4;
@@ -425,7 +466,7 @@ message BatchInsertMessage {
 
 /** Message for updating data in an entity. */
 message UpdateMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     From from = 2;
     Where where = 3;
     repeated UpdateElement updates = 4;
@@ -437,7 +478,7 @@ message UpdateMessage {
 
 /** Message for deleting data from an entity. */
 message DeleteMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     From from = 2;
     Where where = 3;
 }
@@ -448,7 +489,7 @@ message DeleteMessage {
 
 /* A single query that should be executed. */
 message QueryMessage {
-    Metadata metadata = 1;
+    RequestMetadata metadata = 1;
     Query query = 2;
 }
 
@@ -464,7 +505,7 @@ message Query {
 
 /* A query response message. */
 message QueryResponseMessage {
-    Metadata metadata = 1;                      /* Metadata associated with this QueryResponseMessage. */
+    ResponseMetadata metadata = 1;                      /* Metadata associated with this QueryResponseMessage. */
     repeated ColumnDefinition columns = 2;      /* Columns returned by this QueryResponseMessage. */
     repeated Tuple tuples = 3;                  /* List of tuples returned (data in order of columns). */
     message Tuple {

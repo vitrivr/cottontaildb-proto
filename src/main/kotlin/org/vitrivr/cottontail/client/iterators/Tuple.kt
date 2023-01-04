@@ -8,7 +8,7 @@ import java.util.*
  * A [Tuple] as returned by the [TupleIterator].
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 1.2.1
  */
 abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
     /** Internal list of values. */
@@ -42,10 +42,9 @@ abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
             else -> UnsupportedOperationException("Data of type ${data.dataCase} is not supported by TupleIterator.")
         }
     }
-
     abstract fun nameForIndex(index: Int): String
+    abstract fun simpleNameForIndex(index: Int): String
     abstract fun indexForName(name: String): Int
-
     abstract fun type(name: String): Type
     abstract fun type(index: Int): Type
 

@@ -6,6 +6,7 @@ import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 import java.util.concurrent.CancellationException
+import kotlin.collections.ArrayList
 
 /**
  * A [TupleIterator] used for retrieving [Tuple]s in a synchronous fashion.
@@ -13,7 +14,7 @@ import java.util.concurrent.CancellationException
  * Usually used with unary, server-side calls that only return a limited amount of data.
  *
  * @author Ralph Gasser
- * @version 1.1.0
+ * @version 1.1.1
  */
 class TupleIteratorImpl internal constructor(private val results: Iterator<CottontailGrpc.QueryResponseMessage>, private val context: Context.CancellableContext) : TupleIterator {
 
@@ -35,26 +36,24 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
     /** The ID of the Cottontail DB query this [TupleIterator] is associated with. */
     override val queryId: String
 
+    /** The time it took in milliseconds to plan the query. */
+    override val planDuration: Long
+
+    /** The time it took in milliseconds to execute the query. */
+    override val queryDuration: Long
+
     /** The column names returned by this [TupleIterator]. */
-    override val columnNames: List<String>
-        get() = this._columns.keys.toList()
+    override val columnNames: List<String> = ArrayList()
+
+    /** [List] of simple column names returned by this [TupleIterator] in order of occurrence. */
+    override val simpleNames: List<String> = ArrayList()
 
     /** The column [Type]s returned by this [TupleIterator]. */
-    override val columnTypes: List<Type> = LinkedList()
-
-    /**
-     *  [List] of column names returned by this [TupleIterator] in order of occurrence. Contains simple names.
-     *
-     *  Since simple names may collide, list may be incomplete for given query.
-     */
-    override val simpleNames: List<String>
-        get() = this._simple.keys.toList()
+    override val columnTypes: List<Type> = ArrayList()
 
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
         get() = this.columnNames.size
-
-
 
     init {
         /* Start loading first results. */
@@ -63,10 +62,15 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         /* Assign metadata, columns and data. */
         this.transactionId = next.metadata.transactionId
         this.queryId = next.metadata.queryId
+        this.planDuration = next.metadata.planDuration
+        this.queryDuration = next.metadata.queryDuration
+
         next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
         next.columnsList.forEachIndexed { i,c ->
             this._columns[c.name.fqn()] = i
-            (this.columnTypes as LinkedList).add(Type.of(c.type))
+            (this.columnNames as MutableList).add(c.name.fqn())
+            (this.simpleNames as MutableList).add(c.name.name)
+            (this.columnTypes as MutableList).add(Type.of(c.type))
             if (!this._simple.contains(c.name.name)) {
                 this._simple[c.name.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
             }
@@ -114,6 +118,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
 
     inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
         override fun nameForIndex(index: Int): String = this@TupleIteratorImpl.columnNames[index]
+        override fun simpleNameForIndex(index: Int): String = this@TupleIteratorImpl.simpleNames[index]
         override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
         override fun type(index: Int): Type = this@TupleIteratorImpl.columnTypes[index]
         override fun type(name: String): Type = this@TupleIteratorImpl.columnTypes[indexForName(name)]

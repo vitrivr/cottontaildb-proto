@@ -26,7 +26,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * The [SimpleClient] wraps a [ManagedChannel]. It remains to the caller, to setup and close that [ManagedChannel].
  *
  * @author Ralph Gasser
- * @version 2.1.0
+ * @version 2.2.0
  */
 class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
 
@@ -36,9 +36,16 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     /**
      * Begins a new transaction through this [SimpleClient].
      *
+     * @param readonly Flag indicating whether a read-only or a read/write transaction should be started.
      * @return The ID of the newly begun transaction.
      */
-    fun begin(): Long = TXNGrpc.newBlockingStub(this.channel).begin(Empty.getDefaultInstance()).transactionId
+    fun begin(readonly: Boolean = false): Long = TXNGrpc.newBlockingStub(this.channel).begin(
+        if (readonly){
+            CottontailGrpc.BeginTransaction.newBuilder().setMode(CottontailGrpc.TransactionMode.READONLY).build()
+        } else {
+            CottontailGrpc.BeginTransaction.newBuilder().setMode(CottontailGrpc.TransactionMode.READ_WRITE).build()
+        }
+    ).transactionId
 
     /**
      * Commits a transaction through this [SimpleClient].
@@ -46,7 +53,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param txId The transaction ID to commit.
      */
     fun commit(txId: Long) = this.context.run {
-        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
+        val tx = CottontailGrpc.RequestMetadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).commit(tx)
     }
 
@@ -56,7 +63,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param txId The transaction ID to rollback.
      */
     fun rollback(txId: Long) = this.context.run {
-        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
+        val tx = CottontailGrpc.RequestMetadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).rollback(tx)
     }
 
@@ -66,7 +73,7 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
      * @param txId The transaction ID to kill and rollback.
      */
     fun kill(txId: Long) = this.context.run {
-        val tx = CottontailGrpc.Metadata.newBuilder().setTransactionId(txId).build()
+        val tx = CottontailGrpc.RequestMetadata.newBuilder().setTransactionId(txId).build()
         TXNGrpc.newBlockingStub(this.channel).kill(tx)
     }
     /**
@@ -426,6 +433,50 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     fun about(message: AboutEntity): TupleIterator = this.about(message.builder.build())
 
     /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.ColumnDetailsMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun statistics(message: CottontailGrpc.EntityDetailsMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.entityStatistics(message), inner)
+        }
+    }
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [EntityStatistics] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun about(message: EntityStatistics): TupleIterator = this.statistics(message.builder.build())
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [CottontailGrpc.IndexDetailsMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun about(message: CottontailGrpc.IndexDetailsMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.indexDetails(message), inner)
+        }
+    }
+
+    /**
+     * Lists detailed information about an entity through this [SimpleClient].
+     *
+     * @param message [AboutIndex] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun about(message: AboutIndex): TupleIterator = this.about(message.builder.build())
+
+    /**
      * Truncates the given entity through this [SimpleClient].
      *
      * @param message [TruncateEntity] to execute.
@@ -448,26 +499,48 @@ class SimpleClient(private val channel: ManagedChannel): AutoCloseable {
     }
 
     /**
-     * Optimizes an entity through this [SimpleClient].
+     * Analyzes an entity through this [SimpleClient].
      *
-     * @param message [CottontailGrpc.OptimizeEntityMessage] to execute.
+     * @param message [CottontailGrpc.AnalyzeEntityMessage] to execute.
      * @return [TupleIterator] containing the response.
      */
-    fun optimize(message: CottontailGrpc.OptimizeEntityMessage): TupleIterator = this.context.call {
+    fun analyze(message: CottontailGrpc.AnalyzeEntityMessage): TupleIterator = this.context.call {
         val inner = Context.current().withCancellation()
         inner.call {
             val stub = DDLGrpc.newBlockingStub(this.channel)
-            TupleIteratorImpl(stub.optimizeEntity(message), inner)
+            TupleIteratorImpl(stub.analyzeEntity(message), inner)
         }
     }
 
     /**
-     * Optimizes an entity through this [SimpleClient].
+     * Rebuilds an index through this [SimpleClient].
      *
-     * @param message [OptimizeEntity] to execute.
+     * @param message [CottontailGrpc.AnalyzeEntityMessage] to execute.
+     * @return [TupleIterator] containing the response.
+     */
+    fun rebuild(message: CottontailGrpc.RebuildIndexMessage): TupleIterator = this.context.call {
+        val inner = Context.current().withCancellation()
+        inner.call {
+            val stub = DDLGrpc.newBlockingStub(this.channel)
+            TupleIteratorImpl(stub.rebuildIndex(message), inner)
+        }
+    }
+
+    /**
+     * Rebuilds an index through this [SimpleClient].
+     *
+     * @param message [RebuildIndex] to execute.
      * @return [TupleIterator]
      */
-    fun optimize(message: OptimizeEntity): TupleIterator = this.optimize(message.builder.build())
+    fun rebuild(message: RebuildIndex): TupleIterator = this.rebuild(message.builder.build())
+
+    /**
+     * Analyzes an entity through this [SimpleClient].
+     *
+     * @param message [AnalyzeEntity] to execute.
+     * @return [TupleIterator]
+     */
+    fun analyze(message: AnalyzeEntity): TupleIterator = this.analyze(message.builder.build())
 
     /**
      * Pings this Cottontail DB instance. The method returns true on success and false otherwise.
