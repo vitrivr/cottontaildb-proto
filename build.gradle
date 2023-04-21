@@ -123,7 +123,10 @@ protobuf {
             }
         }
     }
+
+    sourcesJar.dependsOn generateProtoTasks
 }
+
 
 dependencies {
     /////// gRPC & Protobuf
