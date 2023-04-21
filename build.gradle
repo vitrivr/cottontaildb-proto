@@ -82,13 +82,13 @@ signing {
 sourceSets {
     main {
         proto {
-            srcDirs += "$projectDir/src/main/protobuf"
+            srcDir  "$projectDir/src/main/protobuf"
         }
         java {
-            srcDirs += "$projectDir/build/generated/source/proto/main/java"
+            srcDir "$projectDir/build/generated/source/proto/main/java"
         }
         kotlin {
-            srcDirs += "$projectDir/build/generated/source/proto/main/kotlin"
+            srcDirs "$projectDir/build/generated/source/proto/main/kotlin"
         }
     }
 }
@@ -101,7 +101,6 @@ compileTestKotlin {
 }
 
 protobuf {
-    generatedFilesBaseDir = "$projectDir/build/generated/source/proto"
     plugins {
         grpc {
             artifact = "io.grpc:protoc-gen-grpc-java:$version_grpc"
@@ -125,7 +124,11 @@ protobuf {
     }
 }
 
-sourcesJar.dependsOn 'generateProto'
+
+sourcesJar {
+    dependsOn 'generateProto'
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+}
 
 dependencies {
     /////// gRPC & Protobuf
