@@ -249,13 +249,19 @@ message Literal {
     }
 }
 
+/** A list of literal data. */
+message LiteralList {
+    repeated Literal literal = 1;
+}
 
-/** An expression can either be a literal, a column reference or a function invocation. */
+/** An expression can either be a literal, a column reference, a function invocation or a new query. */
 message Expression {
     oneof exp {
         Literal literal = 1;
-        ColumnName column = 2;
-        Function function = 3;
+        LiteralList literalList = 2;
+        ColumnName column = 3;
+        Function function = 4;
+        Query query = 5;
     }
 }
 
@@ -519,7 +525,7 @@ message From {
     oneof from {
         Scan scan = 1;          /* Entity SCAN. */
         Sample sample = 2;      /* Entity SAMPLE. */
-        Query subSelect = 3;    /* A SUB-SELECT clause, i.e., another query. */
+        Query query = 3;        /* A SUB-SELECT clause, i.e., another query. */
     }
 }
 
@@ -561,63 +567,81 @@ message Projection {
 
 /** The boolean predicate ('WHERE') part of a QueryMessage. */
 message Where {
-    oneof predicate {
-        AtomicBooleanPredicate atomic = 1;
-        CompoundBooleanPredicate compound = 2;
+    Predicate predicate = 1;
+}
+
+
+/** A boolean expression that evaluates to true or false. */
+message Predicate {
+    oneof expression {
+        Literal literal = 1;
+        Comparison comparison = 2;
+        IsNull isnull = 3;
+        And and = 4;
+        Or or = 5;
+        Not not = 6;
     }
-}
 
-/**
- * An operator to compare a series of values.
- */
-enum ComparisonOperator {
-    EQUAL = 0;
-    GREATER = 1;
-    LESS = 2;
-    GEQUAL = 3;
-    LEQUAL = 4;
-    IN = 5;
-    BETWEEN = 6;
-    ISNULL = 7;
-    LIKE = 8;
-}
-
-/**
- * An operator to connect multiple boolean predicates.
- */
-enum ConnectionOperator {
-    AND = 0;
-    OR = 1;
-}
-
-/** An atomic boolean predicate of form X OP Y, where X is always a column and Y is an operand. */
-message AtomicBooleanPredicate {
-    ColumnName left = 1;
-    AtomicBooleanOperand right = 2;
-    ComparisonOperator op = 3;
-    bool not = 4;
-}
-
-/** An atomic boolean predicate operand. */
-message AtomicBooleanOperand {
-    oneof operand {
-        Expressions expressions = 1;
-        Query query = 2;
+    /**
+     * A literal Boolean predicate (i.e., true or false)
+     */
+    message Literal {
+        bool value = 1;
     }
-}
 
-/**
-* The boolean query part for a query message.
-*/
-message CompoundBooleanPredicate {
-    oneof left {
-        AtomicBooleanPredicate aleft = 1;
-        CompoundBooleanPredicate cleft = 2;
+    /**
+    * An unary IsNull predicate, which evaluates to true if the expression is null.
+    */
+    message IsNull {
+        Expression expression = 1;
     }
-    ConnectionOperator op = 3;
-    oneof right {
-        AtomicBooleanPredicate aright = 4;
-        CompoundBooleanPredicate cright = 5;
+
+    /**
+     * A binary comparison predicate that compares two expressions using an operator.
+     */
+    message Comparison {
+        Expression left = 1;
+        Operator operator = 2;
+        Expression right = 3;
+
+        /**
+         * An operator to compare a series of values.
+         */
+        enum Operator {
+            EQUAL = 0;
+            NOTEQUAL = 1;
+            GREATER = 2;
+            LESS = 3;
+            GEQUAL = 4;
+            LEQUAL = 5;
+            IN = 6;
+            BETWEEN = 7;
+            LIKE = 8;
+            MATCH = 9;
+        }
+    }
+
+    /**
+     * A binary AND combination for predicates.
+     */
+    message And {
+        Predicate left = 1;
+        Predicate right = 2;
+    }
+
+    /**
+     * A binary OR combinator for predicates.
+     */
+    message Or {
+        Predicate left = 1;
+        Predicate right = 2;
+    }
+
+    /**
+     * A unary NOT combinator for Boolean expressions.
+     */
+    message Not {
+        Predicate exp = 1;
     }
 }
 

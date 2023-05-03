@@ -65,34 +65,3 @@ fun String.parseColumn(): CottontailGrpc.ColumnName {
  * @return [CottontailGrpc.FunctionName]
  */
 fun String.parseFunction(): CottontailGrpc.FunctionName = CottontailGrpc.FunctionName.newBuilder().setName(this).build()
-
-/**
- * Parses a [String] into an [CottontailGrpc.AtomicBooleanPredicate.Builder]
- *
- * @return [CottontailGrpc.ColumnName]
- */
-fun String.parseOperator(): CottontailGrpc.ComparisonOperator = when(val value = this.uppercase()) {
-    "=" -> CottontailGrpc.ComparisonOperator.EQUAL
-    "==" -> CottontailGrpc.ComparisonOperator.EQUAL
-    "!=" -> CottontailGrpc.ComparisonOperator.EQUAL
-    "!==" -> CottontailGrpc.ComparisonOperator.EQUAL
-    ">" -> CottontailGrpc.ComparisonOperator.GREATER
-    "<" -> CottontailGrpc.ComparisonOperator.LESS
-    ">=" -> CottontailGrpc.ComparisonOperator.GEQUAL
-    "<=" -> CottontailGrpc.ComparisonOperator.LEQUAL
-    "NOT IN" -> CottontailGrpc.ComparisonOperator.IN
-    "NOT LIKE" -> CottontailGrpc.ComparisonOperator.LIKE
-    "IS NULL" -> CottontailGrpc.ComparisonOperator.ISNULL
-    "IS NOT NULL" -> CottontailGrpc.ComparisonOperator.ISNULL
-    else -> CottontailGrpc.ComparisonOperator.valueOf(value)
-}
-
-/**
- * Parses a [String] into an [Boolean] indicating whether it is a NOT or not.
- *
- * @return [Boolean]
- */
-fun String.parseNot(): Boolean = when(this.uppercase()) {
-    "!=", "!==", "NOT IN", "NOT LIKE", "IS NOT NULL" -> true
-    else -> false
-}

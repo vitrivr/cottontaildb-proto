@@ -3,11 +3,13 @@ package org.vitrivr.cottontail.client.language.basics.predicate
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
- * An [Or] [Compound]
+ * A boolean OR operator, which can be used as [Predicate].
  *
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class Or(left: Predicate, right: Predicate): Compound(left, right) {
-    override val operator = CottontailGrpc.ConnectionOperator.OR
+data class Or(val left: Predicate, val right: Predicate): Predicate{
+    override fun toGrpc(): CottontailGrpc.Predicate = CottontailGrpc.Predicate.newBuilder().setOr(
+        CottontailGrpc.Predicate.Or.newBuilder().setLeft(this.left.toGrpc()).setRight(this.right.toGrpc())
+    ).build()
 }

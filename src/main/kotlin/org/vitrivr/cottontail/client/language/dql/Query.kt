@@ -1,8 +1,8 @@
 package org.vitrivr.cottontail.client.language.dql
 
 import org.vitrivr.cottontail.client.language.basics.*
-import org.vitrivr.cottontail.client.language.basics.predicate.Atomic
-import org.vitrivr.cottontail.client.language.basics.predicate.Compound
+import org.vitrivr.cottontail.client.language.basics.expression.Column
+import org.vitrivr.cottontail.client.language.basics.expression.Expression
 import org.vitrivr.cottontail.client.language.basics.predicate.Predicate
 import org.vitrivr.cottontail.client.language.extensions.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
@@ -12,7 +12,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexType
  * A query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.3.0
+ * @version 2.0.0
  */
 @Suppress("UNCHECKED_CAST")
 class Query(entity: String? = null): LanguageFeature() {
@@ -59,7 +59,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param alias The column alias. This is optional.
      * @return [Query]
      */
-    fun select(column: String, alias: String? = null): Query = select(Expression.Column(column), alias)
+    fun select(column: String, alias: String? = null): Query = select(Column(column), alias)
 
     /**
      * Adds a SELECT projection to this [Query]. Call this method repeatedly to add multiple projections.
@@ -93,7 +93,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param alias The column alias. This is optional.
      * @return [Query]
      */
-    fun distinct(column: String, alias: String? = null): Query = distinct(Expression.Column(column), alias)
+    fun distinct(column: String, alias: String? = null): Query = distinct(Column(column), alias)
 
     /**
      * Adds a SELECT DISTINCT projection to this [Query]. Call this method repeatedly to add multiple projections.
@@ -228,7 +228,7 @@ class Query(entity: String? = null): LanguageFeature() {
      */
     fun from(query: Query): Query {
         require(query != this) { "SUB-SELECT query cannot specify itself."}
-        this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setSubSelect(query.builder.queryBuilder))
+        this.builder.queryBuilder.setFrom(CottontailGrpc.From.newBuilder().setQuery(query.builder.queryBuilder))
         return this
     }
 
@@ -239,11 +239,8 @@ class Query(entity: String? = null): LanguageFeature() {
      * @return This [Query]
      */
     infix fun where(predicate: Predicate): Query {
-        val builder = this.builder.queryBuilder.whereBuilder
-        when (predicate) {
-            is Atomic -> builder.setAtomic(predicate.toGrpc())
-            is Compound -> builder.setCompound(predicate.toGrpc())
-        }
+        this.builder.queryBuilder.clearWhere()
+        this.builder.queryBuilder.whereBuilder.setPredicate(predicate.toGrpc())
         return this
     }
 

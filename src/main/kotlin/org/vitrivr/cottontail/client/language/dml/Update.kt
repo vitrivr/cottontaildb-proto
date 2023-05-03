@@ -9,7 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An UPDATE query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.2.0
+ * @version 2.0.0
  */
 class Update(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */
@@ -69,11 +69,7 @@ class Update(entity: String? = null): LanguageFeature() {
      */
     fun where(predicate: Predicate): Update {
         this.builder.clearWhere()
-        val builder = this.builder.whereBuilder
-        when (predicate) {
-            is Atomic -> builder.setAtomic(predicate.toGrpc())
-            is Compound -> builder.setCompound(predicate.toGrpc())
-        }
+        this.builder.whereBuilder.setPredicate(predicate.toGrpc())
         return this
     }
 
