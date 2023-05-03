@@ -220,13 +220,14 @@ enum Type {
     COMPLEX64 = 10;
 
     /* Vector types. */
-    DOUBLE_VEC = 11;
-    FLOAT_VEC = 12;
-    LONG_VEC = 13;
-    INT_VEC = 14;
-    BOOL_VEC = 15;
-    COMPLEX32_VEC = 16;
-    COMPLEX64_VEC = 17;
+    DOUBLE_VECTOR = 11;
+    FLOAT_VECTOR = 12;
+    LONG_VECTOR = 13;
+    INT_VECTOR = 14;
+    BOOL_VECTOR = 15;
+    COMPLEX32_VECTOR = 16;
+    COMPLEX64_VECTOR = 17;
+
     /* Binary */
     BYTESTRING = 18;
 }

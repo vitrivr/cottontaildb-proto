@@ -22,13 +22,13 @@ enum class Type(val grpc: CottontailGrpc.Type) {
     STRING(CottontailGrpc.Type.STRING),
     COMPLEX32(CottontailGrpc.Type.COMPLEX32),
     COMPLEX64(CottontailGrpc.Type.COMPLEX64),
-    DOUBLE_VECTOR(CottontailGrpc.Type.DOUBLE_VEC),
-    FLOAT_VECTOR(CottontailGrpc.Type.FLOAT_VEC),
-    LONG_VECTOR(CottontailGrpc.Type.LONG_VEC),
-    INTEGER_VECTOR(CottontailGrpc.Type.INT_VEC),
-    BOOLEAN_VECTOR(CottontailGrpc.Type.BOOL_VEC),
-    COMPLEX32_VECTOR(CottontailGrpc.Type.COMPLEX32_VEC),
-    COMPLEX64_VECTOR(CottontailGrpc.Type.COMPLEX64_VEC),
+    DOUBLE_VECTOR(CottontailGrpc.Type.DOUBLE_VECTOR),
+    FLOAT_VECTOR(CottontailGrpc.Type.FLOAT_VECTOR),
+    LONG_VECTOR(CottontailGrpc.Type.LONG_VECTOR),
+    INTEGER_VECTOR(CottontailGrpc.Type.INT_VECTOR),
+    BOOLEAN_VECTOR(CottontailGrpc.Type.BOOL_VECTOR),
+    COMPLEX32_VECTOR(CottontailGrpc.Type.COMPLEX32_VECTOR),
+    COMPLEX64_VECTOR(CottontailGrpc.Type.COMPLEX64_VECTOR),
     BYTESTRING(CottontailGrpc.Type.BYTESTRING),
     UNDEFINED(CottontailGrpc.Type.UNRECOGNIZED);
 
@@ -51,13 +51,13 @@ enum class Type(val grpc: CottontailGrpc.Type) {
             CottontailGrpc.Type.STRING -> STRING
             CottontailGrpc.Type.COMPLEX32 -> COMPLEX32
             CottontailGrpc.Type.COMPLEX64 -> COMPLEX64
-            CottontailGrpc.Type.DOUBLE_VEC -> DOUBLE_VECTOR
-            CottontailGrpc.Type.FLOAT_VEC -> FLOAT_VECTOR
-            CottontailGrpc.Type.LONG_VEC -> LONG_VECTOR
-            CottontailGrpc.Type.INT_VEC -> INTEGER_VECTOR
-            CottontailGrpc.Type.BOOL_VEC -> BOOLEAN_VECTOR
-            CottontailGrpc.Type.COMPLEX32_VEC -> COMPLEX32_VECTOR
-            CottontailGrpc.Type.COMPLEX64_VEC -> COMPLEX64_VECTOR
+            CottontailGrpc.Type.DOUBLE_VECTOR -> DOUBLE_VECTOR
+            CottontailGrpc.Type.FLOAT_VECTOR -> FLOAT_VECTOR
+            CottontailGrpc.Type.LONG_VECTOR -> LONG_VECTOR
+            CottontailGrpc.Type.INT_VECTOR -> INTEGER_VECTOR
+            CottontailGrpc.Type.BOOL_VECTOR-> BOOLEAN_VECTOR
+            CottontailGrpc.Type.COMPLEX32_VECTOR -> COMPLEX32_VECTOR
+            CottontailGrpc.Type.COMPLEX64_VECTOR -> COMPLEX64_VECTOR
             CottontailGrpc.Type.BYTESTRING -> BYTESTRING
             CottontailGrpc.Type.UNRECOGNIZED -> UNDEFINED
         }
