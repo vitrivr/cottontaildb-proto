@@ -122,20 +122,5 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
         override fun type(index: Int): Type = this@TupleIteratorImpl.columnTypes[index]
         override fun type(name: String): Type = this@TupleIteratorImpl.columnTypes[indexForName(name)]
-        override fun asBoolean(name: String) = asBoolean(indexForName(name))
-        override fun asByte(name: String) = asByte(indexForName(name))
-        override fun asShort(name: String) = asShort(indexForName(name))
-        override fun asInt(name: String) = asInt(indexForName(name))
-        override fun asLong(name: String) = asLong(indexForName(name))
-        override fun asFloat(name: String) = asFloat(indexForName(name))
-        override fun asDouble(name: String) = asDouble(indexForName(name))
-        override fun asBooleanVector(name: String) = asBooleanVector(indexForName(name))
-        override fun asIntVector(name: String) = asIntVector(indexForName(name))
-        override fun asLongVector(name: String) = asLongVector(indexForName(name))
-        override fun asFloatVector(name: String) = asFloatVector(indexForName(name))
-        override fun asDoubleVector(name: String) = asDoubleVector(indexForName(name))
-        override fun asDate(name: String) = asDate(indexForName(name))
-        override fun asString(name: String) = asString(indexForName(name))
-        override fun asByteString(name: String): ByteArray? = asByteString(indexForName(name))
     }
 }
