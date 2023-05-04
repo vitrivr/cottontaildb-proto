@@ -1,4 +1,6 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
+
+import org.vitrivr.cottontail.core.values.*
 
 /**
  * Represent a complex c = a + ib, where a is the real part, be is the imaginary part and i the
@@ -9,7 +11,7 @@ package org.vitrivr.cottontail.core.values
  * @version 2.0.0
  * @author Ralph Gasser
  */
-sealed interface ComplexValue<T: Number>: NumericValue<T> {
+interface ComplexValue<T: Number>: NumericValue<T> {
     /** Returns the inverse of this [ComplexValue]. */
     fun inverse(): ComplexValue<T>
 

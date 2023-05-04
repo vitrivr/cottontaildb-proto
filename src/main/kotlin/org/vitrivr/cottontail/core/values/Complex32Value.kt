@@ -2,6 +2,10 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.ComplexValue
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -14,7 +18,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 @Serializable
 @SerialName("Complex32")
 @JvmInline
-value class Complex32Value(val data: FloatArray): ComplexValue<Float> {
+value class Complex32Value(val data: FloatArray): ComplexValue<Float>, PublicValue {
 
     companion object {
         val I = Complex32Value(floatArrayOf(0.0f, 1.0f))

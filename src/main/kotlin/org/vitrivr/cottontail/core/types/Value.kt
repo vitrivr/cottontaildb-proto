@@ -1,6 +1,6 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
 
-import org.vitrivr.cottontail.grpc.CottontailGrpc
+import org.vitrivr.cottontail.core.values.types.Types
 
 /**
  * This is an abstraction over the existing primitive types provided by Kotlin. It allows for the
@@ -10,12 +10,11 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @version 2.0.0
  */
 interface Value : Comparable<Value> {
-    /**
-     * Converts this [Value] to a [CottontailGrpc.Literal] gRCP representation.
-     *
-     * @return [CottontailGrpc.Literal]
-     */
-    fun toGrpc(): CottontailGrpc.Literal
+    /** Size of this [Value]. */
+    val logicalSize: Int
+
+    /** The [Types] of this [Value]. */
+    val type: Types<*>
 
     /**
      * Compares two [Value]s. Returns true, if they are equal, and false otherwise.
@@ -27,4 +26,6 @@ interface Value : Comparable<Value> {
      * @return true if equal, false otherwise.
      */
     fun isEqual(other: Value): Boolean
+
+
 }

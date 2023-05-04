@@ -1,4 +1,6 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
+
+import org.vitrivr.cottontail.core.values.IntValue
 
 /**
  * Represents a vector value of any type, i.e., a value that consists only more than one entry.
@@ -9,8 +11,7 @@ package org.vitrivr.cottontail.core.values
  * @version 2.0.0
  * @author Ralph Gasser
  */
-sealed interface VectorValue<T : Number>: ExposedValue {
-
+interface VectorValue<T : Number>: Value {
     /**
      * Returns the i-th entry of  this [VectorValue].
      *

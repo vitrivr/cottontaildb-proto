@@ -1,4 +1,6 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
+
+import org.vitrivr.cottontail.core.values.*
 
 /**
  * Represent a numeric value regardless of whether that [NumericValue] is real or complex. This is
@@ -8,7 +10,7 @@ package org.vitrivr.cottontail.core.values
  * @version 2.0.0
  * @author Ralph Gasser
  */
-sealed interface NumericValue<T : Number>: ScalarValue<T> {
+interface NumericValue<T : Number>: ScalarValue<T> {
 
     override val value: T
 

@@ -2,6 +2,10 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealVectorValue
+import org.vitrivr.cottontail.core.types.Value
+import org.vitrivr.cottontail.core.types.VectorValue
 import org.vitrivr.cottontail.core.values.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
@@ -16,7 +20,7 @@ import kotlin.math.pow
 @Serializable
 @SerialName("LongVector")
 @JvmInline
-value class LongVectorValue(val data: LongArray) : RealVectorValue<Long> {
+value class LongVectorValue(val data: LongArray) : RealVectorValue<Long>, PublicValue {
     constructor(input: List<Number>) : this(LongArray(input.size) { input[it].toLong() })
     constructor(input: Array<Number>) : this(LongArray(input.size) { input[it].toLong() })
     constructor(input: DoubleArray) : this(LongArray(input.size) { input[it].toLong() })

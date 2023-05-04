@@ -2,6 +2,10 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealVectorValue
+import org.vitrivr.cottontail.core.types.Value
+import org.vitrivr.cottontail.core.types.VectorValue
 import org.vitrivr.cottontail.core.values.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
@@ -17,7 +21,7 @@ import kotlin.math.pow
 @Serializable
 @SerialName("FloatVector")
 @JvmInline
-value class FloatVectorValue(val data: FloatArray) : RealVectorValue<Float> {
+value class FloatVectorValue(val data: FloatArray) : RealVectorValue<Float>, PublicValue {
     constructor(input: List<Number>) : this(FloatArray(input.size) { input[it].toFloat() })
     constructor(input: Array<Number>) : this(FloatArray(input.size) { input[it].toFloat() })
     constructor(input: DoubleArray) : this(FloatArray(input.size) { input[it].toFloat() })

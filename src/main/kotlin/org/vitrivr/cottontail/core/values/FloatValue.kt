@@ -2,6 +2,9 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import kotlin.math.pow
@@ -15,7 +18,7 @@ import kotlin.math.pow
 @Serializable
 @SerialName("Float")
 @JvmInline
-value class FloatValue(override val value: Float): RealValue<Float> {
+value class FloatValue(override val value: Float): RealValue<Float>, PublicValue {
 
     companion object {
         /**

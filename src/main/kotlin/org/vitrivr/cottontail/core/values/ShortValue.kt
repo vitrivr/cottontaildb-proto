@@ -2,6 +2,9 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -14,7 +17,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 @Serializable
 @SerialName("Short")
 @JvmInline
-value class ShortValue(override val value: Short): RealValue<Short> {
+value class ShortValue(override val value: Short): RealValue<Short>, PublicValue {
     companion object {
         /**
          * The minimum value that can be held by a [ShortValue].

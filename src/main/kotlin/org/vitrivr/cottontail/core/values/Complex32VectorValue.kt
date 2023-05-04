@@ -2,6 +2,10 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.ComplexVectorValue
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.Value
+import org.vitrivr.cottontail.core.types.VectorValue
 import org.vitrivr.cottontail.core.values.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import kotlin.math.atan2
@@ -17,7 +21,7 @@ import kotlin.math.withSign
 @Serializable
 @SerialName("Complex32Vector")
 @JvmInline
-value class Complex32VectorValue(val data: FloatArray) : ComplexVectorValue<Float> {
+value class Complex32VectorValue(val data: FloatArray) : ComplexVectorValue<Float>, PublicValue {
 
     /**
      * Constructor given an array of [Number]s

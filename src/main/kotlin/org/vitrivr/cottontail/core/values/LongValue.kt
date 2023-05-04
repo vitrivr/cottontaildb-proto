@@ -2,6 +2,9 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -14,7 +17,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 @Serializable
 @SerialName("Long")
 @JvmInline
-value class LongValue(override val value: Long): RealValue<Long> {
+value class LongValue(override val value: Long): RealValue<Long>, PublicValue {
 
     companion object {
         /**

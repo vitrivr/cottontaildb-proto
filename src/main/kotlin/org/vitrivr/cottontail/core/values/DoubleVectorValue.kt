@@ -2,6 +2,7 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.*
 import org.vitrivr.cottontail.core.values.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
@@ -17,7 +18,7 @@ import kotlin.math.pow
 @Serializable
 @SerialName("DoubleVector")
 @JvmInline
-value class DoubleVectorValue(val data: DoubleArray) : RealVectorValue<Double> {
+value class DoubleVectorValue(val data: DoubleArray) : RealVectorValue<Double>, PublicValue {
     constructor(input: List<Number>) : this(DoubleArray(input.size) { input[it].toDouble() })
     constructor(input: Array<Number>) : this(DoubleArray(input.size) { input[it].toDouble() })
     constructor(input: FloatArray) : this(DoubleArray(input.size) { input[it].toDouble() })

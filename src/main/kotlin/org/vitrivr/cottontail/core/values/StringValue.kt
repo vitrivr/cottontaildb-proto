@@ -2,6 +2,8 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.ScalarValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -14,7 +16,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 @Serializable
 @SerialName("String")
 @JvmInline
-value class StringValue(override val value: String) : ScalarValue<String> {
+value class StringValue(override val value: String) : ScalarValue<String>, PublicValue {
 
     companion object {
         /** The empty [StringValue]. */

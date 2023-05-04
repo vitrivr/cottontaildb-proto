@@ -1,4 +1,4 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
 /**
  * Represents a complex valued [VectorValue] of any primitive type, i.e., a vector whose elements
  * consist of [ComplexValue]s. This  is an abstraction over the existing primitive array types
@@ -10,7 +10,7 @@ package org.vitrivr.cottontail.core.values
  * @version 2.0.0
  * @author Ralph Gasser
  */
-sealed interface ComplexVectorValue<T: Number> : VectorValue<T>, Iterable<ComplexValue<T>> {
+interface ComplexVectorValue<T: Number> : VectorValue<T>, Iterable<ComplexValue<T>> {
     /**
      * Returns the i-th entry of  this [ComplexVectorValue].
      *

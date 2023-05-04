@@ -2,6 +2,10 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.ComplexValue
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import kotlin.math.atan2
@@ -15,7 +19,7 @@ import kotlin.math.atan2
 @Serializable
 @SerialName("Complex64")
 @JvmInline
-value class Complex64Value(val data: DoubleArray): ComplexValue<Double> {
+value class Complex64Value(val data: DoubleArray): ComplexValue<Double>, PublicValue {
     companion object {
         val I = Complex64Value(doubleArrayOf(0.0, 1.0))
         val ZERO = Complex64Value(doubleArrayOf(0.0, 0.0))

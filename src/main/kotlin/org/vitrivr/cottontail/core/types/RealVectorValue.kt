@@ -1,4 +1,4 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
 /**
  * Represents a real valued vector value of any primitive type, i.e. [Short], [Int], [Long], [Float]
  * or [Double]. This  is an abstraction over the existing primitive array types provided by Kotlin.

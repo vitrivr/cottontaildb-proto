@@ -3,6 +3,8 @@ package org.vitrivr.cottontail.core.values
 import com.google.protobuf.ByteString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.ScalarValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
@@ -16,7 +18,7 @@ import java.util.*
 @Serializable
 @SerialName("ByteString")
 @JvmInline
-value class ByteStringValue(override val value: ByteArray) : ScalarValue<ByteArray> {
+value class ByteStringValue(override val value: ByteArray) : ScalarValue<ByteArray>, PublicValue {
 
     companion object {
         val EMPTY = ByteStringValue(ByteArray(0))

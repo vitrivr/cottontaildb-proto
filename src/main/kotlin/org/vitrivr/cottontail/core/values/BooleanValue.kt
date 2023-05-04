@@ -2,6 +2,8 @@ package org.vitrivr.cottontail.core.values
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.vitrivr.cottontail.core.types.ScalarValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -14,7 +16,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 @Serializable
 @SerialName("Boolean")
 @JvmInline
-value class BooleanValue(override val value: Boolean): ScalarValue<Boolean> {
+value class BooleanValue(override val value: Boolean): ScalarValue<Boolean>, PublicValue {
 
     companion object {
         /** The true [BooleanValue]. */

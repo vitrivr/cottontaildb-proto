@@ -5,7 +5,8 @@ import org.vitrivr.cottontail.client.language.basics.expression.Column
 import org.vitrivr.cottontail.client.language.basics.expression.Expression
 import org.vitrivr.cottontail.client.language.basics.predicate.Predicate
 import org.vitrivr.cottontail.client.language.extensions.*
-import org.vitrivr.cottontail.core.values.VectorValue
+import org.vitrivr.cottontail.core.types.VectorValue
+import org.vitrivr.cottontail.core.values.PublicValue
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexType
 
@@ -260,7 +261,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * @return This [Query]
      */
     @Deprecated("Deprecated since version 0.13.0; use nns() function instead!", replaceWith = ReplaceWith("nns"))
-    fun knn(column: String, k: Int, distance: String, query: VectorValue<*>, weight: Any? = null): Query {
+    fun knn(column: String, k: Int, distance: String, query: PublicValue, weight: Any? = null): Query {
         if (weight != null)throw UnsupportedOperationException("Weighted NNS is no longer supported by Cottontail DB. Use weighted distance function with respective arguments instead.")
 
         /* Calculate distance. */
@@ -290,7 +291,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param name The name of the column that holds the calculated distance value.
      * @return This [Query]
      */
-    fun distance(probingColumn: String, query: VectorValue<*>, distance: Distances, name: String): Query {
+    fun distance(probingColumn: String, query: PublicValue, distance: Distances, name: String): Query {
         /* Parse necessary functions. */
         val distanceColumn = name.parseColumn()
         val distanceFunction = CottontailGrpc.Function.newBuilder()
@@ -406,7 +407,7 @@ class Query(entity: String? = null): LanguageFeature() {
     /**
      * Sets a hint to the query planner that instructs it to use a specific index type.
      *
-     * @param index The name of the index to use.
+     * @param type The name of the index to use.
      * @return This [Query]
      */
     fun useIndexType(type: String): Query {

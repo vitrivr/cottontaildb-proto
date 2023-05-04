@@ -1,6 +1,7 @@
 package org.vitrivr.cottontail.client.iterators
 
 import org.vitrivr.cottontail.core.toValue
+import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.*
 import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc

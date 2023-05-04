@@ -4,6 +4,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.core.toDouble
 import org.vitrivr.cottontail.core.toInt
+import org.vitrivr.cottontail.core.types.NumericValue
+import org.vitrivr.cottontail.core.types.RealVectorValue
+import org.vitrivr.cottontail.core.types.Value
+import org.vitrivr.cottontail.core.types.VectorValue
 import org.vitrivr.cottontail.core.values.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
@@ -18,7 +22,7 @@ import kotlin.math.pow
 @Serializable
 @SerialName("BooleanVector")
 @JvmInline
-value class BooleanVectorValue(val data: BooleanArray) : RealVectorValue<Int> {
+value class BooleanVectorValue(val data: BooleanArray) : RealVectorValue<Int>, PublicValue {
     constructor(input: List<Number>) : this(BooleanArray(input.size) { input[it].toInt() == 1 })
     constructor(input: Array<Number>) : this(BooleanArray(input.size) { input[it].toInt() == 1 })
     constructor(input: Array<Boolean>) : this(BooleanArray(input.size) { input[it] })

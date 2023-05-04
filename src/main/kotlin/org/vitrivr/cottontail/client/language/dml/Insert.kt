@@ -3,7 +3,8 @@ package org.vitrivr.cottontail.client.language.dml
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
-import org.vitrivr.cottontail.core.values.Value
+import org.vitrivr.cottontail.core.types.Value
+import org.vitrivr.cottontail.core.values.PublicValue
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -70,7 +71,7 @@ class Insert(entity: String? = null): LanguageFeature() {
      * @param value The value or null.
      * @return This [Insert]
      */
-    fun value(column: String, value: Value?): Insert {
+    fun value(column: String, value: PublicValue?): Insert {
         this.builder.addElements(
             CottontailGrpc.InsertMessage.InsertElement.newBuilder()
                 .setColumn(column.parseColumn())
@@ -84,7 +85,7 @@ class Insert(entity: String? = null): LanguageFeature() {
      * @param assignments The value assignments for the [Insert]
      * @return This [Insert]
      */
-    fun values(vararg assignments: Pair<String,Value?>): Insert {
+    fun values(vararg assignments: Pair<String, PublicValue?>): Insert {
         this.builder.clearElements()
         for (assignment in assignments) {
             this.value(assignment.first, assignment.second)

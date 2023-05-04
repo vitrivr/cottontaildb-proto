@@ -1,4 +1,4 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
 
 /**
  * Represents a scalar value of any type, i.e. a value that consists only of a one entry. This is an
@@ -8,7 +8,7 @@ package org.vitrivr.cottontail.core.values
  * @version 2.0.0
  * @author Ralph Gasser
  */
-sealed interface ScalarValue<T: Any>: ExposedValue {
+interface ScalarValue<T: Any>: Value {
     /** Actual value of this [Value]. */
     val value: T
 }

@@ -1,4 +1,4 @@
-package org.vitrivr.cottontail.core.values
+package org.vitrivr.cottontail.core.types
 
 /**
  * Represent a real (i.e., non-complex) value containing a primitive type such as [Short], [Int],
@@ -8,7 +8,7 @@ package org.vitrivr.cottontail.core.values
  * @version 2.0.0
  * @author Ralph Gasser
  */
-sealed interface RealValue<T : Number>: NumericValue<T> {
+interface RealValue<T : Number>: NumericValue<T> {
     companion object {
         /**
          * Returns the smaller of two [RealValue]s.
