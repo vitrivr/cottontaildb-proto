@@ -7,6 +7,30 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 
 /**
+ * Tries to convert an [Any] to a [PublicValue].
+ *
+ * @return [PublicValue]
+ */
+fun Any.tryConvertToValue(): PublicValue = when(this) {
+    is PublicValue -> this
+    is String -> StringValue(this)
+    is Boolean -> BooleanValue(this)
+    is Byte -> ByteValue(this)
+    is Short -> ShortValue(this)
+    is Int -> IntValue(this)
+    is Long -> LongValue(this)
+    is Float -> FloatValue(this)
+    is Double -> DoubleValue(this)
+    is BooleanArray -> BooleanVectorValue(this)
+    is IntArray -> IntVectorValue(this)
+    is LongArray -> LongVectorValue(this)
+    is FloatArray -> FloatVectorValue(this)
+    is DoubleArray -> DoubleVectorValue(this)
+    else -> throw IllegalArgumentException("Cannot convert value of type ${this::class.java}.")
+}
+
+
+/**
  * Returns the value of [CottontailGrpc.Literal] as [Value] of the given [Types]. Performs
  * conversion if necessary.
  *
