@@ -5,6 +5,7 @@ import org.vitrivr.cottontail.client.language.basics.expression.Column
 import org.vitrivr.cottontail.client.language.basics.expression.Expression
 import org.vitrivr.cottontail.client.language.basics.predicate.Predicate
 import org.vitrivr.cottontail.client.language.extensions.*
+import org.vitrivr.cottontail.core.values.VectorValue
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexType
 
@@ -259,7 +260,7 @@ class Query(entity: String? = null): LanguageFeature() {
      * @return This [Query]
      */
     @Deprecated("Deprecated since version 0.13.0; use nns() function instead!", replaceWith = ReplaceWith("nns"))
-    fun knn(column: String, k: Int, distance: String, query: Any, weight: Any? = null): Query {
+    fun knn(column: String, k: Int, distance: String, query: VectorValue<*>, weight: Any? = null): Query {
         if (weight != null)throw UnsupportedOperationException("Weighted NNS is no longer supported by Cottontail DB. Use weighted distance function with respective arguments instead.")
 
         /* Calculate distance. */
@@ -289,13 +290,13 @@ class Query(entity: String? = null): LanguageFeature() {
      * @param name The name of the column that holds the calculated distance value.
      * @return This [Query]
      */
-    fun distance(probingColumn: String, query: Any, distance: Distances, name: String): Query {
+    fun distance(probingColumn: String, query: VectorValue<*>, distance: Distances, name: String): Query {
         /* Parse necessary functions. */
         val distanceColumn = name.parseColumn()
         val distanceFunction = CottontailGrpc.Function.newBuilder()
             .setName(distance.toGrpc())
             .addArguments(CottontailGrpc.Expression.newBuilder().setColumn(probingColumn.parseColumn()))
-            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(CottontailGrpc.Literal.newBuilder().setVectorData(query.convertAnyToVector())))
+            .addArguments(CottontailGrpc.Expression.newBuilder().setLiteral(query.toGrpc()))
 
         /* Update projection: Add distance column + alias. */
         this.builder.queryBuilder.projectionBuilder.addElements(CottontailGrpc.Projection.ProjectionElement.newBuilder()
@@ -458,25 +459,5 @@ class Query(entity: String? = null): LanguageFeature() {
     fun limitParallelism(max: Int): Query {
         this.builder.metadataBuilder.parallelHintBuilder.limit = max
         return this
-    }
-
-    /**
-     * Tries to convert [Any] to a [CottontailGrpc.Vector].
-     *
-     * Only works for compatible types, otherwise throws an [IllegalStateException]
-     *
-     * @return [CottontailGrpc.Vector]
-     */
-    private fun Any.convertAnyToVector(): CottontailGrpc.Vector = when (this) {
-        is Array<*> -> {
-            require(this[0] is Number) { "Only arrays of numbers can be converted to vector literals." }
-            (this as Array<Number>).toVector()
-        }
-        is BooleanArray -> this.toVector()
-        is IntArray -> this.toVector()
-        is LongArray -> this.toVector()
-        is FloatArray -> this.toVector()
-        is DoubleArray -> this.toVector()
-        else -> throw IllegalStateException("Conversion of ${this.javaClass.simpleName} to vector element is not supported.")
     }
 }

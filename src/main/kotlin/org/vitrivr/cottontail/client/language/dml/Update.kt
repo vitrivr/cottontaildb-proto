@@ -3,6 +3,7 @@ package org.vitrivr.cottontail.client.language.dml
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.basics.predicate.*
 import org.vitrivr.cottontail.client.language.extensions.*
+import org.vitrivr.cottontail.core.values.Value
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -79,7 +80,7 @@ class Update(entity: String? = null): LanguageFeature() {
      * @param assignments The value assignments for the [Update]
      * @return This [Update]
      */
-    fun values(vararg assignments: Pair<String,Any?>): Update {
+    fun values(vararg assignments: Pair<String,Value?>): Update {
         this.builder.clearUpdates()
         for (assignment in assignments) {
             this.builder.addUpdates(

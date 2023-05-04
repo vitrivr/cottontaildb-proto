@@ -1,8 +1,9 @@
 package org.vitrivr.cottontail.client.iterators
 
 import io.grpc.Context
-import org.vitrivr.cottontail.client.language.basics.Type
 import org.vitrivr.cottontail.client.language.extensions.fqn
+import org.vitrivr.cottontail.core.toType
+import org.vitrivr.cottontail.core.values.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 import java.util.concurrent.CancellationException
@@ -48,8 +49,8 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
     /** [List] of simple column names returned by this [TupleIterator] in order of occurrence. */
     override val simpleNames: List<String> = ArrayList()
 
-    /** The column [Type]s returned by this [TupleIterator]. */
-    override val columnTypes: List<Type> = ArrayList()
+    /** The column [Types]s returned by this [TupleIterator]. */
+    override val columnTypes: List<Types<*>> = ArrayList()
 
     /** Returns the number of columns contained in the [Tuple]s returned by this [TupleIterator]. */
     override val numberOfColumns: Int
@@ -70,7 +71,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
             this._columns[c.name.fqn()] = i
             (this.columnNames as MutableList).add(c.name.fqn())
             (this.simpleNames as MutableList).add(c.name.name)
-            (this.columnTypes as MutableList).add(Type.of(c.type))
+            (this.columnTypes as MutableList).add(c.type.toType())
             if (!this._simple.contains(c.name.name)) {
                 this._simple[c.name.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
             }
@@ -120,7 +121,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         override fun nameForIndex(index: Int): String = this@TupleIteratorImpl.columnNames[index]
         override fun simpleNameForIndex(index: Int): String = this@TupleIteratorImpl.simpleNames[index]
         override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
-        override fun type(index: Int): Type = this@TupleIteratorImpl.columnTypes[index]
-        override fun type(name: String): Type = this@TupleIteratorImpl.columnTypes[indexForName(name)]
+        override fun type(index: Int): Types<*> = this@TupleIteratorImpl.columnTypes[index]
+        override fun type(name: String): Types<*> = this@TupleIteratorImpl.columnTypes[indexForName(name)]
     }
 }

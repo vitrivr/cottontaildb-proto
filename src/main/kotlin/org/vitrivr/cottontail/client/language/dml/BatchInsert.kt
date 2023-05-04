@@ -4,7 +4,7 @@ import org.vitrivr.cottontail.client.language.basics.Constants
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
-import org.vitrivr.cottontail.client.language.extensions.toGrpc
+import org.vitrivr.cottontail.core.values.Value
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -82,7 +82,7 @@ class BatchInsert(entity: String? = null): LanguageFeature() {
      * @param values The value to append to the [BatchInsert]
      * @return This [BatchInsert]
      */
-    fun append(vararg values: Any?): Boolean {
+    fun append(vararg values: Value?): Boolean {
         val insert = CottontailGrpc.BatchInsertMessage.Insert.newBuilder()
         for (v in values) {
             insert.addValues(v?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build())
