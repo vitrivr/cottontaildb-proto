@@ -14,7 +14,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 @Serializable
 @SerialName("Literal")
-data class Literal(@Contextual val value: Any): Expression {
+data class Literal(@Contextual val value: Any): Expression() {
     override fun toGrpc(): CottontailGrpc.Expression {
         val expression = CottontailGrpc.Expression.newBuilder()
         expression.literal = this.value.toGrpc()

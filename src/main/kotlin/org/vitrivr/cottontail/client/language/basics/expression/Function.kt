@@ -13,7 +13,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 @Serializable
 @SerialName("Function")
-class Function(val name: String, vararg val args: Expression): Expression {
+class Function(val name: String, vararg val args: Expression): Expression() {
     override fun toGrpc(): CottontailGrpc.Expression {
         val function = CottontailGrpc.Function.newBuilder().setName(name.parseFunction())
         for (exp in this.args) {

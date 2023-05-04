@@ -14,7 +14,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 @Serializable
 @SerialName("List")
-class List(val value: Array<@Contextual Any>): Expression {
+class List(val value: Array<@Contextual Any>): Expression() {
     override fun toGrpc(): CottontailGrpc.Expression {
         val builder = CottontailGrpc.Expression.newBuilder()
         for (data in this.value) {

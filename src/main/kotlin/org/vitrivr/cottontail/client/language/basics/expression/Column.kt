@@ -10,6 +10,6 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 @Serializable
 @SerialName("Column")
-data class Column(val name: String): Expression {
+data class Column(val name: String): Expression() {
     override fun toGrpc(): CottontailGrpc.Expression = CottontailGrpc.Expression.newBuilder().setColumn(name.parseColumn()).build()
 }

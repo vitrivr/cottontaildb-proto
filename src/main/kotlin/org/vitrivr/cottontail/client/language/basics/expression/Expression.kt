@@ -10,9 +10,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @version 1.0.0
  */
 @Serializable
-sealed interface Expression {
+sealed class Expression {
     /**
      * Converts this [Expression] into a [CottontailGrpc.Expression]
      */
-    fun toGrpc(): CottontailGrpc.Expression
+    abstract fun toGrpc(): CottontailGrpc.Expression
 }

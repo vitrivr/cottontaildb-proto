@@ -10,7 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 @Serializable
 @SerialName("Compare")
-data class Compare(val lexp: Expression, val operator: Operator, val rexp: Expression): Predicate {
+data class Compare(val lexp: Expression, val operator: Operator, val rexp: Expression): Predicate() {
     override fun toGrpc(): CottontailGrpc.Predicate = CottontailGrpc.Predicate.newBuilder().setComparison(
         CottontailGrpc.Predicate.Comparison.newBuilder().setLexp(this.lexp.toGrpc()).setRexp(this.rexp.toGrpc()).setOperator(this.operator.grpc)
     ).build()

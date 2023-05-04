@@ -11,9 +11,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @version 1.0.0
  */
 @Serializable
-sealed interface Predicate {
+sealed class Predicate {
     /**
      * Converts this [Predicate] to a gRPC representation.
      */
-    fun toGrpc(): CottontailGrpc.Predicate
+    abstract fun toGrpc(): CottontailGrpc.Predicate
 }

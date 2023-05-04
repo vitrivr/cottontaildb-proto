@@ -12,7 +12,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  */
 @Serializable
 @SerialName("Not")
-data class Not(val p: Predicate): Predicate {
+data class Not(val p: Predicate): Predicate() {
     override fun toGrpc(): CottontailGrpc.Predicate = CottontailGrpc.Predicate.newBuilder().setNot(
         CottontailGrpc.Predicate.Not.newBuilder().setP(this.p.toGrpc())
     ).build()
