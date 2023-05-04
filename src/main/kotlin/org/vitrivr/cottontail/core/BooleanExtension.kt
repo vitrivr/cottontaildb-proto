@@ -1,4 +1,4 @@
-package org.vitrivr.cottontail.core.extensions
+package org.vitrivr.cottontail.core
 
 /**
  * Converts this [Boolean] to an [Int] (true = 1, false = 0).
