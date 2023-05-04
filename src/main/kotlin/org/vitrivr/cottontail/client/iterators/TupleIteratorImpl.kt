@@ -71,7 +71,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
             this._columns[c.name.fqn()] = i
             (this.columnNames as MutableList).add(c.name.fqn())
             (this.simpleNames as MutableList).add(c.name.name)
-            (this.columnTypes as MutableList).add(c.type.toType())
+            (this.columnTypes as MutableList).add(c.type.toType(c.length))
             if (!this._simple.contains(c.name.name)) {
                 this._simple[c.name.name] = i /* If a simple name is not unique, only the first occurrence is returned. */
             }
