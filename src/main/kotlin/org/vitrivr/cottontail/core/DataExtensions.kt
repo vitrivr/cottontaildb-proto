@@ -72,6 +72,47 @@ fun CottontailGrpc.Literal.toValue(): Value = when(this.dataCase) {
 }
 
 /**
+ * Returns a [String] representation of [CottontailGrpc.Literal].
+ *
+ * @return [String]
+ * @throws IllegalArgumentException If cast is not possible.
+ */
+fun CottontailGrpc.Literal.toDescription() = when (this.dataCase) {
+    CottontailGrpc.Literal.DataCase.BOOLEANDATA -> this.booleanData.toString()
+    CottontailGrpc.Literal.DataCase.INTDATA -> this.intData.toString()
+    CottontailGrpc.Literal.DataCase.LONGDATA -> this.longData.toString()
+    CottontailGrpc.Literal.DataCase.FLOATDATA -> this.floatData.toString()
+    CottontailGrpc.Literal.DataCase.DOUBLEDATA -> this.doubleData.toString()
+    CottontailGrpc.Literal.DataCase.STRINGDATA -> this.stringData
+    CottontailGrpc.Literal.DataCase.DATEDATA -> Date(this.dateData).toString()
+    CottontailGrpc.Literal.DataCase.COMPLEX32DATA -> "${this.complex32Data.real} + i${this.complex32Data.imaginary}"
+    CottontailGrpc.Literal.DataCase.COMPLEX64DATA -> "${this.complex32Data.real} + i${this.complex32Data.imaginary}"
+    CottontailGrpc.Literal.DataCase.VECTORDATA -> when (this.vectorData.vectorDataCase) {
+        CottontailGrpc.Vector.VectorDataCase.FLOATVECTOR -> vectorToString(this.vectorData.floatVector.vectorList)
+        CottontailGrpc.Vector.VectorDataCase.DOUBLEVECTOR -> vectorToString(this.vectorData.doubleVector.vectorList)
+        CottontailGrpc.Vector.VectorDataCase.INTVECTOR -> vectorToString(this.vectorData.intVector.vectorList)
+        CottontailGrpc.Vector.VectorDataCase.LONGVECTOR -> vectorToString(this.vectorData.longVector.vectorList)
+        CottontailGrpc.Vector.VectorDataCase.BOOLVECTOR -> vectorToString(this.vectorData.boolVector.vectorList)
+        CottontailGrpc.Vector.VectorDataCase.COMPLEX32VECTOR -> vectorToString(this.vectorData.complex32Vector.vectorList.map { c -> "${c.real} + i${c.imaginary}" })
+        CottontailGrpc.Vector.VectorDataCase.COMPLEX64VECTOR -> vectorToString(this.vectorData.complex64Vector.vectorList.map { c -> "${c.real} + i${c.imaginary}" })
+        else -> "<NULL>"
+    }
+    else  -> "<NULL>"
+}
+
+/**
+ * Concatenates a vector (list) into a [String]
+ *
+ * @param vector The [List] to concatenate.
+ * @param max The maximum number of elements to include.
+ */
+private fun vectorToString(vector: List<*>, max: Int = 4) = if (vector.size > max) {
+    "[${vector.take(max - 1).joinToString(", ")}.., ${vector.last()}]"
+} else {
+    "[${vector.joinToString(", ")}]"
+}
+
+/**
  * Returns the [Types] of a [CottontailGrpc.Literal].
  *
  * @return [Types]
