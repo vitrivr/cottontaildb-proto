@@ -3,6 +3,7 @@ package org.vitrivr.cottontail.client.language.dml
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.basics.predicate.*
 import org.vitrivr.cottontail.client.language.extensions.*
+import org.vitrivr.cottontail.core.tryConvertToValue
 import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.PublicValue
 import org.vitrivr.cottontail.grpc.CottontailGrpc
@@ -81,8 +82,24 @@ class Update(entity: String? = null): LanguageFeature() {
      * @param assignments The value assignments for the [Update]
      * @return This [Update]
      */
+    fun any(vararg assignments: Pair<String, Any?>): Update {
+        for (assignment in assignments) {
+            this.builder.addUpdates(
+                CottontailGrpc.UpdateMessage.UpdateElement.newBuilder()
+                    .setColumn(assignment.first.parseColumn())
+                    .setValue(CottontailGrpc.Expression.newBuilder().setLiteral(assignment.second?.tryConvertToValue()?.toGrpc() ?: CottontailGrpc.Literal.newBuilder().build()))
+            )
+        }
+        return this
+    }
+
+    /**
+     * Adds value assignments this [Update]
+     *
+     * @param assignments The value assignments for the [Update]
+     * @return This [Update]
+     */
     fun values(vararg assignments: Pair<String, PublicValue?>): Update {
-        this.builder.clearUpdates()
         for (assignment in assignments) {
             this.builder.addUpdates(
                 CottontailGrpc.UpdateMessage.UpdateElement.newBuilder()

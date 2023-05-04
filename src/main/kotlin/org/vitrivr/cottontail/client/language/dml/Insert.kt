@@ -3,7 +3,7 @@ package org.vitrivr.cottontail.client.language.dml
 import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
-import org.vitrivr.cottontail.core.types.Value
+import org.vitrivr.cottontail.core.tryConvertToValue
 import org.vitrivr.cottontail.core.values.PublicValue
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -11,7 +11,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * An INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.3.0
+ * @version 2.0.0
  */
 class Insert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.InsertMessage.Builder]. */
@@ -71,6 +71,16 @@ class Insert(entity: String? = null): LanguageFeature() {
      * @param value The value or null.
      * @return This [Insert]
      */
+    fun any(column: String, value: Any?): Insert = this.value(column, value?.tryConvertToValue())
+
+    /**
+     * Adds a value assignments this [Insert]. This method is cumulative, i.e., invoking
+     * this method multiple times appends another assignment each time.
+     *
+     * @param column The name of the column to insert into.
+     * @param value The value or null.
+     * @return This [Insert]
+     */
     fun value(column: String, value: PublicValue?): Insert {
         this.builder.addElements(
             CottontailGrpc.InsertMessage.InsertElement.newBuilder()
@@ -85,8 +95,20 @@ class Insert(entity: String? = null): LanguageFeature() {
      * @param assignments The value assignments for the [Insert]
      * @return This [Insert]
      */
+    fun any(vararg assignments: Pair<String, Any?>): Insert {
+        for (assignment in assignments) {
+            this.value(assignment.first, assignment.second?.tryConvertToValue())
+        }
+        return this
+    }
+
+    /**
+     * Adds value assignments this [Insert]. A value assignment consists of a column name and a value.
+     *
+     * @param assignments The value assignments for the [Insert]
+     * @return This [Insert]
+     */
     fun values(vararg assignments: Pair<String, PublicValue?>): Insert {
-        this.builder.clearElements()
         for (assignment in assignments) {
             this.value(assignment.first, assignment.second)
         }

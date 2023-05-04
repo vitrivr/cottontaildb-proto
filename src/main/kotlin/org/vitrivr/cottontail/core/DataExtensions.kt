@@ -11,7 +11,7 @@ import java.util.*
  *
  * @return [PublicValue]
  */
-fun Any.tryConvertToValue(): PublicValue = when(this) {
+internal fun Any.tryConvertToValue(): PublicValue = when(this) {
     is PublicValue -> this
     is String -> StringValue(this)
     is Boolean -> BooleanValue(this)
