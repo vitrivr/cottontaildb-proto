@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.basics.predicate
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.client.language.basics.expression.Expression
 import org.vitrivr.cottontail.grpc.CottontailGrpc
@@ -8,6 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A [Predicate] that compares two [Expression]s using a [Compare.Operator].
  */
 @Serializable
+@SerialName("Compare")
 data class Compare(val lexp: Expression, val operator: Operator, val rexp: Expression): Predicate {
     override fun toGrpc(): CottontailGrpc.Predicate = CottontailGrpc.Predicate.newBuilder().setComparison(
         CottontailGrpc.Predicate.Comparison.newBuilder().setLexp(this.lexp.toGrpc()).setRexp(this.rexp.toGrpc()).setOperator(this.operator.grpc)
@@ -16,6 +18,7 @@ data class Compare(val lexp: Expression, val operator: Operator, val rexp: Expre
     /**
      * Enumeration of supported [Compare] operators.
      */
+    @Serializable
     enum class Operator(val symbol: String, val grpc: CottontailGrpc.Predicate.Comparison.Operator) {
         EQUAL("=", CottontailGrpc.Predicate.Comparison.Operator.EQUAL),
         NOTEQUAL("!=", CottontailGrpc.Predicate.Comparison.Operator.NOTEQUAL),

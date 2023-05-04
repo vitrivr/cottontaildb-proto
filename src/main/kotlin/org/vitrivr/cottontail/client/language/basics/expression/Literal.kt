@@ -1,6 +1,7 @@
 package org.vitrivr.cottontail.client.language.basics.expression
 
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.client.language.extensions.toGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc
@@ -12,6 +13,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @version 1.0.0
  */
 @Serializable
+@SerialName("Literal")
 data class Literal(@Contextual val value: Any): Expression {
     override fun toGrpc(): CottontailGrpc.Expression {
         val expression = CottontailGrpc.Expression.newBuilder()

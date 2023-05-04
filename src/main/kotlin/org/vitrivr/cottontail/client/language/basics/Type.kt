@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.basics
 
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.time.Instant
 import java.util.*
@@ -10,6 +11,7 @@ import java.util.*
  * @author Ralph Gasser
  * @version 1.1.0
  */
+@Serializable
 enum class Type(val grpc: CottontailGrpc.Type) {
     BOOLEAN(CottontailGrpc.Type.BOOLEAN),
     BYTE(CottontailGrpc.Type.BYTE),
