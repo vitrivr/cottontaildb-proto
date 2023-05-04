@@ -5,7 +5,6 @@ import org.vitrivr.cottontail.client.language.basics.LanguageFeature
 import org.vitrivr.cottontail.client.language.extensions.parseColumn
 import org.vitrivr.cottontail.client.language.extensions.parseEntity
 import org.vitrivr.cottontail.core.tryConvertToValue
-import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.values.PublicValue
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -13,7 +12,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * A BATCH INSERT query in the Cottontail DB query language.
  *
  * @author Ralph Gasser
- * @version 1.3.0
+ * @version 2.0.0
  */
 class BatchInsert(entity: String? = null): LanguageFeature() {
     /** Internal [CottontailGrpc.DeleteMessage.Builder]. */

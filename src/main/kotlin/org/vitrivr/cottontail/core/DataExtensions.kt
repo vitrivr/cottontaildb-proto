@@ -9,6 +9,9 @@ import java.util.*
 /**
  * Tries to convert an [Any] to a [PublicValue].
  *
+ * This is an internal function since its use is exclusively
+ * restricted to the SimpleClient API.
+ *
  * @return [PublicValue]
  */
 internal fun Any.tryConvertToValue(): PublicValue = when(this) {
