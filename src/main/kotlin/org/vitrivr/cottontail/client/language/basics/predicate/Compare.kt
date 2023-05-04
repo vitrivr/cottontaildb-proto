@@ -6,9 +6,9 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
 /**
  * A [Predicate] that compares two [Expression]s using a [Compare.Operator].
  */
-data class Compare(val left: Expression, val operator: Operator, val right: Expression): Predicate {
+data class Compare(val lexp: Expression, val operator: Operator, val rexp: Expression): Predicate {
     override fun toGrpc(): CottontailGrpc.Predicate = CottontailGrpc.Predicate.newBuilder().setComparison(
-        CottontailGrpc.Predicate.Comparison.newBuilder().setLeft(this.left.toGrpc()).setRight(this.right.toGrpc()).setOperator(this.operator.grpc)
+        CottontailGrpc.Predicate.Comparison.newBuilder().setLexp(this.lexp.toGrpc()).setRexp(this.rexp.toGrpc()).setOperator(this.operator.grpc)
     ).build()
 
     /**

@@ -8,8 +8,8 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-data class Or(val left: Predicate, val right: Predicate): Predicate{
+data class Or(val p1: Predicate, val p2: Predicate): Predicate{
     override fun toGrpc(): CottontailGrpc.Predicate = CottontailGrpc.Predicate.newBuilder().setOr(
-        CottontailGrpc.Predicate.Or.newBuilder().setLeft(this.left.toGrpc()).setRight(this.right.toGrpc())
+        CottontailGrpc.Predicate.Or.newBuilder().setP1(this.p1.toGrpc()).setP2(this.p2.toGrpc())
     ).build()
 }

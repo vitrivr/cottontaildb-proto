@@ -573,7 +573,7 @@ message Where {
 
 /** A boolean expression that evaluates to true or false. */
 message Predicate {
-    oneof expression {
+    oneof predicate {
         Literal literal = 1;
         Comparison comparison = 2;
         IsNull isnull = 3;
@@ -593,16 +593,16 @@ message Predicate {
     * An unary IsNull predicate, which evaluates to true if the expression is null.
     */
     message IsNull {
-        Expression expression = 1;
+        Expression exp = 1;
     }
 
     /**
      * A binary comparison predicate that compares two expressions using an operator.
      */
     message Comparison {
-        Expression left = 1;
+        Expression lexp = 1;
         Operator operator = 2;
-        Expression right = 3;
+        Expression rexp = 3;
 
         /**
          * An operator to compare a series of values.
@@ -625,23 +625,23 @@ message Predicate {
      * A binary AND combination for predicates.
      */
     message And {
-        Predicate left = 1;
-        Predicate right = 2;
+        Predicate p1 = 1;
+        Predicate p2 = 2;
     }
 
     /**
      * A binary OR combinator for predicates.
      */
     message Or {
-        Predicate left = 1;
-        Predicate right = 2;
+        Predicate p1 = 1;
+        Predicate p2 = 2;
     }
 
     /**
      * A unary NOT combinator for Boolean expressions.
      */
     message Not {
-        Predicate exp = 1;
+        Predicate p = 1;
     }
 }
 
