@@ -1,6 +1,6 @@
 package org.vitrivr.cottontail.client.iterators
 
-import org.vitrivr.cottontail.core.values.types.Types
+import org.vitrivr.cottontail.core.types.Types
 
 /**
  * An [Iterator] for [Tuple]s as returned by the [org.vitrivr.cottontail.client.SimpleClient]

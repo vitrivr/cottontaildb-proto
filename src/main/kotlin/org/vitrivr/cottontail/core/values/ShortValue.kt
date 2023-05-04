@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.core.types.NumericValue
 import org.vitrivr.cottontail.core.types.RealValue
 import org.vitrivr.cottontail.core.types.Value
-import org.vitrivr.cottontail.core.values.types.Types
+import org.vitrivr.cottontail.core.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**

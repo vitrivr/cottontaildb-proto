@@ -1,6 +1,6 @@
 package org.vitrivr.cottontail.core.types
 
-import org.vitrivr.cottontail.core.values.types.Types
+import org.vitrivr.cottontail.core.types.Types
 
 /**
  * This is an abstraction over the existing primitive types provided by Kotlin. It allows for the

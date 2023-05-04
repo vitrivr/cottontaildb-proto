@@ -1,6 +1,5 @@
-package org.vitrivr.cottontail.core.values.types
+package org.vitrivr.cottontail.core.types
 
-import org.vitrivr.cottontail.core.types.*
 import org.vitrivr.cottontail.core.values.*
 
 /**

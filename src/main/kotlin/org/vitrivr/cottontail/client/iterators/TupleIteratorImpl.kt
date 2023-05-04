@@ -3,7 +3,7 @@ package org.vitrivr.cottontail.client.iterators
 import io.grpc.Context
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.core.toType
-import org.vitrivr.cottontail.core.values.types.Types
+import org.vitrivr.cottontail.core.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 import java.util.concurrent.CancellationException

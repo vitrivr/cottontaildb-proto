@@ -6,7 +6,7 @@ import org.vitrivr.cottontail.core.types.ComplexVectorValue
 import org.vitrivr.cottontail.core.types.NumericValue
 import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.types.VectorValue
-import org.vitrivr.cottontail.core.values.types.*
+import org.vitrivr.cottontail.core.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import kotlin.math.atan2
 import kotlin.math.pow

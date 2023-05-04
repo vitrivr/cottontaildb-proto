@@ -8,7 +8,7 @@ import org.vitrivr.cottontail.core.types.NumericValue
 import org.vitrivr.cottontail.core.types.RealVectorValue
 import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.types.VectorValue
-import org.vitrivr.cottontail.core.values.types.*
+import org.vitrivr.cottontail.core.types.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 import kotlin.math.pow
