@@ -1,6 +1,7 @@
 plugins {
     id "com.google.protobuf" version "0.9.2"
     id "org.jetbrains.kotlin.jvm" version "$version_kotlin"
+    id "org.jetbrains.kotlin.plugin.serialization" version "$version_kotlin"
 }
 
 group 'org.vitrivr'
@@ -141,5 +142,6 @@ dependencies {
 
     /////// Kotlin references
     implementation group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib', version: version_kotlin
+    implementation group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-json-jvm', version: version_kotlinx_json_jvm
     implementation group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: version_kotlinx_coroutines
 }

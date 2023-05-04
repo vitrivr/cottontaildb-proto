@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.basics.predicate
 
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.client.language.dql.Query
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,6 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
+@Serializable
 sealed interface Predicate {
     /**
      * Converts this [Predicate] to a gRPC representation.

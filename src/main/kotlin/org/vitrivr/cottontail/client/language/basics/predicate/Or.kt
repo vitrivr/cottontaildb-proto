@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.basics.predicate
 
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -8,6 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
+@Serializable
 data class Or(val p1: Predicate, val p2: Predicate): Predicate{
     override fun toGrpc(): CottontailGrpc.Predicate = CottontailGrpc.Predicate.newBuilder().setOr(
         CottontailGrpc.Predicate.Or.newBuilder().setP1(this.p1.toGrpc()).setP2(this.p2.toGrpc())

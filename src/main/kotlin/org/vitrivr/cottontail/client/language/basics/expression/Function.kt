@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.basics.expression
 
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.client.language.extensions.parseFunction
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,6 +10,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
+@Serializable
 class Function(val name: String, vararg val args: Expression): Expression {
     override fun toGrpc(): CottontailGrpc.Expression {
         val function = CottontailGrpc.Function.newBuilder().setName(name.parseFunction())

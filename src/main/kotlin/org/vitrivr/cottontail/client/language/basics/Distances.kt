@@ -1,13 +1,15 @@
 package org.vitrivr.cottontail.client.language.basics
 
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
-/*
-* An enumeration of all [Distances] supported by Cottontail DB for NNS.
-*
-* @author Ralph Gasser
-* @version 1.2.0
-*/
+/**
+ * An enumeration of all [Distances] supported by Cottontail DB for NNS.
+ *
+ * @author Ralph Gasser
+ * @version 1.2.0
+ */
+@Serializable
 enum class Distances(val functionName: String) {
     L1("manhattan"),
     MANHATTAN("manhattan"),

@@ -1,5 +1,7 @@
 package org.vitrivr.cottontail.client.language.basics.expression
 
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.client.language.extensions.toGrpc
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
@@ -9,7 +11,8 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
-class LiteralList(val value: Array<Any>): Expression {
+@Serializable
+class LiteralList(val value: Array<@Contextual Any>): Expression {
     override fun toGrpc(): CottontailGrpc.Expression {
         val builder = CottontailGrpc.Expression.newBuilder()
         for (data in this.value) {

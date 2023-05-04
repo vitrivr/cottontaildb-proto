@@ -1,5 +1,6 @@
 package org.vitrivr.cottontail.client.language.basics
 
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
@@ -8,6 +9,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 1.0.0
  */
+@Serializable
 enum class Direction {
     ASC,
     DESC;
