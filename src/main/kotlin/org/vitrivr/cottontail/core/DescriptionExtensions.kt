@@ -2,7 +2,6 @@ package org.vitrivr.cottontail.core
 
 import org.vitrivr.cottontail.core.values.*
 import org.vitrivr.cottontail.grpc.CottontailGrpc
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Complex32
 import java.util.*
 
 
@@ -64,7 +63,7 @@ fun CottontailGrpc.Literal.toDescription() = when (this.dataCase) {
 }
 
 /**
- * Converts [Complex32] to a [String] description.
+ * Converts [Complex32Value] to a [String] description.
  *
  * @return [String]
  */
@@ -75,7 +74,7 @@ fun Complex32Value.toDescription() = if (this.imaginary.value < 0.0f) {
 }
 
 /**
- * Converts [Complex32] to a [String] description.
+ * Converts [Complex64Value] to a [String] description.
  *
  * @return [String]
  */
@@ -171,9 +170,9 @@ fun Complex32VectorValue.toDescription(vectorSeparator: String = ";", max: Int =
  * @return [String]
  */
 fun Complex64VectorValue.toDescription(vectorSeparator: String = ";", max: Int = 4) : String = if (this.logicalSize / 2 > max) {
-    "[${this.take(max - 1).joinToString(separator = vectorSeparator, prefix = "[") { (it as Complex32Value).toDescription() }}.., ${(this.last() as Complex32Value).toDescription()}]"
+    "[${this.take(max - 1).joinToString(separator = vectorSeparator, prefix = "[") { (it as Complex64Value).toDescription() }}.., ${(this.last() as Complex64Value).toDescription()}]"
 } else {
-    this.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]") { (it as Complex32Value).toDescription() }
+    this.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]") { (it as Complex64Value).toDescription() }
 }
 
 

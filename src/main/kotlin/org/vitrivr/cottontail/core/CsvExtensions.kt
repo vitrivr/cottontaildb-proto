@@ -1,6 +1,5 @@
 package org.vitrivr.cottontail.core
 
-
 import org.vitrivr.cottontail.client.iterators.Tuple
 import org.vitrivr.cottontail.core.values.*
 
@@ -11,14 +10,14 @@ import org.vitrivr.cottontail.core.values.*
  * @param vectorSeparator The vector separator to use (default to semicolon)
  * @return [String]
  */
-fun Tuple.csvEncode(separator: String = ",", vectorSeparator: String = ";") = (0..this.size()).map { this[it]?.csvEncode() }.joinToString(separator)
+fun Tuple.toCsv(separator: String = ",", vectorSeparator: String = ";") = (0..this.size()).map { this[it]?.toCsv() }.joinToString(separator)
 
 /**
  * Converts this [PublicValue] to a CSV compatible [String] representation.
  *
  * @return [String]
  */
-fun PublicValue.csvEncode(vectorSeparator: String = ";") = when(this) {
+fun PublicValue.toCsv(vectorSeparator: String = ";") = when(this) {
     is BooleanValue,
     is ByteValue,
     is ShortValue,
@@ -28,22 +27,77 @@ fun PublicValue.csvEncode(vectorSeparator: String = ";") = when(this) {
     is FloatValue -> this.toString()
     is StringValue -> "\"${this}\""
     is DateValue -> this.toDate()
-    is Complex32Value -> "${this.real} + i${this.imaginary}"
-    is Complex64Value -> "${this.real} + i${this.imaginary}"
-    is BooleanVectorValue -> encode(this)
-    is DoubleVectorValue -> encode(this)
-    is FloatVectorValue -> encode(this)
-    is IntVectorValue -> encode(this)
-    is LongVectorValue -> encode(this)
-    is Complex32VectorValue -> TODO()
-    is Complex64VectorValue -> TODO()
+    is Complex32Value -> this.toDescription()
+    is Complex64Value -> this.toDescription()
+    is BooleanVectorValue -> this.toCsv()
+    is DoubleVectorValue -> this.toCsv()
+    is FloatVectorValue -> this.toCsv()
+    is IntVectorValue -> this.toCsv()
+    is LongVectorValue -> this.toCsv()
+    is Complex32VectorValue -> this.toCsv()
+    is Complex64VectorValue -> this.toCsv()
     is ByteStringValue -> "<BLOB>" /* ByteStrings cannot be exported to CSV. */
 }
 
-private fun encode(vector: BooleanVectorValue, vectorSeparator: String = ";") : String = vector.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
-private fun encode(vector: DoubleVectorValue, vectorSeparator: String = ";") : String = vector.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
-private fun encode(vector: FloatVectorValue, vectorSeparator: String = ";") : String = vector.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
-private fun encode(vector: IntVectorValue, vectorSeparator: String = ";") : String = vector.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
-private fun encode(vector: LongVectorValue, vectorSeparator: String = ";") : String = vector.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
-private fun encode(vector: Complex32VectorValue, vectorSeparator: String = ";") : String = vector.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]") { "$"}
-private fun encode(vector: Complex64VectorValue, vectorSeparator: String = ";") : String = vector.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
+/**
+ * Converts [BooleanVectorValue] to a [String] representation that can be used in a CSV.
+ *
+ * @param vectorSeparator The character used to separate vector components.
+ *
+ * @return [String]
+ */
+fun BooleanVectorValue.toCsv(vectorSeparator: String = ";") : String = this.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
+
+/**
+ * Converts [DoubleVectorValue] to a [String] representation that can be used in a CSV.
+ *
+ * @param vectorSeparator The character used to separate vector components.
+ *
+ * @return [String]
+ */
+fun DoubleVectorValue.toCsv(vectorSeparator: String = ";") : String = this.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
+
+/**
+ * Converts [FloatVectorValue] to a [String] representation that can be used in a CSV.
+ *
+ * @param vectorSeparator The character used to separate vector components.
+ *
+ * @return [String]
+ */
+fun FloatVectorValue.toCsv(vectorSeparator: String = ";") : String = this.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
+
+/**
+ * Converts [IntVectorValue] to a [String] representation that can be used in a CSV.
+ *
+ * @param vectorSeparator The character used to separate vector components.
+ *
+ * @return [String]
+ */
+fun IntVectorValue.toCsv(vectorSeparator: String = ";") : String = this.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
+
+/**
+ * Converts [LongVectorValue] to a [String] representation that can be used in a CSV.
+ *
+ * @param vectorSeparator The character used to separate vector components.
+ *
+ * @return [String]
+ */
+fun LongVectorValue.toCsv(vectorSeparator: String = ";") : String = this.data.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]")
+
+/**
+ * Converts [Complex32VectorValue] to a [String] representation that can be used in a CSV.
+ *
+ * @param vectorSeparator The character used to separate vector components.
+ * @return [String]
+ */
+fun Complex32VectorValue.toCsv(vectorSeparator: String = ";") : String =
+    this.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]") { (it as Complex32Value).toDescription() }
+
+/**
+ * Converts [Complex32VectorValue] to a [String] representation that can be used in a CSV.
+ *
+ * @param vectorSeparator The character used to separate vector components.
+ * @return [String]
+ */
+fun Complex64VectorValue.toCsv(vectorSeparator: String = ";") : String =
+    this.joinToString(separator = vectorSeparator, prefix = "[", postfix = "]") { (it as Complex64Value).toDescription() }
