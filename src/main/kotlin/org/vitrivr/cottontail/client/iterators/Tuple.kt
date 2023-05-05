@@ -3,6 +3,7 @@ package org.vitrivr.cottontail.client.iterators
 import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.core.values.*
 import org.vitrivr.cottontail.core.types.Types
+import java.util.*
 
 /**
  * A [Tuple] as returned by the [TupleIterator].
@@ -18,6 +19,7 @@ abstract class Tuple(private val values: Array<PublicValue?>) {
     abstract fun type(name: String): Types<*>
     abstract fun type(index: Int): Types<*>
     fun size() = this.values.size
+    fun values(): Array<PublicValue?> = this.values
     operator fun get(name: String): PublicValue? = this.values[indexForName(name)]
     operator fun get(index: Int): PublicValue? = this.values[index]
     fun asBooleanValue(index: Int): BooleanValue? = this.values[index] as? BooleanValue
@@ -73,7 +75,9 @@ abstract class Tuple(private val values: Array<PublicValue?>) {
     fun asString(index: Int): String? = this.asStringValue(index)?.value
     fun asString(name: String): String? = this.asStringValue(indexForName(name))?.value
     fun asDateValue(index: Int): DateValue? = this.values[index] as? DateValue
+    fun asDate(index: Int): Date? = asDateValue(index)?.toDate()
     fun asDateValue(name: String): DateValue? = this.asDateValue(indexForName(name))
+    fun asDate(name: String): Date? = asDateValue(name)?.toDate()
     fun asByteStringValue(index: Int): ByteStringValue? = this.values[index] as? ByteStringValue
     fun asByteStringValue(name: String): ByteStringValue?  = this.asByteStringValue(indexForName(name))
     fun asByteArray(index: Int): ByteArray?  = this.asByteStringValue(index)?.value
