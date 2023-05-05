@@ -7,10 +7,10 @@ import org.vitrivr.cottontail.core.values.*
  * Converts this [Tuple] to a CSV compatible [String] representation.
  *
  * @param separator The column separator to use (defaults to a comma).
- * @param vectorSeparator The vector separator to use (default to semicolon)
+ * @param componentSeparator The vector separator to use (default to semicolon)
  * @return [String]
  */
-fun Tuple.toCsv(separator: String = ",", vectorSeparator: String = ";") = (0..this.size()).map { this[it]?.toCsv() }.joinToString(separator)
+fun Tuple.toCsv(separator: String = ",", componentSeparator: String = ";") = (0..this.size()).map { this[it]?.toCsv() }.joinToString(separator)
 
 /**
  * Converts this [PublicValue] to a CSV compatible [String] representation.
