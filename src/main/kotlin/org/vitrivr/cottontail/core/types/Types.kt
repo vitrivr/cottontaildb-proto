@@ -13,7 +13,8 @@ import org.vitrivr.cottontail.core.values.*
  * @author Ralph Gasser
  * @version 2.0.0
  */
-sealed interface Types<T : Value> {
+@Serializable
+sealed class Types<T : Value> {
 
     companion object {
         /** Constant for unknown logical size. */
@@ -80,22 +81,22 @@ sealed interface Types<T : Value> {
     }
 
     /** The name of a [Types] implementation. */
-    val name: kotlin.String
+    abstract val name: kotlin.String
 
     /** The logical size of a [Types] implementation, i.e., the number of elements in a vector. */
-    val logicalSize: kotlin.Int
+    abstract val logicalSize: kotlin.Int
 
     /** The physical size of a [Types] implementation, i.e., the size in bytes in-memory or on disk (w/o compression). */
-    val physicalSize: kotlin.Int
+    abstract val physicalSize: kotlin.Int
 
     /** The ordinal value of a [Types] implementation. */
-    val ordinal: kotlin.Int
+    abstract val ordinal: kotlin.Int
 
     /**
      * A [Scalar] type.
      */
     @Serializable
-    sealed class Scalar<T: ScalarValue<*>>: Types<T> {
+    sealed class Scalar<T: ScalarValue<*>>: Types<T>() {
         override val logicalSize
             get() = 1
         override fun equals(other: Any?): kotlin.Boolean
@@ -120,7 +121,7 @@ sealed interface Types<T : Value> {
      * A [Vector] type
      */
     @Serializable
-    sealed class Vector<T: VectorValue<*>, E: ScalarValue<*>>: Types<T> {
+    sealed class Vector<T: VectorValue<*>, E: ScalarValue<*>>: Types<T>() {
         /** The element type of this [Vector] type. */
         abstract val elementType: Scalar<E>
         override fun equals(other: Any?): kotlin.Boolean =
