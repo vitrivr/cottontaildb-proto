@@ -6,6 +6,7 @@ import org.vitrivr.cottontail.core.types.ScalarValue
 import org.vitrivr.cottontail.core.types.Value
 import org.vitrivr.cottontail.core.types.Types
 import org.vitrivr.cottontail.grpc.CottontailGrpc
+import java.time.Instant
 import java.util.*
 
 /**
@@ -55,6 +56,13 @@ value class DateValue(override val value: Long) : ScalarValue<Long>, PublicValue
      */
     override fun isEqual(other: Value): Boolean =
         (other is DateValue) && (other.value == this.value)
+
+    /**
+     * Converts this [DateValue] to a [Date] and returns it.
+     *
+     * @return [Date] representation.
+     */
+    fun toDate() = Date.from(Instant.ofEpochMilli(this.value))
 
     /**
      * Converts this [DateValue] to a  [CottontailGrpc.Literal] gRCP representation.
