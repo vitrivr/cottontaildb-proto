@@ -40,7 +40,7 @@ internal fun Any.tryConvertToValue(): PublicValue = when(this) {
  * @param type The desired [Types].
  * @return [Value] or null
  */
-fun CottontailGrpc.Literal.toValue(type: Types<*>): Value = when (type) {
+fun CottontailGrpc.Literal.toValue(type: Types<*>): PublicValue = when (type) {
     is Types.Double -> this.toDoubleValue()
     is Types.Float -> this.toFloatValue()
     is Types.Boolean -> this.toBooleanValue()
@@ -68,7 +68,7 @@ fun CottontailGrpc.Literal.toValue(type: Types<*>): Value = when (type) {
  * @return [Value] or null
  * @throws IllegalArgumentException If cast is not possible.
  */
-fun CottontailGrpc.Literal.toValue(): Value = when(this.dataCase) {
+fun CottontailGrpc.Literal.toValue(): PublicValue = when(this.dataCase) {
     CottontailGrpc.Literal.DataCase.BOOLEANDATA -> BooleanValue(this.booleanData)
     CottontailGrpc.Literal.DataCase.INTDATA -> IntValue(this.intData)
     CottontailGrpc.Literal.DataCase.LONGDATA -> LongValue(this.longData)
