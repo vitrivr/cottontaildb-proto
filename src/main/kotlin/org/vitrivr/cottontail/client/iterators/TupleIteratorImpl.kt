@@ -70,7 +70,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         this.queryDuration = next.metadata.queryDuration
 
         next.tuplesList.forEach { t->
-            TupleImpl(Array(t.dataCount) { t.dataList[it].toValue() })
+            this.buffer.add(TupleImpl(Array(t.dataCount) { t.dataList[it].toValue() }))
         }
         next.columnsList.forEachIndexed { i,c ->
             this._columns[c.name.fqn()] = i
