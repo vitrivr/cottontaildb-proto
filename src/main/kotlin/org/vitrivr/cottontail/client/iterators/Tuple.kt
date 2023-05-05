@@ -1,10 +1,8 @@
 package org.vitrivr.cottontail.client.iterators
 
-import org.vitrivr.cottontail.core.toValue
-import org.vitrivr.cottontail.core.types.Value
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.core.values.*
 import org.vitrivr.cottontail.core.types.Types
-import org.vitrivr.cottontail.grpc.CottontailGrpc
 
 /**
  * A [Tuple] as returned by the [TupleIterator].
@@ -12,19 +10,16 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc
  * @author Ralph Gasser
  * @version 2.0.0
  */
-abstract class Tuple(val raw: CottontailGrpc.QueryResponseMessage.Tuple) {
-    /** Internal list of values. */
-    private val values: Array<Value?> = Array(raw.dataCount) { raw.dataList[it].toValue() }
-
+@Serializable
+abstract class Tuple(private val values: Array<PublicValue?>) {
     abstract fun nameForIndex(index: Int): String
     abstract fun simpleNameForIndex(index: Int): String
     abstract fun indexForName(name: String): Int
     abstract fun type(name: String): Types<*>
     abstract fun type(index: Int): Types<*>
     fun size() = this.values.size
-    operator fun get(name: String): Value? = this.values[indexForName(name)]
-    operator fun get(index: Int): Value? = this.values[index]
-
+    operator fun get(name: String): PublicValue? = this.values[indexForName(name)]
+    operator fun get(index: Int): PublicValue? = this.values[index]
     fun asBooleanValue(index: Int): BooleanValue? = this.values[index] as? BooleanValue
     fun asBooleanValue(name: String): BooleanValue? = this.asBooleanValue(indexForName(name))
     fun asBoolean(index: Int): Boolean? = asBooleanValue(index)?.value

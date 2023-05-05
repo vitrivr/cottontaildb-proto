@@ -1,9 +1,12 @@
 package org.vitrivr.cottontail.client.iterators
 
 import io.grpc.Context
+import kotlinx.serialization.Serializable
 import org.vitrivr.cottontail.client.language.extensions.fqn
 import org.vitrivr.cottontail.core.toType
+import org.vitrivr.cottontail.core.toValue
 import org.vitrivr.cottontail.core.types.Types
+import org.vitrivr.cottontail.core.values.PublicValue
 import org.vitrivr.cottontail.grpc.CottontailGrpc
 import java.util.*
 import java.util.concurrent.CancellationException
@@ -66,7 +69,9 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         this.planDuration = next.metadata.planDuration
         this.queryDuration = next.metadata.queryDuration
 
-        next.tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
+        next.tuplesList.forEach { t->
+            TupleImpl(Array(t.dataCount) { t.dataList[it].toValue() })
+        }
         next.columnsList.forEachIndexed { i,c ->
             this._columns[c.name.fqn()] = i
             (this.columnNames as MutableList).add(c.name.fqn())
@@ -105,7 +110,9 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
                 this.context.close()
                 throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
             }
-            this.results.next().tuplesList.forEach { this.buffer.add(TupleImpl(it)) }
+            this.results.next().tuplesList.forEach { t ->
+                this.buffer.add(TupleImpl(Array(t.dataCount) { t.dataList[it].toValue() }))
+            }
         }
         return this.buffer.poll()!!
     }
@@ -117,7 +124,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         this.context.cancel(CancellationException("TupleIterator has been prematurely closed by user."))
     }
 
-    inner class TupleImpl(tuple: CottontailGrpc.QueryResponseMessage.Tuple): Tuple(tuple) {
+    inner class TupleImpl(values: Array<PublicValue?>): Tuple(values) {
         override fun nameForIndex(index: Int): String = this@TupleIteratorImpl.columnNames[index]
         override fun simpleNameForIndex(index: Int): String = this@TupleIteratorImpl.simpleNames[index]
         override fun indexForName(name: String) = (this@TupleIteratorImpl._columns[name] ?: this@TupleIteratorImpl._simple[name]) ?: throw IllegalArgumentException("Column $name not known to this TupleIterator.")
