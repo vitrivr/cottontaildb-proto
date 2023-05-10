@@ -70,7 +70,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
         this.queryDuration = next.metadata.queryDuration
 
         next.tuplesList.forEach { t->
-            this.buffer.add(TupleImpl(Array(t.dataCount) { t.dataList[it].toValue() }))
+            this.buffer.add(TupleImpl(Array(t.dataCount) { t.dataList[it]?.toValue() }))
         }
         next.columnsList.forEachIndexed { i,c ->
             this._columns[c.name.fqn()] = i
@@ -111,7 +111,7 @@ class TupleIteratorImpl internal constructor(private val results: Iterator<Cotto
                 throw IllegalArgumentException("TupleIterator has been drained and no more elements can be loaded. Call hasNext() to ensure that elements are available before calling next().")
             }
             this.results.next().tuplesList.forEach { t ->
-                this.buffer.add(TupleImpl(Array(t.dataCount) { t.dataList[it].toValue() }))
+                this.buffer.add(TupleImpl(Array(t.dataCount) { t.dataList[it]?.toValue() }))
             }
         }
         return this.buffer.poll()!!
